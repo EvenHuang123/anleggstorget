@@ -103,43 +103,96 @@ export default function NyAnnonsePage() {
     setLoading(true)
     setError('')
 
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { router.push('/logg-inn'); return }
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setLoading(false)
+        router.push('/logg-inn')
+        return
+      }
 
-    const uploadedUrls: string[] = []
-    for (const file of form.images) {
-      const ext = file.name.split('.').pop()
-      const path = `${session.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-      const { error: uploadErr } = await supabase.storage
-        .from('listing-images')
-        .upload(path, file, { contentType: file.type, upsert: false })
-      if (!uploadErr) uploadedUrls.push(path)
-    }
+      const price = Number(form.price)
+      if (!form.price || isNaN(price) || price <= 0) {
+        setError('Ugyldig pris. Gå tilbake og fyll inn et gyldig beløp.')
+        setLoading(false)
+        return
+      }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: insertErr } = await (supabase as any).from('listings').insert({
-      seller_id: session.user.id,
-      category: form.category as Category,
-      title: form.title,
-      description: form.description || null,
-      brand: form.brand || null,
-      model: form.model || null,
-      year: form.year ? parseInt(form.year) : null,
-      operating_hours: form.operating_hours ? parseInt(form.operating_hours) : null,
-      weight_class: form.weight_class || null,
-      price: parseInt(form.price),
-      price_type: form.price_type,
-      location: form.location || null,
-      status,
-      images: uploadedUrls,
-    })
+      // Ensure profile exists (foreign key requirement for listings.seller_id)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existingProfile } = await (supabase as any)
+        .from('profiles')
+        .select('id')
+        .eq('id', session.user.id)
+        .maybeSingle() as { data: { id: string } | null }
 
-    setLoading(false)
-    if (insertErr) {
-      setError('Kunne ikke publisere annonsen. Prøv igjen.')
-    } else {
-      toast.success(status === 'active' ? 'Annonsen er publisert!' : 'Annonsen er lagret som kladd.')
-      router.push('/dashboard')
+      if (!existingProfile) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: profileErr } = await (supabase as any).from('profiles').insert({
+          id: session.user.id,
+          company_name: session.user.email?.split('@')[0] ?? 'Ukjent bedrift',
+          org_number: '000000000',
+        })
+        if (profileErr) {
+          console.error('Profile creation failed:', profileErr.message)
+          setError('Profil mangler. Gå til Innstillinger og fyll inn bedriftsinfo.')
+          setLoading(false)
+          return
+        }
+      }
+
+      // Upload images
+      const uploadedUrls: string[] = []
+      for (const file of form.images) {
+        const ext = file.name.split('.').pop() ?? 'jpg'
+        const path = `${session.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { error: uploadErr } = await supabase.storage
+          .from('listing-images')
+          .upload(path, file, { contentType: file.type, upsert: false })
+        if (uploadErr) {
+          console.warn('Image upload failed:', uploadErr.message)
+        } else {
+          uploadedUrls.push(path)
+        }
+      }
+
+      // Insert listing
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: newListing, error: insertErr } = await (supabase as any)
+        .from('listings')
+        .insert({
+          seller_id: session.user.id,
+          category: form.category as Category,
+          title: form.title,
+          description: form.description || null,
+          brand: form.brand || null,
+          model: form.model || null,
+          year: form.year ? parseInt(form.year) : null,
+          operating_hours: form.operating_hours ? parseInt(form.operating_hours) : null,
+          weight_class: form.weight_class || null,
+          price,
+          price_type: form.price_type,
+          location: form.location || null,
+          status,
+          images: uploadedUrls,
+        })
+        .select('id')
+        .single() as { data: { id: string } | null; error: { message: string; code: string } | null }
+
+      setLoading(false)
+
+      if (insertErr) {
+        console.error('Listing insert error:', insertErr.code, insertErr.message)
+        setError(`Publisering feilet: ${insertErr.message}`)
+        return
+      }
+
+      toast.success(status === 'active' ? 'Annonsen er publisert!' : 'Lagret som kladd.')
+      router.push(status === 'active' && newListing?.id ? `/annonse/${newListing.id}` : '/dashboard/annonser')
+    } catch (err) {
+      console.error('Unexpected error in publishListing:', err)
+      setError('En uventet feil oppstod. Sjekk konsollen og prøv igjen.')
+      setLoading(false)
     }
   }
 
