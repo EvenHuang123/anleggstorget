@@ -1,14 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
-export default function LoggInnPage() {
+function LoggInnForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const urlError = searchParams.get('error')
   const supabase = createClient()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -59,7 +61,21 @@ export default function LoggInnPage() {
           </p>
         </div>
 
-        {/* Error */}
+        {/* URL error (e.g. confirmation_failed) */}
+        {urlError === 'confirmation_failed' && (
+          <div style={{
+            background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+            borderRadius: 3, padding: '10px 14px', marginBottom: 20,
+            display: 'flex', alignItems: 'flex-start', gap: 8,
+          }}>
+            <AlertCircle size={14} style={{ color: '#ef4444', flexShrink: 0, marginTop: 1 }} />
+            <p style={{ color: '#ef4444', fontSize: 13, lineHeight: 1.5 }}>
+              E-postbekreftelse feilet. Prøv å registrere deg på nytt.
+            </p>
+          </div>
+        )}
+
+        {/* Form error */}
         {error && (
           <div style={{
             background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
@@ -161,5 +177,13 @@ export default function LoggInnPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LoggInnPage() {
+  return (
+    <Suspense>
+      <LoggInnForm />
+    </Suspense>
   )
 }
