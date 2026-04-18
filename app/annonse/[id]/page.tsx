@@ -5,40 +5,82 @@ import Navbar from '@/components/shared/Navbar'
 import Footer from '@/components/shared/Footer'
 import AnnonseContent from './AnnonseContent'
 import { createClient } from '@/lib/supabase/server'
+import type { Listing } from '@/lib/supabase/types'
 
 interface Props {
   params: Promise<{ id: string }>
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params
+async function fetchListing(id: string) {
   try {
     const supabase = await createClient()
-    const { data } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from('listings')
-      .select('title, description, brand, year, price')
+      .select('*, profiles(*)')
       .eq('id', id)
-      .single() as { data: { title: string; description: string | null; brand: string | null; year: number | null; price: number } | null }
-
-    if (!data) return { title: 'Annonse ikke funnet' }
-
-    return {
-      title: data.title,
-      description: data.description || `${data.brand || ''} ${data.year || ''} – ${data.price.toLocaleString('nb-NO')} kr`,
-    }
+      .single() as { data: Listing | null; error: unknown }
+    if (error || !data) return null
+    return data
   } catch {
-    return { title: 'Maskin til salgs' }
+    return null
+  }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params
+  const listing = await fetchListing(id)
+  if (!listing) return { title: 'Annonse ikke funnet' }
+
+  const desc = listing.description
+    ? listing.description.substring(0, 155) + '…'
+    : `${listing.brand || ''} ${listing.model || ''} – ${listing.price.toLocaleString('nb-NO')} kr`.trim()
+
+  return {
+    title: `${listing.title} – ${listing.price.toLocaleString('nb-NO')} kr | Maskintorget`,
+    description: desc,
+    openGraph: {
+      title: listing.title,
+      description: desc,
+      images: listing.images?.[0]
+        ? [`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-images/${listing.images[0]}`]
+        : ['/og-image.jpg'],
+    },
   }
 }
 
 export default async function AnnonsePage({ params }: Props) {
   const { id } = await params
+  const listing = await fetchListing(id)
+
+  if (!listing) notFound()
+
+  // Related listings — same category, exclude current
+  let related: Listing[] = []
+  try {
+    const supabase = await createClient()
+    const { data } = await (supabase as any)
+      .from('listings')
+      .select('*, profiles(company_name, verified)')
+      .eq('category', listing.category)
+      .eq('status', 'active')
+      .neq('id', id)
+      .order('created_at', { ascending: false })
+      .limit(3) as { data: Listing[] | null }
+    related = data || []
+  } catch {
+    related = []
+  }
+
+  // Increment views fire-and-forget
+  createClient().then(s => {
+    ;(s as any).rpc('increment_listing_views', { listing_id: id }).catch(() => {})
+  })
 
   return (
     <>
       <Navbar />
       <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 64 }}>
-        <AnnonseContent id={id} />
+        <AnnonseContent listing={listing} related={related} />
       </main>
       <Footer />
     </>
