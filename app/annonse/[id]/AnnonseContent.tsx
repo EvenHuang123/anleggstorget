@@ -128,6 +128,7 @@ export default function AnnonseContent({ id }: { id: string }) {
                 sizes="(max-width: 900px) 100vw, 60vw"
                 style={{ objectFit: 'cover' }}
                 priority
+                onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
               />
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>

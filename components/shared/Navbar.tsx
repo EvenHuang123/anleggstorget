@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import { Menu, X, ChevronDown, LogOut, LayoutDashboard, PlusSquare } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Menu, X, ChevronDown, LogOut, LayoutDashboard, PlusSquare, Settings } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function Navbar() {
@@ -11,6 +11,8 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [user, setUser] = useState<{ email?: string; company?: string } | null>(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -40,7 +42,18 @@ export default function Navbar() {
     return () => subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const handleLogout = async () => {
+    setDropdownOpen(false)
     await supabase.auth.signOut()
     setUser(null)
     window.location.href = '/'
@@ -102,8 +115,14 @@ export default function Navbar() {
                   <PlusSquare size={14} />
                   Legg ut annonse
                 </Link>
-                <div style={{ position: 'relative' }} className="user-menu-wrap">
-                  <button className="btn-ghost" style={{ gap: 6 }}>
+                <div ref={dropdownRef} style={{ position: 'relative' }}>
+                  <button
+                    className="btn-ghost"
+                    onClick={() => setDropdownOpen(o => !o)}
+                    style={{ gap: 6 }}
+                    aria-expanded={dropdownOpen}
+                    aria-haspopup="true"
+                  >
                     <div style={{
                       width: 24, height: 24, borderRadius: '50%',
                       background: 'var(--gold3)', border: '1px solid rgba(200,149,58,0.3)',
@@ -116,20 +135,45 @@ export default function Navbar() {
                     <span style={{ fontSize: 13, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {user.company || user.email}
                     </span>
-                    <ChevronDown size={12} />
+                    <ChevronDown size={12} style={{ transition: 'transform 0.15s ease', transform: dropdownOpen ? 'rotate(180deg)' : 'none' }} />
                   </button>
-                  <div className="user-dropdown">
-                    <Link href="/dashboard" className="dropdown-item">
-                      <LayoutDashboard size={14} /> Min side
-                    </Link>
-                    <Link href="/ny-annonse" className="dropdown-item">
-                      <PlusSquare size={14} /> Ny annonse
-                    </Link>
-                    <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
-                    <button onClick={handleLogout} className="dropdown-item" style={{ width: '100%', textAlign: 'left' }}>
-                      <LogOut size={14} /> Logg ut
-                    </button>
-                  </div>
+
+                  {dropdownOpen && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      right: 0,
+                      minWidth: 200,
+                      background: 'var(--bg3)',
+                      border: '1px solid var(--border2)',
+                      borderRadius: 4,
+                      boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+                      padding: 8,
+                      zIndex: 200,
+                    }}>
+                      <div style={{ padding: '8px 10px 10px', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>
+                        <p style={{ fontSize: 12, color: 'var(--t3)', fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                          Innlogget som
+                        </p>
+                        <p style={{ fontSize: 13, color: 'var(--t1)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {user.company || user.email}
+                        </p>
+                      </div>
+                      <Link href="/dashboard" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                        <LayoutDashboard size={14} /> Min side
+                      </Link>
+                      <Link href="/ny-annonse" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                        <PlusSquare size={14} /> Ny annonse
+                      </Link>
+                      <Link href="/dashboard/innstillinger" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                        <Settings size={14} /> Innstillinger
+                      </Link>
+                      <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+                      <button onClick={handleLogout} className="dropdown-item" style={{ width: '100%', textAlign: 'left', color: '#ef4444' }}>
+                        <LogOut size={14} /> Logg ut
+                      </button>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
@@ -202,21 +246,7 @@ export default function Navbar() {
           .hidden-mobile { display: none !important; }
           .show-mobile { display: flex !important; }
         }
-        .user-menu-wrap { position: relative; }
-        .user-dropdown {
-          display: none;
-          position: absolute;
-          top: calc(100% + 8px);
-          right: 0;
-          min-width: 180px;
-          background: var(--bg3);
-          border: 1px solid var(--border2);
-          border-radius: 4px;
-          box-shadow: 0 16px 40px rgba(0,0,0,0.5);
-          overflow: hidden;
-          z-index: 200;
-        }
-        .user-menu-wrap:hover .user-dropdown { display: block; }
+        .dropdown-item:hover { background: var(--gold4) !important; color: var(--t1) !important; }
       `}</style>
     </nav>
   )
