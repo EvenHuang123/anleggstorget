@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { Heart, MapPin, Clock, Calendar, ArrowRight, Shield } from 'lucide-react'
-import { formatPrice, formatNumber, formatRelativeDate, getListingImageUrl, CATEGORIES } from '@/lib/utils/format'
+import { Heart, MapPin, Clock, Calendar, ArrowRight, Shield, Eye } from 'lucide-react'
+import { formatPrice, formatNumber, formatRelativeDate, getListingImageUrl, getListingFallbackImage, CATEGORIES } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
 
 interface Props {
@@ -14,41 +14,27 @@ interface Props {
 export default function ListingCard({ listing, onToggleFavorite, isFavorite }: Props) {
   const imageUrl = listing.images?.[0]
     ? getListingImageUrl(listing.images[0])
-    : null
+    : getListingFallbackImage(listing.category)
 
   return (
     <Link href={`/annonse/${listing.id}`} style={{ textDecoration: 'none', display: 'block' }}>
       <article className="card card-gold" style={{ overflow: 'hidden', cursor: 'pointer' }}>
         {/* Image */}
         <div className="listing-img-wrap">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={listing.title}
-              onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-              style={{
-                position: 'absolute', inset: 0, width: '100%', height: '100%',
-                objectFit: 'cover', filter: 'sepia(0.2) brightness(0.9)',
-                transition: 'transform 0.3s ease',
-              }}
-              className="listing-img"
-            />
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-              <svg viewBox="0 0 160 100" style={{ width: 140, opacity: 0.12 }} aria-hidden>
-                <g fill="var(--gold)">
-                  <rect x="20" y="35" width="100" height="40" rx="3" />
-                  <rect x="28" y="18" width="48" height="28" rx="3" />
-                  <rect x="30" y="20" width="44" height="24" rx="2" fill="var(--bg3)" />
-                  <rect x="65" y="6" width="8" height="54" rx="3" transform="rotate(-22 65 6)" />
-                  <rect x="108" y="3" width="6" height="42" rx="3" transform="rotate(15 108 3)" />
-                  <path d="M118 42 L136 48 L134 60 L114 58 Z" />
-                  <rect x="10" y="74" width="140" height="10" rx="3" />
-                  {[28,50,72,94,116].map(x => <circle key={x} cx={x} cy={78} r={6} />)}
-                </g>
-              </svg>
-            </div>
-          )}
+          <img
+            src={imageUrl}
+            alt={listing.title}
+            onError={e => {
+              const el = e.currentTarget as HTMLImageElement
+              el.src = getListingFallbackImage(listing.category)
+            }}
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              objectFit: 'cover', filter: 'sepia(0.15) brightness(0.88)',
+              transition: 'transform 0.3s ease',
+            }}
+            className="listing-img"
+          />
 
           {/* Overlays */}
           <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2 }}>
@@ -177,9 +163,17 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
                 {listing.profiles?.company_name || 'Selger'}
               </span>
             </div>
-            <span style={{ fontSize: 11, color: 'var(--t3)' }}>
-              {formatRelativeDate(listing.created_at)}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {listing.views > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  <Eye size={10} style={{ color: 'var(--t3)' }} />
+                  <span style={{ fontSize: 11, color: 'var(--t3)' }}>{formatNumber(listing.views)}</span>
+                </div>
+              )}
+              <span style={{ fontSize: 11, color: 'var(--t3)' }}>
+                {formatRelativeDate(listing.created_at)}
+              </span>
+            </div>
           </div>
         </div>
       </article>

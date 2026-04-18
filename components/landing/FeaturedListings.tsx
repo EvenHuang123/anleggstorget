@@ -11,8 +11,7 @@ async function getFeaturedListings(): Promise<Listing[]> {
       .from('listings')
       .select('*, profiles(company_name, verified, org_number)')
       .eq('status', 'active')
-      .eq('featured', true)
-      .order('created_at', { ascending: false })
+      .order('views', { ascending: false })
       .limit(6)
     return (data as Listing[]) || []
   } catch {
@@ -87,7 +86,7 @@ export default async function FeaturedListings() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40, gap: 16 }}>
           <div>
-            <p className="section-label" style={{ marginBottom: 8 }}>Utvalgte annonser</p>
+            <p className="section-label" style={{ marginBottom: 8 }}>Mest sette</p>
             <h2 className="section-title" style={{ fontSize: 'clamp(24px, 3vw, 36px)' }}>
               Populære maskiner nå
             </h2>

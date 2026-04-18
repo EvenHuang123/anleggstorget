@@ -7,7 +7,6 @@ import TickerStripe from '@/components/landing/TickerStripe'
 import SearchBar from '@/components/landing/SearchBar'
 import FeaturedListings from '@/components/landing/FeaturedListings'
 import Categories from '@/components/landing/Categories'
-import TrustSection from '@/components/landing/TrustSection'
 import BrandsStripe from '@/components/landing/BrandsStripe'
 import CtaSection from '@/components/landing/CtaSection'
 
@@ -39,7 +38,6 @@ export default function HomePage() {
         </Suspense>
         <div className="gold-line" />
         <Categories />
-        <TrustSection />
         <BrandsStripe />
         <CtaSection />
       </main>

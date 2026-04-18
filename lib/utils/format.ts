@@ -90,8 +90,22 @@ export function slugify(str: string): string {
     .replace(/^-|-$/g, '')
 }
 
+export const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
+  gravemaskin: 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&q=75',
+  traktor: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800&q=75',
+  hjullaster: 'https://images.unsplash.com/photo-1625231334168-35067f8853ed?w=800&q=75',
+  dumper: 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&q=75',
+  kranbil: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=75',
+  skogsutstyr: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=75',
+  annet: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=75',
+}
+
 export function getListingImageUrl(imagePath: string): string {
   if (!imagePath) return '/images/placeholder-machine.svg'
   if (imagePath.startsWith('http')) return imagePath
   return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-images/${imagePath}`
+}
+
+export function getListingFallbackImage(category: string): string {
+  return CATEGORY_FALLBACK_IMAGES[category] ?? CATEGORY_FALLBACK_IMAGES.annet
 }

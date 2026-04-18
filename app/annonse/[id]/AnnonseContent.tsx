@@ -35,19 +35,27 @@ export default function AnnonseContent({ listing, related }: Props) {
   const [activeImg, setActiveImg] = useState(0)
   const [lightbox, setLightbox] = useState(false)
   const [isFav, setIsFav] = useState(false)
+  const [favLoading, setFavLoading] = useState(false)
   const [inquiryOpen, setInquiryOpen] = useState(false)
   const [inquiry, setInquiry] = useState({ name: '', email: '', phone: '', message: '' })
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
 
-  // Pre-fill inquiry form from session
+  // Pre-fill inquiry form + check favorite status
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session?.user) {
-        setInquiry(prev => ({ ...prev, email: data.session!.user.email || '' }))
-      }
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session?.user) return
+      setInquiry(prev => ({ ...prev, email: data.session!.user.email || '' }))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: fav } = await (supabase as any)
+        .from('favorites')
+        .select('id')
+        .eq('user_id', data.session!.user.id)
+        .eq('listing_id', listing.id)
+        .maybeSingle()
+      if (fav) setIsFav(true)
     })
-  }, [])
+  }, [listing.id])
 
   // Keyboard navigation for lightbox
   const handleKey = useCallback((e: KeyboardEvent) => {
@@ -252,7 +260,24 @@ export default function AnnonseContent({ listing, related }: Props) {
               </div>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                 <button
-                  onClick={() => { setIsFav(!isFav); toast.success(isFav ? 'Fjernet fra favoritter' : 'Lagt til i favoritter') }}
+                  onClick={async () => {
+                    if (favLoading) return
+                    const { data: { session } } = await supabase.auth.getSession()
+                    if (!session) { toast.error('Logg inn for å lagre favoritter'); return }
+                    setFavLoading(true)
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const sb = supabase as any
+                    if (isFav) {
+                      await sb.from('favorites').delete().eq('user_id', session.user.id).eq('listing_id', listing.id)
+                      setIsFav(false)
+                      toast.success('Fjernet fra favoritter')
+                    } else {
+                      await sb.from('favorites').insert({ user_id: session.user.id, listing_id: listing.id })
+                      setIsFav(true)
+                      toast.success('Lagt til i favoritter')
+                    }
+                    setFavLoading(false)
+                  }}
                   style={{
                     background: isFav ? 'var(--gold3)' : 'var(--bg3)',
                     border: `1px solid ${isFav ? 'rgba(200,149,58,0.4)' : 'var(--border)'}`,

@@ -94,8 +94,7 @@ export default function RegistrerPage() {
     if (profileErr) {
       setError('Konto opprettet, men profilen kunne ikke lagres. Kontakt oss.')
     } else {
-      toast.success('Konto opprettet! Sjekk e-posten din for verifiseringslenke.')
-      router.push('/dashboard')
+      router.push('/registrer/bekreft')
     }
   }
 
