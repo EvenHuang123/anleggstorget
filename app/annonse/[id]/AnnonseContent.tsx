@@ -81,20 +81,27 @@ export default function AnnonseContent({ listing, related }: Props) {
       return
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).from('inquiries').insert({
+    const { data: newInquiry, error } = await (supabase as any).from('inquiries').insert({
       listing_id: listing.id,
       sender_id: session.user.id,
       message: inquiry.message,
       phone: inquiry.phone || null,
       email: inquiry.email || session.user.email || null,
-    })
+    }).select('id').single() as { data: { id: string } | null; error: unknown }
+
     setSending(false)
-    if (error) {
+    if (error || !newInquiry) {
       toast.error('Kunne ikke sende forespørsel. Prøv igjen.')
     } else {
       setSent(true)
       setInquiryOpen(false)
       toast.success('Forespørsel sendt! Selger vil kontakte deg.')
+      // Fire-and-forget email to seller
+      fetch('/api/send-inquiry-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inquiryId: newInquiry.id }),
+      }).catch(err => console.warn('Email notify failed:', err))
     }
   }
 

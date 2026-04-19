@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { Menu, X, ChevronDown, LogOut, LayoutDashboard, PlusSquare, Settings } from 'lucide-react'
+import { Menu, X, ChevronDown, LogOut, LayoutDashboard, PlusSquare, Settings, Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function Navbar() {
@@ -12,6 +12,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [user, setUser] = useState<{ email?: string; company?: string } | null>(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const supabase = createClient()
 
@@ -21,25 +22,61 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  const fetchUnreadCount = async (userId: string) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: ids } = await (supabase as any)
+      .from('listings')
+      .select('id')
+      .eq('seller_id', userId) as { data: { id: string }[] | null }
+
+    if (!ids?.length) { setUnreadCount(0); return }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count } = await (supabase as any)
+      .from('inquiries')
+      .select('id', { count: 'exact', head: true })
+      .in('listing_id', ids.map(l => l.id))
+      .eq('status', 'new') as { count: number | null }
+
+    setUnreadCount(count ?? 0)
+  }
+
   useEffect(() => {
+    let userId: string | null = null
+
     supabase.auth.getSession().then(async ({ data }) => {
       if (data.session?.user) {
+        userId = data.session.user.id
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: profile } = await (supabase as any)
           .from('profiles')
           .select('company_name')
-          .eq('id', data.session.user.id)
+          .eq('id', userId)
           .single() as { data: { company_name: string } | null }
         setUser({
           email: data.session.user.email,
           company: profile?.company_name,
         })
+        fetchUnreadCount(userId)
       }
     })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!session) setUser(null)
+      if (!session) { setUser(null); setUnreadCount(0) }
     })
-    return () => subscription.unsubscribe()
+
+    // Realtime — re-count when any inquiry changes
+    const channel = supabase
+      .channel('navbar-inquiries')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'inquiries' }, () => {
+        if (userId) fetchUnreadCount(userId)
+      })
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   useEffect(() => {
@@ -115,6 +152,37 @@ export default function Navbar() {
                   <PlusSquare size={14} />
                   Legg ut annonse
                 </Link>
+
+                {/* Notification bell */}
+                <Link
+                  href="/dashboard/foresporsel"
+                  style={{
+                    position: 'relative', flexShrink: 0,
+                    width: 38, height: 38, borderRadius: 3,
+                    background: unreadCount > 0 ? 'var(--gold3)' : 'var(--bg3)',
+                    border: `1px solid ${unreadCount > 0 ? 'rgba(200,149,58,0.4)' : 'var(--border)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: unreadCount > 0 ? 'var(--gold)' : 'var(--t2)',
+                    textDecoration: 'none', transition: 'all 0.15s',
+                  }}
+                  title="Forespørsler"
+                >
+                  <Bell size={15} />
+                  {unreadCount > 0 && (
+                    <span style={{
+                      position: 'absolute', top: -5, right: -5,
+                      background: 'var(--gold)', color: '#0d0c0a',
+                      borderRadius: '50%', width: 17, height: 17,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, fontWeight: 700,
+                      border: '2px solid var(--bg)',
+                      fontFamily: 'Barlow Condensed, sans-serif',
+                    }}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
+
                 <div ref={dropdownRef} style={{ position: 'relative' }}>
                   <button
                     className="btn-ghost"
