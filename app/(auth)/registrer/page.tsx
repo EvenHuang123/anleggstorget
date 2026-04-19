@@ -68,34 +68,28 @@ export default function RegistrerPage() {
     setError('')
     setLoading(true)
 
-    const { data: authData, error: authErr } = await supabase.auth.signUp({
+    const { error: authErr } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    })
-
-    if (authErr || !authData.user) {
-      setError(authErr?.message || 'Registrering feilet. Prøv igjen.')
-      setLoading(false)
-      return
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: profileErr } = await (supabase as any).from('profiles').insert({
-      id: authData.user.id,
-      company_name: companyName,
-      org_number: orgNumber.replace(/\s/g, ''),
-      contact_person: contactPerson || null,
-      phone: phone || null,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          company_name: companyName,
+          org_number: orgNumber.replace(/\s/g, ''),
+          contact_person: contactPerson || null,
+          phone: phone || null,
+        },
+      },
     })
 
     setLoading(false)
 
-    if (profileErr) {
-      setError('Konto opprettet, men profilen kunne ikke lagres. Kontakt oss.')
-    } else {
-      router.push('/registrer/bekreft')
+    if (authErr) {
+      setError(authErr.message || 'Registrering feilet. Prøv igjen.')
+      return
     }
+
+    router.push('/registrer/bekreft')
   }
 
   return (
