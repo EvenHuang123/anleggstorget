@@ -127,11 +127,14 @@ export default function NyAnnonsePage() {
         .maybeSingle() as { data: { id: string } | null }
 
       if (!existingProfile) {
+        const meta = session.user.user_metadata ?? {}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: profileErr } = await (supabase as any).from('profiles').insert({
           id: session.user.id,
-          company_name: session.user.email?.split('@')[0] ?? 'Ukjent bedrift',
-          org_number: '000000000',
+          company_name: meta.company_name ?? session.user.email?.split('@')[0] ?? 'Ukjent bedrift',
+          org_number: meta.org_number ?? null,
+          contact_person: meta.contact_person ?? null,
+          phone: meta.phone ?? null,
         })
         if (profileErr) {
           console.error('Profile creation failed:', profileErr.message)
