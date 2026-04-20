@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Shield, Save, AlertCircle, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { Profile } from '@/lib/supabase/types'
+import ThemeToggle from '@/components/shared/ThemeToggle'
 
 export default function InnstillingerPage() {
   const supabase = createClient()
@@ -69,6 +70,14 @@ export default function InnstillingerPage() {
       <h1 style={{ fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 26, color: 'var(--t1)', textTransform: 'uppercase', letterSpacing: '0.02em', marginBottom: 32 }}>
         Innstillinger
       </h1>
+
+      {/* Theme */}
+      <div style={{ marginBottom: 32 }}>
+        <h2 style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 18, color: 'var(--t1)', letterSpacing: '0.02em', marginBottom: 16 }}>
+          Generelt
+        </h2>
+        <ThemeToggle variant="settings" />
+      </div>
 
       {/* Profile form */}
       <form onSubmit={saveProfile}>

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { Menu, X, ChevronDown, LogOut, LayoutDashboard, PlusSquare, Settings, Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import ThemeToggle from './ThemeToggle'
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -102,7 +103,7 @@ export default function Navbar() {
         position: 'fixed',
         top: 0, left: 0, right: 0,
         zIndex: 100,
-        background: scrolled ? 'rgba(13,12,10,0.95)' : 'rgba(13,12,10,0.7)',
+        background: scrolled ? 'color-mix(in srgb, var(--bg) 95%, transparent)' : 'color-mix(in srgb, var(--bg) 75%, transparent)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         borderBottom: `1px solid ${scrolled ? 'rgba(255,255,255,0.09)' : 'transparent'}`,
@@ -148,6 +149,7 @@ export default function Navbar() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }} className="hidden-mobile">
             {user ? (
               <>
+                <ThemeToggle variant="navbar" />
                 <Link href="/ny-annonse" className="btn-primary" style={{ fontSize: 12, padding: '9px 18px' }}>
                   <PlusSquare size={14} />
                   Legg ut annonse
@@ -246,6 +248,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
+                <ThemeToggle variant="navbar" />
                 <Link href="/logg-inn" className="btn-ghost">Logg inn</Link>
                 <Link href="/ny-annonse" className="btn-primary" style={{ fontSize: 12, padding: '9px 18px' }}>
                   <PlusSquare size={14} />
