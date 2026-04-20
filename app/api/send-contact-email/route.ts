@@ -82,7 +82,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         from: 'Anleggstorget <kontakt@anleggstorget.no>',
-        to: 'huangevenzhe@gmail.com',
+        to: ['huangevenzhe@gmail.com', 'alishguliyev1@gmail.com'],
         reply_to: email,
         subject: `Ny kontaktmelding fra ${name}`,
         html,
