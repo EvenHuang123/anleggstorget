@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Menu, X, ChevronDown, LogOut, LayoutDashboard, PlusSquare, Settings, Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import ThemeToggle from './ThemeToggle'
+import Logo from './Logo'
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -113,28 +114,7 @@ export default function Navbar() {
       <div className="container-main">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
           {/* Logo */}
-          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32,
-              background: 'var(--gold)',
-              borderRadius: 3,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <span style={{
-                fontFamily: 'Barlow Condensed, sans-serif',
-                fontWeight: 800, fontSize: 16,
-                color: '#0d0c0a', letterSpacing: '-0.02em',
-              }}>M</span>
-            </div>
-            <span style={{
-              fontFamily: 'Barlow Condensed, sans-serif',
-              fontWeight: 700, fontSize: 18,
-              letterSpacing: '0.06em', textTransform: 'uppercase',
-              color: 'var(--t1)',
-            }}>
-              Maskintorget
-            </span>
-          </Link>
+          <Logo size="md" />
 
           {/* Desktop nav */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="hidden-mobile">

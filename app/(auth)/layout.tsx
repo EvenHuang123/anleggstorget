@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Logo from '@/components/shared/Logo'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -17,17 +18,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         alignItems: 'center',
         justifyContent: 'space-between',
       }}>
-        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 28, height: 28, background: 'var(--gold)',
-            borderRadius: 3, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 14, color: '#0d0c0a' }}>M</span>
-          </div>
-          <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 16, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--t1)' }}>
-            Maskintorget
-          </span>
-        </Link>
+        <Logo size="sm" />
         <Link href="/" className="btn-ghost" style={{ fontSize: 13 }}>
           ← Tilbake til forsiden
         </Link>
