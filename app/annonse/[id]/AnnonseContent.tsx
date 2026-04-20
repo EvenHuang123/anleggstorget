@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import {
   ChevronRight, ChevronLeft, MapPin, Clock, Calendar, Weight,
-  Shield, Heart, Share2, Eye, Phone, Mail, MessageSquare,
+  Shield, Heart, Share2, Phone, Mail, MessageSquare,
   AlertCircle, X, ZoomIn, Building2,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -314,7 +314,7 @@ export default function AnnonseContent({ listing, related }: Props) {
                 { icon: Calendar, label: 'Årsmodell', value: listing.year || '—' },
                 { icon: Clock, label: 'Driftstimer', value: listing.operating_hours != null ? `${formatNumber(listing.operating_hours)} t` : '—' },
                 { icon: Weight, label: 'Vektklasse', value: listing.weight_class || '—' },
-                { icon: Eye, label: 'Visninger', value: formatNumber(listing.views) },
+                { icon: Heart, label: 'Favoritter', value: String(listing.favorites_count?.[0]?.count ?? 0) },
               ].map(({ icon: Icon, label, value }) => (
                 <div key={label} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, padding: '12px 14px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 4 }}>

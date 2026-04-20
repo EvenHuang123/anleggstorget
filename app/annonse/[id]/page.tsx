@@ -16,7 +16,7 @@ async function fetchListing(id: string) {
     const supabase = await createClient()
     const { data, error } = await (supabase as any)
       .from('listings')
-      .select('*, profiles(*)')
+      .select('*, profiles(*), favorites_count:favorites(count)')
       .eq('id', id)
       .single() as { data: Listing | null; error: unknown }
     if (error || !data) return null
@@ -71,10 +71,6 @@ export default async function AnnonsePage({ params }: Props) {
     related = []
   }
 
-  // Increment views fire-and-forget
-  createClient().then(s => {
-    ;(s as any).rpc('increment_listing_views', { listing_id: id }).catch(() => {})
-  })
 
   return (
     <>

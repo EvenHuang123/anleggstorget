@@ -41,6 +41,7 @@ export interface Listing {
   images: string[]
   featured: boolean
   views: number
+  favorites_count?: { count: number }[]
   created_at: string
   updated_at: string
   profiles?: Profile

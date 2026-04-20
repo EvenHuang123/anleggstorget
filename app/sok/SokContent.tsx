@@ -56,7 +56,7 @@ export default function SokContent() {
     try {
       let qb = supabase
         .from('listings')
-        .select('*, profiles(company_name, verified, org_number)')
+        .select('*, profiles(company_name, verified, org_number), favorites_count:favorites(count)')
         .eq('status', 'active')
 
       if (q) qb = qb.ilike('title', `%${q}%`)

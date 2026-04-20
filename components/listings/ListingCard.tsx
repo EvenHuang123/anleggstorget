@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Heart, MapPin, Clock, Calendar, ArrowRight, Shield, Eye } from 'lucide-react'
+import { Heart, MapPin, Clock, Calendar, ArrowRight, Shield } from 'lucide-react'
 import { formatPrice, formatNumber, formatRelativeDate, getListingImageUrl, getListingFallbackImage, CATEGORIES } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
 
@@ -164,10 +164,10 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {listing.views > 0 && (
+              {(listing.favorites_count?.[0]?.count ?? 0) > 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                  <Eye size={10} style={{ color: 'var(--t3)' }} />
-                  <span style={{ fontSize: 11, color: 'var(--t3)' }}>{formatNumber(listing.views)}</span>
+                  <Heart size={10} style={{ color: 'var(--t3)' }} />
+                  <span style={{ fontSize: 11, color: 'var(--t3)' }}>{listing.favorites_count![0].count}</span>
                 </div>
               )}
               <span style={{ fontSize: 11, color: 'var(--t3)' }}>
