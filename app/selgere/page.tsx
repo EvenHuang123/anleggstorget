@@ -17,18 +17,29 @@ interface SellerRow extends Profile {
 async function getSellers(): Promise<SellerRow[]> {
   try {
     const supabase = await createClient()
+
+    // Fetch all profiles
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data: profiles, error: profilesError } = await (supabase as any)
       .from('profiles')
-      .select('*, listings!listings_seller_id_fkey(id, status)')
+      .select('*') as { data: Profile[] | null; error: unknown }
 
-    if (!data) return []
+    if (profilesError || !profiles?.length) return []
 
-    return (data as (Profile & { listings: { id: string; status: string }[] })[])
-      .map(p => ({
-        ...p,
-        active_count: (p.listings ?? []).filter(l => l.status === 'active').length,
-      }))
+    // Fetch active listing counts per seller
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: listings } = await (supabase as any)
+      .from('listings')
+      .select('seller_id')
+      .eq('status', 'active') as { data: { seller_id: string }[] | null }
+
+    const countMap: Record<string, number> = {}
+    for (const l of listings ?? []) {
+      countMap[l.seller_id] = (countMap[l.seller_id] ?? 0) + 1
+    }
+
+    return profiles
+      .map(p => ({ ...p, active_count: countMap[p.id] ?? 0 }))
       .filter(p => p.active_count > 0)
       .sort((a, b) => b.active_count - a.active_count)
   } catch {
