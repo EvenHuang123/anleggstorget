@@ -37,7 +37,7 @@ export default function SearchBar() {
   }
 
   return (
-    <section style={{ padding: '64px 0', background: 'var(--bg)' }}>
+    <section style={{ padding: '64px 0', background: 'var(--bg)', overflowX: 'clip' }}>
       <div className="container-main">
         {/* Section header */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>

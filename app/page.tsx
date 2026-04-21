@@ -60,7 +60,7 @@ export default function HomePage() {
           background: 'var(--bg2)',
           borderTop: '1px solid var(--border)',
           borderBottom: '1px solid var(--border)',
-          padding: '60px 24px',
+          padding: '60px 0',
         }}>
           <div className="container-main" style={{ maxWidth: 1200, margin: '0 auto' }}>
             <div className="features-grid" style={{

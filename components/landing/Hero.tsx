@@ -43,7 +43,7 @@ export default function Hero() {
         pointerEvents: 'none',
       }} />
 
-      <div className="container-main" style={{ position: 'relative', zIndex: 1, padding: '80px 24px 100px', width: '100%' }}>
+      <div className="container-main" style={{ position: 'relative', zIndex: 1, padding: '80px 0 100px', width: '100%' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 64, alignItems: 'center' }} className="hero-grid">
 
           {/* Left: Text content */}

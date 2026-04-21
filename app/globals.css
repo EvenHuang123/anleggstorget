@@ -58,6 +58,32 @@
 
 html { scroll-behavior: smooth; }
 
+/* Layout helpers */
+.container-main {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+.section {
+  padding-top: 80px;
+  padding-bottom: 80px;
+}
+
+@media (max-width: 768px) {
+  .container-main {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .section {
+    padding-top: 56px;
+    padding-bottom: 56px;
+  }
+}
+
 body {
   background-color: var(--bg);
   color: var(--t1);
