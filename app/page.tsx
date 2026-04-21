@@ -2,13 +2,39 @@ import { Suspense } from 'react'
 import Navbar from '@/components/shared/Navbar'
 import Footer from '@/components/shared/Footer'
 import Hero from '@/components/landing/Hero'
-import StatsBar from '@/components/landing/StatsBar'
 import TickerStripe from '@/components/landing/TickerStripe'
 import SearchBar from '@/components/landing/SearchBar'
 import FeaturedListings from '@/components/landing/FeaturedListings'
 import Categories from '@/components/landing/Categories'
 import BrandsStripe from '@/components/landing/BrandsStripe'
 import CtaSection from '@/components/landing/CtaSection'
+
+const FEATURES = [
+  {
+    icon: '✓',
+    iconColor: '#4caf50',
+    heading: 'GRATIS Å BRUKE',
+    text: 'Ingen provisjon eller skjulte kostnader',
+  },
+  {
+    icon: '🔐',
+    iconColor: undefined,
+    heading: 'VERIFISERTE BEDRIFTER',
+    text: 'Sjekket mot Brønnøysundregisteret',
+  },
+  {
+    icon: '🤝',
+    iconColor: undefined,
+    heading: 'TRYGG KOMMUNIKASJON',
+    text: 'Direkte kontakt mellom kjøper og selger',
+  },
+  {
+    icon: '🇳🇴',
+    iconColor: undefined,
+    heading: 'NORSK PLATTFORM',
+    text: 'Bygget for norske bedrifter',
+  },
+]
 
 function ListingsSkeleton() {
   return (
@@ -30,7 +56,43 @@ export default function HomePage() {
       <Navbar />
       <main>
         <Hero />
-        <StatsBar />
+        <section style={{
+          background: 'var(--bg2)',
+          borderTop: '1px solid var(--border)',
+          borderBottom: '1px solid var(--border)',
+          padding: '60px 24px',
+        }}>
+          <div className="container-main" style={{ maxWidth: 1200 }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gap: 40,
+              textAlign: 'center',
+            }}>
+              {FEATURES.map(f => (
+                <div key={f.heading}>
+                  <div style={{ fontSize: 48, marginBottom: 12, lineHeight: 1, color: f.iconColor }}>
+                    {f.icon}
+                  </div>
+                  <div style={{
+                    fontFamily: 'Barlow Condensed, sans-serif',
+                    fontWeight: 700,
+                    fontSize: 18,
+                    color: 'var(--t1)',
+                    marginBottom: 8,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                  }}>
+                    {f.heading}
+                  </div>
+                  <p style={{ color: 'var(--t3)', fontSize: 14, margin: 0, lineHeight: 1.6 }}>
+                    {f.text}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
         <TickerStripe />
         <SearchBar />
         <Suspense fallback={<ListingsSkeleton />}>
