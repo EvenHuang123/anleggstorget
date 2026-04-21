@@ -95,9 +95,7 @@ export default function HomePage() {
               {/* Markedsinnsikt teaser card */}
               <Link
                 href="/markedsinnsikt"
-                style={{ textDecoration: 'none', display: 'block', transition: 'transform 0.15s' }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)' }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)' }}
+                className="feature-teaser-link"
               >
                 <div style={{ fontSize: 48, marginBottom: 12, lineHeight: 1 }}>📊</div>
                 <div style={{
@@ -136,6 +134,8 @@ export default function HomePage() {
             @media (max-width: 1200px) { .features-grid { grid-template-columns: repeat(3, 1fr) !important; } }
             @media (max-width: 768px)  { .features-grid { grid-template-columns: repeat(2, 1fr) !important; } }
             @media (max-width: 480px)  { .features-grid { grid-template-columns: 1fr !important; } }
+            .feature-teaser-link { text-decoration: none; display: block; transition: transform 0.15s; }
+            .feature-teaser-link:hover { transform: translateY(-4px); }
           `}</style>
         </section>
         <TickerStripe />
