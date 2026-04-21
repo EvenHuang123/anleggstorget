@@ -19,7 +19,7 @@ export interface Profile {
   org_number: string
   contact_person: string | null
   phone: string | null
-  bio: string | null
+  bio?: string | null
   verified: boolean
   created_at: string
 }
@@ -54,8 +54,8 @@ export interface Listing {
   featured: boolean
   views: number
   favorites_count?: { count: number }[]
-  sold_at: string | null
-  sold_price: number | null
+  sold_at?: string | null
+  sold_price?: number | null
   created_at: string
   updated_at: string
   profiles?: Profile
