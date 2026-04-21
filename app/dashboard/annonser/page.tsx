@@ -2,17 +2,109 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { PlusSquare, Eye, Edit, Trash2, ExternalLink } from 'lucide-react'
+import { PlusSquare, Eye, Edit, Trash2, ExternalLink, CheckSquare, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice, formatRelativeDate, CATEGORIES } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
 import toast from 'react-hot-toast'
+
+function MarkSoldModal({
+  listing,
+  onClose,
+  onConfirm,
+}: {
+  listing: Listing
+  onClose: () => void
+  onConfirm: (soldPrice: number | null) => void
+}) {
+  const [soldPrice, setSoldPrice] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const handleConfirm = async () => {
+    setSaving(true)
+    await onConfirm(soldPrice ? Number(soldPrice) : null)
+    setSaving(false)
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 500,
+      background: 'rgba(0,0,0,0.7)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 24,
+    }} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div style={{
+        background: 'var(--bg2)', border: '1px solid var(--border2)',
+        borderRadius: 4, padding: '32px 28px',
+        width: '100%', maxWidth: 400,
+        boxShadow: '0 24px 64px rgba(0,0,0,0.6)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+          <h2 style={{
+            fontFamily: 'Barlow Condensed, sans-serif',
+            fontWeight: 700, fontSize: 20,
+            color: 'var(--t1)', textTransform: 'uppercase', letterSpacing: '0.02em',
+          }}>
+            Merk som solgt
+          </h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', padding: 4 }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        <p style={{ color: 'var(--t2)', fontSize: 14, marginBottom: 20, lineHeight: 1.5 }}>
+          Markerer <strong style={{ color: 'var(--t1)' }}>{listing.title}</strong> som solgt og fjerner den fra aktive annonser.
+        </p>
+
+        <div style={{ marginBottom: 24 }}>
+          <label style={{
+            display: 'block', marginBottom: 6,
+            fontFamily: 'Barlow Condensed, sans-serif',
+            fontWeight: 600, fontSize: 11,
+            textTransform: 'uppercase', letterSpacing: '0.1em',
+            color: 'var(--t3)',
+          }}>
+            Solgt for (valgfritt)
+          </label>
+          <div style={{ position: 'relative' }}>
+            <input
+              type="number"
+              value={soldPrice}
+              onChange={e => setSoldPrice(e.target.value)}
+              placeholder={`Listepris: ${formatPrice(listing.price)}`}
+              className="input-base"
+              min={0}
+            />
+          </div>
+          <p style={{ fontSize: 11, color: 'var(--t3)', marginTop: 4 }}>
+            Prisen vises på selgerprofilen under "Nylig solgt"
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onClose} className="btn-secondary" style={{ flex: 1, justifyContent: 'center', height: 42 }}>
+            Avbryt
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={saving}
+            className="btn-primary"
+            style={{ flex: 1, justifyContent: 'center', height: 42 }}
+          >
+            {saving ? 'Lagrer...' : '✓ Bekreft solgt'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function AnnonserPage() {
   const supabase = createClient()
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'sold'>('all')
+  const [markSoldTarget, setMarkSoldTarget] = useState<Listing | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -40,6 +132,27 @@ export default function AnnonserPage() {
     }
   }
 
+  const markAsSold = async (id: string, soldPrice: number | null) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('listings')
+      .update({
+        status: 'sold',
+        sold_at: new Date().toISOString(),
+        sold_price: soldPrice,
+      })
+      .eq('id', id)
+    if (error) {
+      toast.error('Feil ved oppdatering')
+    } else {
+      setListings(prev => prev.map(l =>
+        l.id === id ? { ...l, status: 'sold' as Listing['status'], sold_at: new Date().toISOString(), sold_price: soldPrice } : l
+      ))
+      toast.success('Annonse merket som solgt')
+    }
+    setMarkSoldTarget(null)
+  }
+
   const toggleStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'draft' : 'active'
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,6 +169,13 @@ export default function AnnonserPage() {
 
   return (
     <div>
+      {markSoldTarget && (
+        <MarkSoldModal
+          listing={markSoldTarget}
+          onClose={() => setMarkSoldTarget(null)}
+          onConfirm={(price) => markAsSold(markSoldTarget.id, price)}
+        />
+      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
         <h1 style={{ fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 26, color: 'var(--t1)', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
           Mine annonser
@@ -149,6 +269,20 @@ export default function AnnonserPage() {
                 }}>
                   <ExternalLink size={12} />
                 </Link>
+                {listing.status !== 'sold' && (
+                  <button
+                    onClick={() => setMarkSoldTarget(listing)}
+                    title="Merk som solgt"
+                    style={{
+                      background: 'var(--gold3)', border: '1px solid rgba(200,149,58,0.3)',
+                      borderRadius: 3, width: 32, height: 32,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--gold)', cursor: 'pointer',
+                    }}
+                  >
+                    <CheckSquare size={12} />
+                  </button>
+                )}
                 <button
                   onClick={() => toggleStatus(listing.id, listing.status)}
                   title={listing.status === 'active' ? 'Deaktiver' : 'Publiser'}

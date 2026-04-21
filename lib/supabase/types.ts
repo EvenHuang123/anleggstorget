@@ -19,8 +19,20 @@ export interface Profile {
   org_number: string
   contact_person: string | null
   phone: string | null
+  bio: string | null
   verified: boolean
   created_at: string
+}
+
+export interface Review {
+  id: string
+  listing_id: string
+  seller_id: string
+  reviewer_id: string
+  rating: number
+  comment: string | null
+  created_at: string
+  profiles?: Profile
 }
 
 export interface Listing {
@@ -42,6 +54,8 @@ export interface Listing {
   featured: boolean
   views: number
   favorites_count?: { count: number }[]
+  sold_at: string | null
+  sold_price: number | null
   created_at: string
   updated_at: string
   profiles?: Profile
@@ -80,6 +94,7 @@ export type Database = {
           org_number: string
           contact_person?: string | null
           phone?: string | null
+          bio?: string | null
           verified?: boolean
           created_at?: string
         }
@@ -88,6 +103,7 @@ export type Database = {
           org_number?: string
           contact_person?: string | null
           phone?: string | null
+          bio?: string | null
           verified?: boolean
         }
         Relationships: []
@@ -131,6 +147,8 @@ export type Database = {
           images?: string[]
           featured?: boolean
           views?: number
+          sold_at?: string | null
+          sold_price?: number | null
           updated_at?: string
         }
         Relationships: []

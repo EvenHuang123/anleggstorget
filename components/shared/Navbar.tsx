@@ -121,7 +121,7 @@ export default function Navbar() {
             <Link href="/sok" className={`nav-link ${pathname.startsWith('/sok') ? 'active' : ''}`}>
               Finn maskin
             </Link>
-            <Link href="/sok?type=selger" className="nav-link">Selgere</Link>
+            <Link href="/selgere" className="nav-link">Selgere</Link>
             <Link href="/om-oss" className="nav-link">Om oss</Link>
           </div>
 
@@ -260,7 +260,7 @@ export default function Navbar() {
             <Link href="/sok" className="nav-link" style={{ padding: '10px 0', fontSize: 15 }} onClick={() => setMobileOpen(false)}>
               Finn maskin
             </Link>
-            <Link href="/sok?type=selger" className="nav-link" style={{ padding: '10px 0', fontSize: 15 }} onClick={() => setMobileOpen(false)}>
+            <Link href="/selgere" className="nav-link" style={{ padding: '10px 0', fontSize: 15 }} onClick={() => setMobileOpen(false)}>
               Selgere
             </Link>
             <Link href="/om-oss" className="nav-link" style={{ padding: '10px 0', fontSize: 15 }} onClick={() => setMobileOpen(false)}>

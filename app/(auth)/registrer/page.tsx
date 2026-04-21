@@ -38,6 +38,7 @@ export default function RegistrerPage() {
 
   const [contactPerson, setContactPerson] = useState('')
   const [phone, setPhone] = useState('')
+  const [bio, setBio] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
@@ -78,6 +79,7 @@ export default function RegistrerPage() {
           org_number: orgNumber.replace(/\s/g, ''),
           contact_person: contactPerson || null,
           phone: phone || null,
+          bio: bio || null,
         },
       },
     })
@@ -223,12 +225,28 @@ export default function RegistrerPage() {
               </div>
             </div>
 
-            <div style={{ marginBottom: 28 }}>
+            <div style={{ marginBottom: 20 }}>
               <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Telefon</label>
               <div style={{ position: 'relative' }}>
                 <Phone size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--t3)', pointerEvents: 'none' }} />
                 <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+47 000 00 000" className="input-base" style={{ paddingLeft: 36 }} />
               </div>
+            </div>
+
+            <div style={{ marginBottom: 28 }}>
+              <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>
+                Om bedriften <span style={{ color: 'var(--t3)', fontWeight: 400 }}>(valgfritt)</span>
+              </label>
+              <textarea
+                value={bio}
+                onChange={e => setBio(e.target.value)}
+                placeholder="Fortell kort om bedriften din, hva dere spesialiserer dere på, erfaring, osv..."
+                className="input-base"
+                rows={4}
+                maxLength={500}
+                style={{ resize: 'vertical', minHeight: 96, paddingTop: 10, paddingBottom: 10, fontFamily: 'Barlow, sans-serif' }}
+              />
+              <p style={{ fontSize: 11, color: 'var(--t3)', marginTop: 4, textAlign: 'right' }}>{bio.length}/500</p>
             </div>
 
             <button
