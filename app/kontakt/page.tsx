@@ -100,7 +100,7 @@ export default function KontaktPage() {
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginBottom: 32 }}>
-                  <ContactRow icon={Mail} label="E-post" value="hei@anleggstorget.no" href="mailto:hei@anleggstorget.no" />
+                  <ContactRow icon={Mail} label="E-post" value="kontakt@anleggstorget.no" href="mailto:kontakt@anleggstorget.no" />
                   <ContactRow icon={MapPin} label="Sted" value="Oslo, Norge" />
                 </div>
 

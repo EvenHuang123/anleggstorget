@@ -369,7 +369,7 @@ export default function OmOssPage() {
             Vi hjelper gjerne! Ta kontakt på:
           </p>
           <a
-            href="mailto:hei@anleggstorget.no"
+            href="mailto:kontakt@anleggstorget.no"
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               color: 'var(--gold)', fontSize: 16, fontWeight: 500,
@@ -377,11 +377,11 @@ export default function OmOssPage() {
               fontFamily: 'Barlow, sans-serif',
             }}
           >
-            hei@anleggstorget.no
+            kontakt@anleggstorget.no
           </a>
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="mailto:hei@anleggstorget.no" className="btn-secondary" style={{ textDecoration: 'none' }}>
+            <a href="mailto:kontakt@anleggstorget.no" className="btn-secondary" style={{ textDecoration: 'none' }}>
               Kontakt oss
             </a>
             <Link href="/sok" className="btn-primary">

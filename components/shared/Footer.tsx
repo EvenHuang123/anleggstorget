@@ -71,10 +71,10 @@ export default function Footer() {
 
             <div style={{ marginTop: 32 }}>
               <p className="label-sm" style={{ marginBottom: 12 }}>Kontakt</p>
-              <a href="mailto:hei@anleggstorget.no" style={{
+              <a href="mailto:kontakt@anleggstorget.no" style={{
                 color: 'var(--t2)', fontSize: 14, textDecoration: 'none',
                 transition: 'color 0.15s', display: 'block',
-              }}>hei@anleggstorget.no</a>
+              }}>kontakt@anleggstorget.no</a>
             </div>
           </div>
 

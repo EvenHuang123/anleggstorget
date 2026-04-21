@@ -102,7 +102,7 @@ export default function PersonvernPage() {
           </div>
           <p style={{ marginTop: 16 }}>
             For å utøve dine rettigheter, kontakt oss på:{' '}
-            <a href="mailto:hei@anleggstorget.no" style={{ color: 'var(--gold)' }}>hei@anleggstorget.no</a>
+            <a href="mailto:kontakt@anleggstorget.no" style={{ color: 'var(--gold)' }}>kontakt@anleggstorget.no</a>
           </p>
         </Section>
 
@@ -122,7 +122,7 @@ export default function PersonvernPage() {
         <Section title="8. Kontakt">
           <p>
             Spørsmål om personvern?<br />
-            E-post: <a href="mailto:hei@anleggstorget.no" style={{ color: 'var(--gold)' }}>hei@anleggstorget.no</a>
+            E-post: <a href="mailto:kontakt@anleggstorget.no" style={{ color: 'var(--gold)' }}>kontakt@anleggstorget.no</a>
           </p>
         </Section>
 

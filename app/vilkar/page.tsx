@@ -122,7 +122,7 @@ export default function VilkarPage() {
         <Section title="11. Kontakt">
           <p>
             Spørsmål om vilkårene?<br />
-            E-post: <a href="mailto:hei@anleggstorget.no" style={{ color: 'var(--gold)' }}>hei@anleggstorget.no</a>
+            E-post: <a href="mailto:kontakt@anleggstorget.no" style={{ color: 'var(--gold)' }}>kontakt@anleggstorget.no</a>
           </p>
         </Section>
 
