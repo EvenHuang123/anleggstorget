@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import Navbar from '@/components/shared/Navbar'
 import Footer from '@/components/shared/Footer'
 import Hero from '@/components/landing/Hero'
@@ -65,8 +66,8 @@ export default function HomePage() {
           <div className="container-main" style={{ maxWidth: 1200, margin: '0 auto' }}>
             <div className="features-grid" style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: 40,
+              gridTemplateColumns: 'repeat(5, 1fr)',
+              gap: 32,
               textAlign: 'center',
             }}>
               {FEATURES.map(f => (
@@ -90,11 +91,51 @@ export default function HomePage() {
                   </p>
                 </div>
               ))}
+
+              {/* Markedsinnsikt teaser card */}
+              <Link
+                href="/markedsinnsikt"
+                style={{ textDecoration: 'none', display: 'block', transition: 'transform 0.15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-4px)' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(0)' }}
+              >
+                <div style={{ fontSize: 48, marginBottom: 12, lineHeight: 1 }}>📊</div>
+                <div style={{
+                  fontFamily: 'Barlow Condensed, sans-serif',
+                  fontWeight: 700,
+                  fontSize: 18,
+                  color: 'var(--t1)',
+                  marginBottom: 8,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                }}>
+                  MARKEDSINNSIKT
+                </div>
+                <p style={{ color: 'var(--t3)', fontSize: 14, margin: 0, lineHeight: 1.6 }}>
+                  Prisindekser og trender for brukte maskiner
+                </p>
+                <div style={{
+                  display: 'inline-block',
+                  background: 'var(--gold3)',
+                  border: '1px solid var(--gold)',
+                  borderRadius: 12,
+                  padding: '4px 10px',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: 'var(--gold)',
+                  marginTop: 12,
+                }}>
+                  Kommer snart
+                </div>
+              </Link>
             </div>
           </div>
           <style>{`
-            @media (max-width: 1024px) { .features-grid { grid-template-columns: repeat(2, 1fr) !important; } }
-            @media (max-width: 640px)  { .features-grid { grid-template-columns: 1fr !important; } }
+            @media (max-width: 1200px) { .features-grid { grid-template-columns: repeat(3, 1fr) !important; } }
+            @media (max-width: 768px)  { .features-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+            @media (max-width: 480px)  { .features-grid { grid-template-columns: 1fr !important; } }
           `}</style>
         </section>
         <TickerStripe />
