@@ -56,6 +56,8 @@ const DEMO_SELLERS: SellerRow[] = [
   { id: 'f', company_name: 'Østlandet Maskin AS', org_number: '321654987', contact_person: null, phone: null, bio: 'Vi kjøper og selger tunge maskiner i hele Østlandet.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 6 },
 ]
 
+export const dynamic = 'force-dynamic'
+
 export default async function SelgerePage() {
   const dbSellers = await getSellers()
   const sellers = dbSellers.length > 0 ? dbSellers : DEMO_SELLERS
@@ -133,7 +135,7 @@ export default async function SelgerePage() {
                         fontFamily: 'Barlow Condensed, sans-serif',
                         fontWeight: 800, fontSize: 18, color: 'var(--gold)',
                       }}>
-                        {seller.company_name[0].toUpperCase()}
+                        {(seller.company_name?.[0] ?? '?').toUpperCase()}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                         {seller.verified && (

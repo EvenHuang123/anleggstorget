@@ -29,6 +29,8 @@ function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
   )
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function SelgerProfilPage({ params }: PageProps) {
   const { id } = await params
   const supabase = await createClient()
@@ -59,16 +61,20 @@ export default async function SelgerProfilPage({ params }: PageProps) {
     .sort((a, b) => new Date(b.sold_at!).getTime() - new Date(a.sold_at!).getTime())
     .slice(0, 5)
 
-  // Fetch reviews
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: reviewsData } = await (supabase as any)
-    .from('reviews')
-    .select('*, profiles!reviews_reviewer_id_fkey(company_name)')
-    .eq('seller_id', id)
-    .order('created_at', { ascending: false })
-    .limit(10) as { data: (Review & { profiles: { company_name: string } | null })[] | null }
-
-  const reviews = reviewsData ?? []
+  // Fetch reviews (safe — table may not exist yet)
+  let reviews: (Review & { profiles: { company_name: string } | null })[] = []
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: reviewsData } = await (supabase as any)
+      .from('reviews')
+      .select('*, profiles(company_name)')
+      .eq('seller_id', id)
+      .order('created_at', { ascending: false })
+      .limit(10) as { data: (Review & { profiles: { company_name: string } | null })[] | null }
+    reviews = reviewsData ?? []
+  } catch {
+    reviews = []
+  }
   const avgRating = reviews.length
     ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10
     : null
@@ -112,7 +118,7 @@ export default async function SelgerProfilPage({ params }: PageProps) {
                 fontFamily: 'Barlow Condensed, sans-serif',
                 fontWeight: 800, fontSize: 28, color: 'var(--gold)',
               }}>
-                {profile.company_name[0].toUpperCase()}
+                {(profile.company_name?.[0] ?? '?').toUpperCase()}
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
