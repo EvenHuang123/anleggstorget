@@ -62,10 +62,10 @@ export default function HomePage() {
           borderBottom: '1px solid var(--border)',
           padding: '60px 24px',
         }}>
-          <div className="container-main" style={{ maxWidth: 1200 }}>
-            <div style={{
+          <div className="container-main" style={{ maxWidth: 1200, margin: '0 auto' }}>
+            <div className="features-grid" style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+              gridTemplateColumns: 'repeat(4, 1fr)',
               gap: 40,
               textAlign: 'center',
             }}>
@@ -92,6 +92,10 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+          <style>{`
+            @media (max-width: 1024px) { .features-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+            @media (max-width: 640px)  { .features-grid { grid-template-columns: 1fr !important; } }
+          `}</style>
         </section>
         <TickerStripe />
         <SearchBar />
