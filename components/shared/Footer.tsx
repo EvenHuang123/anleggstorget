@@ -73,12 +73,8 @@ export default function Footer() {
               <p className="label-sm" style={{ marginBottom: 12 }}>Kontakt</p>
               <a href="mailto:hei@anleggstorget.no" style={{
                 color: 'var(--t2)', fontSize: 14, textDecoration: 'none',
-                transition: 'color 0.15s', display: 'block', marginBottom: 4,
+                transition: 'color 0.15s', display: 'block',
               }}>hei@anleggstorget.no</a>
-              <a href="tel:+4722222222" style={{
-                color: 'var(--t2)', fontSize: 14, textDecoration: 'none',
-                transition: 'color 0.15s',
-              }}>+47 22 22 22 22</a>
             </div>
           </div>
 
@@ -110,7 +106,7 @@ export default function Footer() {
           gap: 16,
         }}>
           <p style={{ color: 'var(--t3)', fontSize: 12 }}>
-            © {year} Anleggstorget AS — Org. 123 456 789
+            © {year} Anleggstorget — Norges B2B-markedsplass for tunge maskiner
           </p>
           <div style={{ display: 'flex', gap: 20 }}>
             <Link href="/personvern" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Personvern</Link>
