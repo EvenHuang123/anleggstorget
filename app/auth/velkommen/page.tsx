@@ -52,7 +52,7 @@ export default function VelkommenPage() {
         </h1>
 
         <p style={{ color: 'var(--t2)', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
-          Velkommen til Maskintorget! Du kan nå kjøpe og selge tunge maskiner
+          Velkommen til Anleggstorget! Du kan nå kjøpe og selge tunge maskiner
           med verifiserte norske bedrifter.
         </p>
 

@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       style: 'currency', currency: 'NOK', maximumFractionDigits: 0,
     }).format(inq.listing.price)
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://maskintorget.no'
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://anleggstorget.no'
 
     const html = `<!DOCTYPE html>
 <html>
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 <body>
 <div class="wrap">
   <div class="header">
-    <div class="logo">MASKIN<span>TORGET</span></div>
+    <div class="logo">ANLEGGS<span>TORGET</span></div>
   </div>
   <div class="body">
     <div class="tag">Ny forespørsel</div>
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     </p>
   </div>
   <div class="footer">
-    © ${new Date().getFullYear()} Maskintorget · Norges B2B maskinmarkedsplass<br>
+    © ${new Date().getFullYear()} Anleggstorget · Norges B2B maskinmarkedsplass<br>
     <a href="${siteUrl}">${siteUrl.replace('https://', '')}</a>
   </div>
 </div>
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
         Authorization: `Bearer ${resendKey}`,
       },
       body: JSON.stringify({
-        from: 'Maskintorget <noreply@maskintorget.no>',
+        from: 'Anleggstorget <noreply@anleggstorget.no>',
         to: sellerEmail,
         subject: `Ny forespørsel på: ${inq.listing.title}`,
         html,

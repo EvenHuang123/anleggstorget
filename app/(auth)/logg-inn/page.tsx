@@ -57,7 +57,7 @@ function LoggInnForm() {
             Logg inn
           </h1>
           <p style={{ color: 'var(--t3)', fontSize: 13 }}>
-            Tilgang til din bedriftskonto på Maskintorget
+            Tilgang til din bedriftskonto på Anleggstorget
           </p>
         </div>
 

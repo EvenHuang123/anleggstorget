@@ -21,8 +21,8 @@ const barlowCondensed = Barlow_Condensed({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Maskintorget – Norges B2B Maskinmarkedsplass',
-    template: '%s | Maskintorget',
+    default: 'Anleggstorget – Norges B2B Maskinmarkedsplass',
+    template: '%s | Anleggstorget',
   },
   description:
     'Kjøp og selg tunge maskiner mellom verifiserte norske bedrifter. Gravemaskiner, traktorer, hjullastere og mer.',
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'nb_NO',
-    siteName: 'Maskintorget',
+    siteName: 'Anleggstorget',
     images: ['/og-image.jpg'],
   },
   twitter: {

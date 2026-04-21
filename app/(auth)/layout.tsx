@@ -42,7 +42,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         textAlign: 'center',
       }}>
         <p style={{ color: 'var(--t3)', fontSize: 12 }}>
-          © 2026 Maskintorget AS ·{' '}
+          © 2026 Anleggstorget AS ·{' '}
           <Link href="/personvern" style={{ color: 'var(--t3)', textDecoration: 'none' }}>Personvern</Link>
           {' · '}
           <Link href="/vilkar" style={{ color: 'var(--t3)', textDecoration: 'none' }}>Vilkår</Link>

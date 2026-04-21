@@ -31,7 +31,7 @@ export default function Logo({ size = 'md', variant = 'horizontal', href = '/' }
           lineHeight: 1,
           whiteSpace: 'nowrap',
         }}>
-          Maskin<span style={{ color: 'var(--gold)' }}>torget</span>
+          Anleggs<span style={{ color: 'var(--gold)' }}>torget</span>
         </span>
       )}
     </>

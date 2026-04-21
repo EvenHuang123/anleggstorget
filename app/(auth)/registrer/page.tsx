@@ -108,7 +108,7 @@ export default function RegistrerPage() {
             Registrer bedrift
           </h1>
           <p style={{ color: 'var(--t3)', fontSize: 13 }}>
-            Opprett din bedriftskonto på Maskintorget
+            Opprett din bedriftskonto på Anleggstorget
           </p>
         </div>
 

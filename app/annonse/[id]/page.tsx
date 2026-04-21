@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : `${listing.brand || ''} ${listing.model || ''} – ${listing.price.toLocaleString('nb-NO')} kr`.trim()
 
   return {
-    title: `${listing.title} – ${listing.price.toLocaleString('nb-NO')} kr | Maskintorget`,
+    title: `${listing.title} – ${listing.price.toLocaleString('nb-NO')} kr | Anleggstorget`,
     description: desc,
     openGraph: {
       title: listing.title,

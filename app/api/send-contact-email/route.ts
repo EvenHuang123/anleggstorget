@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   <div style="max-width:600px;margin:0 auto;background:#ffffff;">
     <div style="background:#0d0c0a;padding:28px 32px;text-align:center;">
       <span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;letter-spacing:0.08em;text-transform:uppercase;color:#ede8de;">
-        MASKIN<span style="color:#c8953a;">TORGET</span>
+        ANLEGGS<span style="color:#c8953a;">TORGET</span>
       </span>
     </div>
 

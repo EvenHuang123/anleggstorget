@@ -16,7 +16,7 @@ const FOOTER_LINKS = {
     { label: 'Min side', href: '/dashboard' },
   ],
   'Selskap': [
-    { label: 'Om Maskintorget', href: '/om-oss' },
+    { label: 'Om Anleggstorget', href: '/om-oss' },
     { label: 'Kontakt oss', href: '/kontakt' },
     { label: 'Personvern', href: '/personvern' },
     { label: 'Vilkår', href: '/vilkar' },
@@ -55,7 +55,7 @@ export default function Footer() {
                 fontWeight: 700, fontSize: 20,
                 letterSpacing: '0.06em', textTransform: 'uppercase',
                 color: 'var(--t1)',
-              }}>Maskintorget</span>
+              }}>Anleggstorget</span>
             </Link>
 
             <p style={{ color: 'var(--t3)', fontSize: 14, lineHeight: 1.7, maxWidth: 260, marginBottom: 24 }}>
@@ -71,10 +71,10 @@ export default function Footer() {
 
             <div style={{ marginTop: 32 }}>
               <p className="label-sm" style={{ marginBottom: 12 }}>Kontakt</p>
-              <a href="mailto:hei@maskintorget.no" style={{
+              <a href="mailto:hei@anleggstorget.no" style={{
                 color: 'var(--t2)', fontSize: 14, textDecoration: 'none',
                 transition: 'color 0.15s', display: 'block', marginBottom: 4,
-              }}>hei@maskintorget.no</a>
+              }}>hei@anleggstorget.no</a>
               <a href="tel:+4722222222" style={{
                 color: 'var(--t2)', fontSize: 14, textDecoration: 'none',
                 transition: 'color 0.15s',
@@ -110,7 +110,7 @@ export default function Footer() {
           gap: 16,
         }}>
           <p style={{ color: 'var(--t3)', fontSize: 12 }}>
-            © {year} Maskintorget AS — Org. 123 456 789
+            © {year} Anleggstorget AS — Org. 123 456 789
           </p>
           <div style={{ display: 'flex', gap: 20 }}>
             <Link href="/personvern" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Personvern</Link>

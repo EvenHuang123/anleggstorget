@@ -483,7 +483,7 @@ export default function AnnonseContent({ listing, related }: Props) {
             }}>
               <AlertCircle size={13} style={{ color: 'var(--gold)', flexShrink: 0, marginTop: 1 }} />
               <p style={{ fontSize: 11, color: 'var(--t3)', lineHeight: 1.6 }}>
-                Maskintorget er en markedsplass. Verifiser alltid maskinen og selger før kjøp.
+                Anleggstorget er en markedsplass. Verifiser alltid maskinen og selger før kjøp.
               </p>
             </div>
           </div>

@@ -32,7 +32,7 @@ export default function TrustSection() {
     <section className="section" style={{ background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
       <div className="container-main">
         <div style={{ textAlign: 'center', marginBottom: 56 }}>
-          <p className="section-label" style={{ marginBottom: 8 }}>Hvorfor Maskintorget</p>
+          <p className="section-label" style={{ marginBottom: 8 }}>Hvorfor Anleggstorget</p>
           <h2 className="section-title" style={{ fontSize: 'clamp(24px, 3vw, 40px)', marginBottom: 14 }}>
             Bygget for norsk næringsliv
           </h2>
