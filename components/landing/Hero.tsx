@@ -96,7 +96,7 @@ export default function Hero() {
               marginBottom: 40,
               fontWeight: 300,
             }}>
-              Kjøp og selg tunge maskiner direkte mellom verifiserte norske bedrifter —
+              Kjøp, selg og leie tunge maskiner direkte mellom verifiserte norske bedrifter —
               trygt, effektivt og uten mellomledd.
             </p>
 

@@ -27,7 +27,7 @@ const FEATURES = [
     icon: '🤝',
     iconColor: undefined,
     heading: 'TRYGG KOMMUNIKASJON',
-    text: 'Direkte kontakt mellom kjøper og selger',
+    text: 'Direkte kontakt mellom bedrifter',
   },
   {
     icon: '🇳🇴',

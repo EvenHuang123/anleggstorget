@@ -15,7 +15,7 @@ const VALUES = [
   {
     icon: CheckCircle2,
     title: 'Åpenhet',
-    text: 'Ingen skjulte kostnader eller provisjoner. Helt gratis å kjøpe og selge. Vi tar ikke betalt av transaksjoner.',
+    text: 'Ingen skjulte kostnader eller provisjoner. Helt gratis å kjøpe, selge og leie ut. Vi tar ikke betalt av transaksjoner.',
   },
   {
     icon: MapPin,
@@ -118,9 +118,9 @@ export default function OmOssPage() {
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             {[
-              'Maskinbransjen i Norge har i årevis manglet en moderne, pålitelig plattform for kjøp og salg av tunge maskiner mellom bedrifter.',
-              'Vi så at små og mellomstore entreprenører brukte uker på å finne riktig utstyr, mens selgere slet med å nå riktige kjøpere. Tradisjonelle metoder som Facebook-grupper og telefonsamtaler var ineffektive og utrygge.',
-              'Anleggstorget løser dette. Vi verifiserer alle bedrifter mot Brønnøysundregisteret, sikrer direkte kommunikasjon mellom kjøper og selger, og gjør hele prosessen raskere og enklere.',
+              'Maskinbransjen i Norge har i årevis manglet en moderne, pålitelig plattform for kjøp, salg og utleie av tunge maskiner mellom bedrifter.',
+              'Vi så at små og mellomstore entreprenører brukte uker på å finne riktig utstyr til kjøp eller leie, mens bedrifter med ledige maskiner slet med å nå riktige kjøpere og leietakere. Tradisjonelle metoder som Facebook-grupper og telefonsamtaler var ineffektive og utrygge.',
+              'Anleggstorget løser dette. Vi verifiserer alle bedrifter mot Brønnøysundregisteret, sikrer direkte kommunikasjon mellom bedrifter, og gjør hele prosessen raskere og enklere.',
             ].map((p, i) => (
               <p key={i} style={{ color: 'var(--t2)', fontSize: 15, lineHeight: 1.8, margin: 0 }}>{p}</p>
             ))}

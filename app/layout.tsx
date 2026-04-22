@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: '%s | Anleggstorget',
   },
   description:
-    'Kjøp og selg tunge maskiner mellom verifiserte norske bedrifter. Gravemaskiner, traktorer, hjullastere og mer.',
+    'Kjøp, selg og leie tunge maskiner mellom verifiserte norske bedrifter. Gravemaskiner, traktorer, hjullastere og mer.',
   keywords: ['maskin', 'gravemaskin', 'traktor', 'hjullaster', 'b2b', 'maskinsalg', 'Norge'],
   icons: {
     icon: '/favicon.svg',

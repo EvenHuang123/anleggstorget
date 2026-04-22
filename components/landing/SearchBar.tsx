@@ -46,7 +46,7 @@ export default function SearchBar() {
             Finn din neste maskin
           </h2>
           <p style={{ color: 'var(--t2)', fontSize: 15 }}>
-            Over 1 200 maskiner fra verifiserte norske bedrifter
+            Maskiner til salgs og utleie fra verifiserte norske bedrifter
           </p>
         </div>
 

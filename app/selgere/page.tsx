@@ -49,11 +49,11 @@ async function getSellers(): Promise<SellerRow[]> {
 
 const DEMO_SELLERS: SellerRow[] = [
   { id: 'a', company_name: 'Bergvik Maskin AS', org_number: '123456789', contact_person: 'Lars Bergvik', phone: '+47 900 00 001', bio: 'Spesialist på gravemaskiner og anleggsutstyr i Vestland. 20 års erfaring i bransjen.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 8 },
-  { id: 'b', company_name: 'Hauge Gård AS', org_number: '987654321', contact_person: 'Kari Hauge', phone: '+47 900 00 002', bio: 'Kjøp og salg av landbruksmaskiner i Innlandet.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 5 },
+  { id: 'b', company_name: 'Hauge Gård AS', org_number: '987654321', contact_person: 'Kari Hauge', phone: '+47 900 00 002', bio: 'Kjøp, salg og utleie av landbruksmaskiner i Innlandet.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 5 },
   { id: 'c', company_name: 'Trøndermaskin AS', org_number: '111222333', contact_person: null, phone: null, bio: null, verified: false, created_at: '2026-01-01T00:00:00Z', active_count: 3 },
   { id: 'd', company_name: 'Sørvestmaskin AS', org_number: '444555666', contact_person: 'Tor Magne', phone: '+47 900 00 004', bio: 'Dumpere og hjullastere i Rogaland og omegn.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 4 },
   { id: 'e', company_name: 'Oslo Kran & Lift AS', org_number: '777888999', contact_person: 'Ole Kristiansen', phone: '+47 900 00 005', bio: 'Norges ledende aktør innen mobile kraner og løfteutstyr.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 12 },
-  { id: 'f', company_name: 'Østlandet Maskin AS', org_number: '321654987', contact_person: null, phone: null, bio: 'Vi kjøper og selger tunge maskiner i hele Østlandet.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 6 },
+  { id: 'f', company_name: 'Østlandet Maskin AS', org_number: '321654987', contact_person: null, phone: null, bio: 'Vi kjøper, selger og leier ut tunge maskiner i hele Østlandet.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 6 },
 ]
 
 export const dynamic = 'force-dynamic'
@@ -86,10 +86,10 @@ export default async function SelgerePage() {
               fontWeight: 800, fontSize: 'clamp(32px, 5vw, 52px)',
               color: 'var(--t1)', letterSpacing: '0.02em', marginBottom: 16,
             }}>
-              Selgere på Anleggstorget
+              Bedrifter på Anleggstorget
             </h1>
             <p style={{ color: 'var(--t2)', fontSize: 16, marginBottom: 32, maxWidth: 540 }}>
-              {sellers.length} aktive selgere · {verifiedCount} verifisert mot Brønnøysundregisteret
+              {sellers.length} aktive bedrifter · {verifiedCount} verifisert mot Brønnøysundregisteret
             </p>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <div className="tag tag-gold">

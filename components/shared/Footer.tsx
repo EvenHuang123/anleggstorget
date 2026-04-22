@@ -59,7 +59,7 @@ export default function Footer() {
             </Link>
 
             <p style={{ color: 'var(--t3)', fontSize: 14, lineHeight: 1.7, maxWidth: 260, marginBottom: 24 }}>
-              Norges første dedikerte B2B markedsplass for kjøp og salg av tunge maskiner mellom verifiserte bedrifter.
+              Norges første dedikerte B2B-markedsplass for kjøp, salg og utleie av tunge maskiner mellom verifiserte bedrifter.
             </p>
 
             <div style={{ display: 'flex', gap: 8 }}>

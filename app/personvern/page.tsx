@@ -64,7 +64,7 @@ export default function PersonvernPage() {
           <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
               'Verifisere bedrifter mot Brønnøysundregisteret',
-              'Legge til rette for kommunikasjon mellom kjøpere og selgere',
+              'Legge til rette for kommunikasjon mellom bedrifter',
               'Sende varslinger om nye forespørsler og meldinger',
               'Forbedre plattformen og brukeropplevelsen',
               'Forhindre svindel og misbruk av tjenesten',

@@ -53,7 +53,7 @@ export default function VilkarPage() {
           <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[
               'Registrerte norske bedrifter (AS, ANS, ENK, osv.)',
-              'Kjøp og salg av tunge maskiner og anleggsutstyr',
+              'Kjøp, salg og utleie av tunge maskiner og anleggsutstyr',
               'Kommersiell bruk mellom bedrifter (B2B)',
             ].map(t => <li key={t}>{t}</li>)}
           </ul>
@@ -86,8 +86,8 @@ export default function VilkarPage() {
         </Section>
 
         <Section title="5. Betaling og transaksjoner">
-          <p>Anleggstorget er kun en plattform for å koble kjøpere og selgere. Vi er <strong>ikke</strong> part i transaksjoner og tar <strong>ikke</strong> provisjon.</p>
-          <p style={{ marginTop: 12 }}>All betaling og levering avtales direkte mellom kjøper og selger. Anleggstorget har intet ansvar for tvister, betalingsproblemer eller kvalitet på maskiner solgt via plattformen.</p>
+          <p>Anleggstorget er kun en plattform for å koble bedrifter. Vi er <strong>ikke</strong> part i transaksjoner og tar <strong>ikke</strong> provisjon.</p>
+          <p style={{ marginTop: 12 }}>All betaling og levering avtales direkte mellom partene. Anleggstorget har intet ansvar for tvister, betalingsproblemer eller kvalitet på maskiner kjøpt, solgt eller leid via plattformen.</p>
         </Section>
 
         <Section title="6. Ansvarsbegrensning">
