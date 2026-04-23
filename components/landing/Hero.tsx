@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Shield, Clock } from 'lucide-react'
+import { ArrowRight, Shield, TrendingUp, Clock } from 'lucide-react'
 import { formatPrice } from '@/lib/utils/format'
 
 const FEATURED_PREVIEW = {
