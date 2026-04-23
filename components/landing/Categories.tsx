@@ -170,14 +170,13 @@ export default function Categories() {
                   {cat.svgPath}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={{ marginBottom: 6 }}>
                   <h3 className="cat-label" style={{
                     fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 15,
                     color: 'var(--t2)', letterSpacing: '0.02em', transition: 'color 0.2s',
                   }}>
                     {cat.label}
                   </h3>
-                  <span className="tag tag-muted">{cat.count}</span>
                 </div>
 
                 <p style={{ color: 'var(--t3)', fontSize: 12, lineHeight: 1.5 }}>

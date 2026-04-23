@@ -120,7 +120,7 @@ export default async function FeaturedListings() {
         {/* Bottom CTA */}
         <div style={{ textAlign: 'center', marginTop: 48 }}>
           <Link href="/sok" className="btn-primary" style={{ padding: '14px 36px', fontSize: 14 }}>
-            Se alle {1247} annonser
+            Se alle annonser
             <ArrowRight size={16} />
           </Link>
         </div>

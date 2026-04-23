@@ -3,7 +3,6 @@ import Link from 'next/link'
 import Navbar from '@/components/shared/Navbar'
 import Footer from '@/components/shared/Footer'
 import Hero from '@/components/landing/Hero'
-import TickerStripe from '@/components/landing/TickerStripe'
 import SearchBar from '@/components/landing/SearchBar'
 import FeaturedListings from '@/components/landing/FeaturedListings'
 import Categories from '@/components/landing/Categories'
@@ -138,7 +137,6 @@ export default function HomePage() {
             .feature-teaser-link:hover { transform: translateY(-4px); }
           `}</style>
         </section>
-        <TickerStripe />
         <SearchBar />
         <Suspense fallback={<ListingsSkeleton />}>
           <FeaturedListings />

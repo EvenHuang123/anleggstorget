@@ -45,7 +45,7 @@ export default function CtaSection() {
         </h2>
 
         <p style={{ color: 'var(--t2)', fontSize: 16, maxWidth: 480, margin: '0 auto 40px', lineHeight: 1.65 }}>
-          Legg ut annonsen gratis og nå over 380 verifiserte bedrifter som aktivt leter etter maskiner akkurat nå.
+          Legg ut annonsen gratis og nå verifiserte norske bedrifter som leter etter maskiner.
         </p>
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -59,7 +59,7 @@ export default function CtaSection() {
         </div>
 
         <p style={{ color: 'var(--t3)', fontSize: 12, marginTop: 20 }}>
-          Ingen binding · Gratis å registrere · Betaling kun ved vellykket salg
+          Ingen binding · Gratis å registrere · Ingen provisjon
         </p>
       </div>
     </section>

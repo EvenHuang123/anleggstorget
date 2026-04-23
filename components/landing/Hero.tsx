@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Shield, TrendingUp, Clock } from 'lucide-react'
+import { ArrowRight, Shield, Clock } from 'lucide-react'
 import { formatPrice } from '@/lib/utils/format'
 
 const FEATURED_PREVIEW = {
@@ -260,31 +260,11 @@ export default function Hero() {
               }}>
                 <Shield size={12} style={{ color: 'var(--gold)' }} />
                 <span style={{ fontSize: 12, color: 'var(--t3)' }}>
-                  Verifisert bedrift · Bergvik Maskin AS
+                  Verifisert norsk bedrift
                 </span>
-                <span className="live-dot" style={{ marginLeft: 'auto', width: 6, height: 6 }} />
-                <span style={{ fontSize: 11, color: 'var(--t3)' }}>live</span>
               </div>
             </div>
 
-            {/* Floating stats */}
-            <div style={{
-              position: 'absolute', bottom: -16, left: -24,
-              background: 'var(--bg3)', border: '1px solid var(--border)',
-              borderRadius: 4, padding: '12px 16px',
-              display: 'flex', alignItems: 'center', gap: 10,
-              zIndex: 3, boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
-            }}>
-              <TrendingUp size={16} style={{ color: 'var(--gold)' }} />
-              <div>
-                <p style={{ fontSize: 11, color: 'var(--t3)', fontFamily: 'Barlow Condensed', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  Ny annonse hvert
-                </p>
-                <p style={{ fontSize: 16, fontFamily: 'Barlow Condensed', fontWeight: 700, color: 'var(--t1)' }}>
-                  4. minutt
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>

@@ -22,8 +22,8 @@ const TRUST_ITEMS = [
     title: 'Markedsinnsikt',
     description:
       'Få tilgang til prisdata, markedstrender og sammenligning med lignende maskiner. Ta informerte beslutninger.',
-    metric: '2 400+',
-    metricLabel: 'annonser analysert',
+    metric: 'Snart',
+    metricLabel: 'lanseres med ekte data',
   },
 ]
 
