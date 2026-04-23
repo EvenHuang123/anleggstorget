@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { Shield, Zap, MapPin, CheckCircle2, ArrowRight } from 'lucide-react'
+import Navbar from '@/components/shared/Navbar'
+import SubNav from '@/components/shared/SubNav'
 
 const VALUES = [
   {
@@ -63,6 +65,9 @@ const VERIFY_GUARANTEES = [
 
 export default function OmOssPage() {
   return (
+    <>
+    <Navbar />
+    <SubNav />
     <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 64 }}>
 
       {/* Hero */}
@@ -405,5 +410,6 @@ export default function OmOssPage() {
         }
       `}</style>
     </div>
+    </>
   )
 }

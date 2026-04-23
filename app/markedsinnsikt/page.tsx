@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { TrendingUp, BarChart3, FileText, Bell, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/shared/Navbar'
+import SubNav from '@/components/shared/SubNav'
 import Footer from '@/components/shared/Footer'
 
 export const metadata = {
@@ -27,6 +28,7 @@ export default async function MarkedsinnsiktPage() {
   return (
     <>
       <Navbar />
+      <SubNav />
       <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 64 }}>
 
         {/* Hero */}
