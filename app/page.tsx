@@ -61,9 +61,47 @@ function ListingsSkeleton() {
   )
 }
 
+const FAQ_ITEMS = [
+  {
+    q: 'Hvordan fungerer Anleggstorget?',
+    a: 'Anleggstorget er en B2B-markedsplass kun for verifiserte norske bedrifter. Registrer din bedrift gratis ved å verifisere organisasjonsnummeret mot Brønnøysundregisteret, legg ut annonser for maskiner du vil selge eller leie ut, og kom i direkte kontakt med andre bedrifter. Ingen mellommenn, ingen provisjon.',
+  },
+  {
+    q: 'Er alle bedrifter verifiserte?',
+    a: 'Ja, alle bedrifter på Anleggstorget er automatisk verifisert mot Brønnøysundregisteret før de kan legge ut annonser. Vi sjekker organisasjonsnummer og bedriftsnavn i sanntid, noe som sikrer at kun ekte, registrerte norske bedrifter kan handle på plattformen. Ingen privatpersoner eller uverifiserte selskaper.',
+  },
+  {
+    q: 'Koster det å legge ut annonser?',
+    a: 'Nei, det er helt gratis å legge ut annonser på Anleggstorget. Vi tar ingen provisjon på salg, ingen skjulte kostnader, og ingen abonnementsavgift. Plattformen er 100% gratis for alle verifiserte bedrifter.',
+  },
+  {
+    q: 'Hvilke typer maskiner kan jeg kjøpe, selge og leie?',
+    a: 'Du kan kjøpe, selge og leie alle typer anleggsmaskiner på Anleggstorget: gravemaskiner, hjullastere, dumpere, traktorer, kraner, kompaktlastere, veivalser og mer. Alt fra små minigravere på 1–2 tonn til store anleggsmaskiner på 40+ tonn.',
+  },
+  {
+    q: 'Hvordan kontakter jeg en selger?',
+    a: 'Klikk på "Kontakt selger" på en annonse, fyll ut en kort melding med ditt spørsmål, så får selgeren beskjed på e-post umiddelbart. Du kan også se selgerens bedriftsinformasjon, organisasjonsnummer og kontaktdetaljer direkte på annonsen.',
+  },
+  {
+    q: 'Kan jeg leie ut maskiner på Anleggstorget?',
+    a: 'Ja! Anleggstorget støtter både salg og utleie av maskiner. Når du legger ut en annonse kan du spesifisere at maskinen er til leie, og oppgi leiepris per dag, uke eller måned. Du kan også velge å tilby både salg og leie på samme maskin.',
+  },
+]
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQ_ITEMS.map(({ q, a }) => ({
+    '@type': 'Question',
+    name: q,
+    acceptedAnswer: { '@type': 'Answer', text: a },
+  })),
+}
+
 export default function HomePage() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <Navbar />
       <main>
         <Hero />
@@ -156,6 +194,65 @@ export default function HomePage() {
         <Categories />
         <BrandsStripe />
         <CtaSection />
+
+        {/* FAQ */}
+        <section className="faq-section" style={{
+          background: 'var(--bg2)',
+          borderTop: '1px solid var(--border)',
+          padding: '80px 24px',
+        }}>
+          <div style={{ maxWidth: 900, margin: '0 auto' }}>
+            <p style={{
+              fontFamily: 'Barlow Condensed, sans-serif',
+              fontWeight: 600, fontSize: 11,
+              letterSpacing: '0.14em', textTransform: 'uppercase',
+              color: 'var(--gold)', marginBottom: 12, textAlign: 'center',
+            }}>
+              Spørsmål og svar
+            </p>
+            <h2 className="faq-heading" style={{
+              fontFamily: 'Barlow Condensed, sans-serif',
+              fontWeight: 800, fontSize: 36,
+              color: 'var(--t1)', marginBottom: 48,
+              textAlign: 'center', letterSpacing: '0.02em',
+            }}>
+              Ofte stilte spørsmål
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {FAQ_ITEMS.map(({ q, a }) => (
+                <div key={q} className="faq-item" style={{
+                  background: 'var(--bg)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 4,
+                  padding: 28,
+                }}>
+                  <h3 style={{
+                    fontFamily: 'Barlow Condensed, sans-serif',
+                    fontWeight: 700, fontSize: 20,
+                    color: 'var(--t1)', marginBottom: 12,
+                    letterSpacing: '0.02em',
+                  }}>
+                    {q}
+                  </h3>
+                  <p style={{
+                    color: 'var(--t2)', fontSize: 15,
+                    lineHeight: 1.7, margin: 0,
+                  }}>
+                    {a}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <style>{`
+            @media (max-width: 768px) {
+              .faq-section { padding: 48px 16px !important; }
+              .faq-heading { font-size: 28px !important; margin-bottom: 32px !important; }
+              .faq-item { padding: 20px !important; }
+            }
+          `}</style>
+        </section>
+
       </main>
       <Footer />
     </>
