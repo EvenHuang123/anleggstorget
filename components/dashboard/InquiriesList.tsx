@@ -16,6 +16,7 @@ export interface InquiryWithContext {
   created_at: string
   listing: {
     id: string
+    slug?: string | null
     title: string
     price: number
     category: string
