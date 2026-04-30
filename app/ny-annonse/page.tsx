@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Navbar from '@/components/shared/Navbar'
 import { Upload, X, ChevronRight, ChevronLeft, Check, Image as ImageIcon, AlertCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { CATEGORIES, WEIGHT_CLASSES, NORWEGIAN_COUNTIES, POPULAR_BRANDS } from '@/lib/utils/format'
+import { CATEGORIES, WEIGHT_CLASSES, NORWEGIAN_COUNTIES, POPULAR_BRANDS, slugify } from '@/lib/utils/format'
 import toast from 'react-hot-toast'
 import type { Category, PriceType } from '@/lib/supabase/types'
 
@@ -191,7 +191,15 @@ export default function NyAnnonsePage() {
       }
 
       toast.success(status === 'active' ? 'Annonsen er publisert!' : 'Lagret som kladd.')
-      router.push(status === 'active' && newListing?.id ? `/annonse/${newListing.id}` : '/dashboard/annonser')
+
+      // Generate and store SEO slug after we have the ID
+      let destination = '/dashboard/annonser'
+      if (status === 'active' && newListing?.id) {
+        const slug = `${slugify(form.title)}-${newListing.id.slice(0, 6)}`
+        await (supabase as any).from('listings').update({ slug }).eq('id', newListing.id)
+        destination = `/annonse/${slug}`
+      }
+      router.push(destination)
     } catch (err) {
       console.error('Unexpected error in publishListing:', err)
       setError('En uventet feil oppstod. Sjekk konsollen og prøv igjen.')

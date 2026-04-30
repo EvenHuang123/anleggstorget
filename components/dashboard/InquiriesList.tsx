@@ -102,7 +102,7 @@ export default function InquiriesList({ inquiries: initial }: { inquiries: Inqui
 
             {/* Listing row */}
             <div style={{ display: 'flex', gap: 16, marginBottom: 18, paddingRight: isNew ? 70 : 0 }}>
-              <Link href={`/annonse/${inq.listing.id}`} style={{
+              <Link href={`/annonse/${inq.listing.slug || inq.listing.id}`} style={{
                 width: 100, height: 68, borderRadius: 3, overflow: 'hidden',
                 background: 'var(--bg3)', border: '1px solid var(--border)',
                 flexShrink: 0, display: 'block',
@@ -111,7 +111,7 @@ export default function InquiriesList({ inquiries: initial }: { inquiries: Inqui
               </Link>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <Link href={`/annonse/${inq.listing.id}`} style={{ textDecoration: 'none' }}>
+                <Link href={`/annonse/${inq.listing.slug || inq.listing.id}`} style={{ textDecoration: 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <span style={{
                       fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 16,

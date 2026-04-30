@@ -17,7 +17,7 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
     : getListingFallbackImage(listing.category)
 
   return (
-    <Link href={`/annonse/${listing.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+    <Link href={`/annonse/${listing.slug || listing.id}`} style={{ textDecoration: 'none', display: 'block' }}>
       <article className="card card-gold" style={{ overflow: 'hidden', cursor: 'pointer' }}>
         {/* Image */}
         <div className="listing-img-wrap">

@@ -123,7 +123,7 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--t3)', fontSize: 12, flexShrink: 0 }}>
                   <Eye size={11} /> {listing.views}
                 </div>
-                <Link href={`/annonse/${listing.id}`} style={{ color: 'var(--t3)', flexShrink: 0 }}>
+                <Link href={`/annonse/${listing.slug || listing.id}`} style={{ color: 'var(--t3)', flexShrink: 0 }}>
                   <ChevronRight size={14} />
                 </Link>
               </div>

@@ -21,6 +21,7 @@ export interface Profile {
   phone: string | null
   bio?: string | null
   verified: boolean
+  slug?: string | null
   created_at: string
 }
 
@@ -53,6 +54,7 @@ export interface Listing {
   images: string[]
   featured: boolean
   views: number
+  slug?: string | null
   favorites_count?: { count: number }[]
   sold_at?: string | null
   sold_price?: number | null

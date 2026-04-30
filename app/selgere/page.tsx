@@ -191,7 +191,7 @@ export default async function SelgerePage() {
 
                     {/* Link */}
                     <Link
-                      href={`/selgere/${seller.id}`}
+                      href={`/selgere/${seller.slug || seller.id}`}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 6,
                         color: 'var(--gold)', fontSize: 13,

@@ -32,16 +32,21 @@ function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
 export const dynamic = 'force-dynamic'
 
 export default async function SelgerProfilPage({ params }: PageProps) {
-  const { id } = await params
+  const { id: slugOrId } = await params
   const supabase = await createClient()
 
-  // Fetch profile
+  // Fetch profile — try slug first, fall back to ID
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any)
-    .from('profiles')
-    .select('*')
-    .eq('id', id)
-    .single() as { data: Profile | null }
+  let profile: Profile | null = null
+  for (const field of ['slug', 'id']) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from('profiles')
+      .select('*')
+      .eq(field, slugOrId)
+      .single() as { data: Profile | null }
+    if (data) { profile = data; break }
+  }
 
   if (!profile) notFound()
 
@@ -50,7 +55,7 @@ export default async function SelgerProfilPage({ params }: PageProps) {
   const { data: listingsData } = await (supabase as any)
     .from('listings')
     .select('*, favorites_count:favorites(count)')
-    .eq('seller_id', id)
+    .eq('seller_id', profile.id)
     .in('status', ['active', 'sold', 'reserved'])
     .order('created_at', { ascending: false }) as { data: Listing[] | null }
 
@@ -68,7 +73,7 @@ export default async function SelgerProfilPage({ params }: PageProps) {
     const { data: reviewsData } = await (supabase as any)
       .from('reviews')
       .select('*, profiles(company_name)')
-      .eq('seller_id', id)
+      .eq('seller_id', profile.id)
       .order('created_at', { ascending: false })
       .limit(10) as { data: (Review & { profiles: { company_name: string } | null })[] | null }
     reviews = reviewsData ?? []

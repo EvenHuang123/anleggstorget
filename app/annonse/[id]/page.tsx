@@ -11,16 +11,19 @@ interface Props {
   params: Promise<{ id: string }>
 }
 
-async function fetchListing(id: string) {
+async function fetchListing(slugOrId: string) {
   try {
     const supabase = await createClient()
-    const { data, error } = await (supabase as any)
-      .from('listings')
-      .select('*, profiles(*), favorites_count:favorites(count)')
-      .eq('id', id)
-      .single() as { data: Listing | null; error: unknown }
-    if (error || !data) return null
-    return data
+    // Try slug first, fall back to ID
+    for (const field of ['slug', 'id']) {
+      const { data } = await (supabase as any)
+        .from('listings')
+        .select('*, profiles(*), favorites_count:favorites(count)')
+        .eq(field, slugOrId)
+        .single() as { data: Listing | null }
+      if (data) return data
+    }
+    return null
   } catch {
     return null
   }

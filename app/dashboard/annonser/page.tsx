@@ -261,7 +261,7 @@ export default function AnnonserPage() {
 
               {/* Actions */}
               <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                <Link href={`/annonse/${listing.id}`} title="Se annonse" style={{
+                <Link href={`/annonse/${listing.slug || listing.id}`} title="Se annonse" style={{
                   background: 'var(--bg3)', border: '1px solid var(--border)',
                   borderRadius: 3, width: 32, height: 32,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
