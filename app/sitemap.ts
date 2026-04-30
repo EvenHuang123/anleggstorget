@@ -25,14 +25,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const supabase = await createClient()
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any
     const [{ data: listings }, { data: sellers }] = await Promise.all([
-      supabase
-        .from('listings')
-        .select('id, slug, updated_at')
-        .eq('status', 'active'),
-      supabase
-        .from('profiles')
-        .select('id, slug, updated_at'),
+      sb.from('listings').select('id, slug, updated_at').eq('status', 'active') as
+        Promise<{ data: { id: string; slug: string | null; updated_at: string }[] | null }>,
+      sb.from('profiles').select('id, slug, updated_at') as
+        Promise<{ data: { id: string; slug: string | null; updated_at: string }[] | null }>,
     ])
 
     const listingPages: MetadataRoute.Sitemap = (listings ?? []).map(l => ({
