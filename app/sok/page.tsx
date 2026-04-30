@@ -5,8 +5,13 @@ import Footer from '@/components/shared/Footer'
 import SokContent from './SokContent'
 
 export const metadata: Metadata = {
-  title: 'Søk maskiner',
-  description: 'Søk blant over 1 200 maskiner fra verifiserte norske bedrifter.',
+  title: 'Finn maskiner – Søk brukte gravemaskiner og anleggsutstyr',
+  description: 'Søk blant brukte gravemaskiner, hjullastere, dumpere, traktorer og annet anleggsutstyr fra verifiserte norske bedrifter. Gratis å browse.',
+  keywords: ['søk maskin', 'finn gravemaskin', 'brukt hjullaster', 'dumper til salgs', 'traktor Norge', 'anleggsutstyr', 'maskin søk'],
+  openGraph: {
+    title: 'Finn maskiner | Anleggstorget',
+    description: 'Søk blant brukte gravemaskiner, hjullastere og anleggsutstyr fra verifiserte norske bedrifter.',
+  },
 }
 
 export default function SokPage() {

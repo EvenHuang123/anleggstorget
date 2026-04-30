@@ -7,8 +7,13 @@ import Footer from '@/components/shared/Footer'
 import type { Profile } from '@/lib/supabase/types'
 
 export const metadata = {
-  title: 'Selgere — Anleggstorget',
-  description: 'Oversikt over alle verifiserte selgere på Anleggstorget.',
+  title: 'Verifiserte maskinselgere i Norge',
+  description: 'Se alle verifiserte bedrifter som selger og leier ut anleggsmaskiner i Norge. Alle sjekket mot Brønnøysundregisteret for trygg handel.',
+  keywords: ['maskinselgere Norge', 'verifiserte bedrifter', 'anleggsmaskiner selger', 'Brønnøysund verifisert', 'kjøp maskin bedrift'],
+  openGraph: {
+    title: 'Verifiserte maskinselgere | Anleggstorget',
+    description: 'Se alle verifiserte bedrifter som selger og leier ut anleggsmaskiner. Sjekket mot Brønnøysundregisteret.',
+  },
 }
 
 interface SellerRow extends Profile {

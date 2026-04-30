@@ -6,8 +6,13 @@ import SubNav from '@/components/shared/SubNav'
 import Footer from '@/components/shared/Footer'
 
 export const metadata = {
-  title: 'Markedsinnsikt — Anleggstorget',
-  description: 'Prisindekser og markedstrender for brukte anleggsmaskiner i Norge.',
+  title: 'Prisindekser for brukte maskiner – Markedsinnsikt',
+  description: 'Kvartalsvise prisindekser, markedstrender og verdivurdering for brukte anleggsmaskiner i Norge. Datadrevet innsikt for smarte kjøp og salg.',
+  keywords: ['prisindeks maskin', 'markedspris gravemaskin', 'verdivurdering maskin', 'maskin prisoversikt Norge', 'anleggsutstyr markedsverdi'],
+  openGraph: {
+    title: 'Markedsinnsikt – Prisindekser for brukte maskiner | Anleggstorget',
+    description: 'Kvartalsvise prisindekser og markedstrender for anleggsmaskiner i Norge.',
+  },
 }
 
 export default async function MarkedsinnsiktPage() {

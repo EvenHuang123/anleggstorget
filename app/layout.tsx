@@ -21,12 +21,16 @@ const barlowCondensed = Barlow_Condensed({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Anleggstorget – Norges B2B Maskinmarkedsplass',
+    default: 'Anleggstorget – Kjøp og selg tunge maskiner | B2B Maskinmarkedsplass',
     template: '%s | Anleggstorget',
   },
   description:
-    'Kjøp, selg og leie tunge maskiner mellom verifiserte norske bedrifter. Gravemaskiner, traktorer, hjullastere og mer.',
-  keywords: ['maskin', 'gravemaskin', 'traktor', 'hjullaster', 'b2b', 'maskinsalg', 'Norge'],
+    'Norges B2B-markedsplass for verifiserte bedrifter. Kjøp, selg og leie gravemaskiner, hjullastere, dumpere og anleggsutstyr trygt og gratis.',
+  keywords: [
+    'kjøp maskiner', 'selg gravemaskin', 'anleggsutstyr Norge', 'brukt maskin til salgs',
+    'hjullaster', 'dumper', 'traktor', 'kranbil', 'B2B maskinmarked', 'gravemaskin',
+    'maskin utleie', 'anleggsmaskiner', 'Brønnøysund verifisert', 'maskinsalg Norge',
+  ],
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',
@@ -35,10 +39,15 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'nb_NO',
     siteName: 'Anleggstorget',
+    url: 'https://anleggstorget.no',
+    title: 'Anleggstorget – Norges B2B-markedsplass for tunge maskiner',
+    description: 'Kjøp, selg og leie anleggsmaskiner mellom verifiserte norske bedrifter. Gratis annonsering.',
     images: ['/og-image.jpg'],
   },
   twitter: {
     card: 'summary_large_image',
+    title: 'Anleggstorget – Kjøp og selg tunge maskiner',
+    description: 'Norges B2B-markedsplass for anleggsmaskiner. Verifiserte bedrifter, gratis annonsering.',
     images: ['/og-image.jpg'],
   },
 }

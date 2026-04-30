@@ -2,6 +2,17 @@ import Link from 'next/link'
 import { Shield, Zap, MapPin, CheckCircle2, ArrowRight } from 'lucide-react'
 import Navbar from '@/components/shared/Navbar'
 import SubNav from '@/components/shared/SubNav'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Om Anleggstorget – Norges tryggeste B2B maskinmarkedsplass',
+  description: 'Lær mer om Anleggstorget, hvordan vi verifiserer alle bedrifter mot Brønnøysundregisteret, og hvorfor vi er det sikreste valget for maskinhandel i Norge.',
+  keywords: ['om Anleggstorget', 'B2B maskin Norge', 'verifisert maskinhandel', 'Brønnøysundregisteret', 'trygg maskinmarkedsplass'],
+  openGraph: {
+    title: 'Om Anleggstorget – Norges tryggeste B2B maskinmarkedsplass',
+    description: 'Verifiserte bedrifter, trygg handel og markedsplassen bygget for norsk næringsliv.',
+  },
+}
 
 const VALUES = [
   {

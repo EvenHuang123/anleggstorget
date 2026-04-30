@@ -1,6 +1,17 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import Navbar from '@/components/shared/Navbar'
+
+export const metadata: Metadata = {
+  title: 'Kjøp og selg tunge maskiner – B2B Maskinmarkedsplass',
+  description: 'Norges B2B-markedsplass for verifiserte bedrifter. Kjøp, selg og leie gravemaskiner, hjullastere, dumpere og anleggsutstyr trygt. Gratis annonsering.',
+  openGraph: {
+    title: 'Anleggstorget – Kjøp og selg tunge maskiner',
+    description: 'Norges B2B-markedsplass for verifiserte bedrifter. Kjøp, selg og leie anleggsmaskiner trygt. Gratis annonsering.',
+    url: 'https://anleggstorget.no',
+  },
+}
 import Footer from '@/components/shared/Footer'
 import Hero from '@/components/landing/Hero'
 import SearchBar from '@/components/landing/SearchBar'
