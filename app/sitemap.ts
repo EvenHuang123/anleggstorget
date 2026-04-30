@@ -9,6 +9,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticPages: MetadataRoute.Sitemap = [
     { url: `${BASE}/`,                             lastModified: now, changeFrequency: 'daily',   priority: 1.0 },
     { url: `${BASE}/sok`,                          lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
+    { url: `${BASE}/gravemaskiner`,               lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
+    { url: `${BASE}/hjullastere`,                 lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
+    { url: `${BASE}/dumpere`,                     lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
+    { url: `${BASE}/traktorer`,                   lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
     { url: `${BASE}/sok?category=gravemaskin`,     lastModified: now, changeFrequency: 'daily',   priority: 0.8 },
     { url: `${BASE}/sok?category=traktor`,         lastModified: now, changeFrequency: 'daily',   priority: 0.8 },
     { url: `${BASE}/sok?category=hjullaster`,      lastModified: now, changeFrequency: 'daily',   priority: 0.8 },
