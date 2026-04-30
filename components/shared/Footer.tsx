@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Logo from './Logo'
 
 const FOOTER_LINKS = {
   'Markeder': [
@@ -37,26 +38,9 @@ export default function Footer() {
         }} className="footer-grid">
           {/* Brand column */}
           <div>
-            <Link href="/" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-              <div style={{
-                width: 36, height: 36,
-                background: 'var(--gold)',
-                borderRadius: 3,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <span style={{
-                  fontFamily: 'Barlow Condensed, sans-serif',
-                  fontWeight: 800, fontSize: 18,
-                  color: '#0d0c0a',
-                }}>M</span>
-              </div>
-              <span style={{
-                fontFamily: 'Barlow Condensed, sans-serif',
-                fontWeight: 700, fontSize: 20,
-                letterSpacing: '0.06em', textTransform: 'uppercase',
-                color: 'var(--t1)',
-              }}>Anleggstorget</span>
-            </Link>
+            <div style={{ marginBottom: 20 }}>
+              <Logo size="sm" variant="footer" />
+            </div>
 
             <p style={{ color: 'var(--t3)', fontSize: 14, lineHeight: 1.7, maxWidth: 260, marginBottom: 24 }}>
               Norges første dedikerte B2B-markedsplass for kjøp, salg og utleie av tunge maskiner mellom verifiserte bedrifter.

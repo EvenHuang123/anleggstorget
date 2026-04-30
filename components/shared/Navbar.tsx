@@ -114,7 +114,7 @@ export default function Navbar() {
       <div className="container-main">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
           {/* Logo */}
-          <Logo size="md" />
+          <Logo size="md" variant="navbar" />
 
           {/* Desktop nav */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="hidden-mobile">
