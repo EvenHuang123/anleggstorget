@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useTheme } from '@/lib/context/ThemeContext'
 
 interface LogoProps {
@@ -11,10 +10,10 @@ interface LogoProps {
   href?: string
 }
 
-const IMG_SIZES = {
-  sm: { w: 140, h: 35 },
-  md: { w: 200, h: 50 },
-  lg: { w: 280, h: 70 },
+const IMG_HEIGHTS = {
+  sm: 32,
+  md: 44,
+  lg: 64,
 }
 
 const SVG_SIZES = {
@@ -26,8 +25,8 @@ const SVG_SIZES = {
 export default function Logo({ variant = 'navbar', size = 'md', href = '/' }: LogoProps) {
   const { theme } = useTheme()
   const [imgError, setImgError] = useState(false)
-  const { w, h } = IMG_SIZES[size]
-  const src = theme === 'dark' ? '/logo-light.svg' : '/logo-dark.svg'
+  const h = IMG_HEIGHTS[size]
+  const src = theme === 'dark' ? '/logo-light.png' : '/logo-dark.png'
 
   if (imgError) {
     const { icon, text, gap } = SVG_SIZES[size]
@@ -48,13 +47,12 @@ export default function Logo({ variant = 'navbar', size = 'md', href = '/' }: Lo
 
   return (
     <Link href={href} style={{ display: 'block', lineHeight: 0, flexShrink: 0 }}>
-      <Image
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={src}
         alt="Anleggstorget – B2B markedsplass for anleggsmaskiner"
-        width={w}
         height={h}
-        priority={variant === 'navbar'}
-        style={{ width: 'auto', height: h, maxWidth: '100%', display: 'block' }}
+        style={{ height: h, width: 'auto', maxWidth: '100%', display: 'block' }}
         onError={() => setImgError(true)}
       />
     </Link>
