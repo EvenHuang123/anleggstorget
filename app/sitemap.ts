@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { articles } from '@/lib/guides/articles'
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://anleggstorget.no'
 
@@ -24,6 +25,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/om-oss`,                       lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${BASE}/kontakt`,                      lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE}/registrer`,                    lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${BASE}/guide`,                        lastModified: now, changeFrequency: 'weekly',  priority: 0.8 },
+    ...articles.map(a => ({
+      url: `${BASE}/guide/${a.slug}`,
+      lastModified: new Date(a.updatedAt),
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
   ]
 
   try {

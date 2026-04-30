@@ -8,6 +8,7 @@ const LINKS = [
   { href: '/sok',            label: 'Finn maskin' },
   { href: '/selgere',        label: 'Bedrifter' },
   { href: '/om-oss',         label: 'Om oss' },
+  { href: '/guide',          label: 'Guider' },
   { href: '/markedsinnsikt', label: 'Markedsinnsikt' },
   { href: '/kontakt',        label: 'Kontakt' },
 ]
