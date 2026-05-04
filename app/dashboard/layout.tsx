@@ -54,7 +54,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <>
       <Navbar />
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 64, display: 'flex' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80, display: 'flex' }}>
         {/* Sidebar */}
         <aside style={{
           width: 220, flexShrink: 0,

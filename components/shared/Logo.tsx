@@ -13,7 +13,7 @@ interface LogoProps {
 const IMG_HEIGHTS = {
   sm: 32,
   md: 44,
-  lg: 64,
+  lg: 60,
 }
 
 const SVG_SIZES = {

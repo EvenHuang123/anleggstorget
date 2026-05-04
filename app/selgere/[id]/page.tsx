@@ -91,7 +91,7 @@ export default async function SelgerProfilPage({ params }: PageProps) {
   return (
     <>
       <Navbar />
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 64 }}>
+      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
 
         {/* Back nav */}
         <div style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg2)' }}>

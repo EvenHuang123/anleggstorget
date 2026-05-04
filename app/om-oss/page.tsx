@@ -79,7 +79,7 @@ export default function OmOssPage() {
     <>
     <Navbar />
     <SubNav />
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 64 }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
 
       {/* Hero */}
       <section style={{

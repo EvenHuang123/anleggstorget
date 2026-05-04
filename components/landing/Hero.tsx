@@ -21,7 +21,7 @@ export default function Hero() {
       display: 'flex',
       alignItems: 'center',
       overflow: 'hidden',
-      paddingTop: 64,
+      paddingTop: 80,
     }}>
       {/* Grid overlay */}
       <div className="grid-overlay" style={{

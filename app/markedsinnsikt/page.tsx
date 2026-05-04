@@ -34,7 +34,7 @@ export default async function MarkedsinnsiktPage() {
     <>
       <Navbar />
       <SubNav />
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 64 }}>
+      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
 
         {/* Hero */}
         <div style={{

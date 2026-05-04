@@ -21,7 +21,7 @@ export default function SubNav() {
       background: 'var(--bg2)',
       borderBottom: '1px solid var(--border)',
       position: 'sticky',
-      top: 64,
+      top: 80,
       zIndex: 90,
     }}>
       <div className="container-main">

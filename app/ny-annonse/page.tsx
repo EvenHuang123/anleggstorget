@@ -210,7 +210,7 @@ export default function NyAnnonsePage() {
   return (
     <>
       <Navbar />
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 64 }}>
+      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
         <div className="container-main" style={{ padding: '48px 24px' }}>
           {/* Page header */}
           <div style={{ marginBottom: 40 }}>

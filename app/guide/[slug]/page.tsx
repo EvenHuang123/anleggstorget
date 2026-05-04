@@ -156,7 +156,7 @@ export default async function GuideArticlePage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <Navbar />
       <SubNav />
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 64 }}>
+      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
 
         {/* Hero */}
         <section style={{

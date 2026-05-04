@@ -23,7 +23,7 @@ export default function VilkarPage() {
   const updated = new Date().toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 64 }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
       <div style={{
         background: 'var(--bg2)',
         borderBottom: '1px solid var(--border)',

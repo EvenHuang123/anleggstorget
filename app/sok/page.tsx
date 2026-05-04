@@ -18,7 +18,7 @@ export default function SokPage() {
   return (
     <>
       <Navbar />
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 64 }}>
+      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
         <Suspense fallback={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh' }}>
             <p style={{ color: 'var(--t3)', fontFamily: 'Barlow Condensed', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: 13 }}>Laster...</p>

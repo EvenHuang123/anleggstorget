@@ -78,7 +78,7 @@ export default async function AnnonsePage({ params }: Props) {
   return (
     <>
       <Navbar />
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 64 }}>
+      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
         <AnnonseContent listing={listing} related={related} />
       </main>
       <Footer />
