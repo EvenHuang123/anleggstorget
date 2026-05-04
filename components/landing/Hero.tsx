@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowRight, Shield, TrendingUp, Clock } from 'lucide-react'
 import { formatPrice } from '@/lib/utils/format'
+import { useTheme } from '@/lib/context/ThemeContext'
 
 const FEATURED_PREVIEW = {
   title: 'Volvo EC480E Gravemaskin',
@@ -14,6 +15,8 @@ const FEATURED_PREVIEW = {
 }
 
 export default function Hero() {
+  const { theme } = useTheme()
+
   return (
     <section style={{
       position: 'relative',
@@ -23,6 +26,25 @@ export default function Hero() {
       overflow: 'hidden',
       paddingTop: 80,
     }}>
+      {/* Background photo */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 0,
+        backgroundImage: 'url("/url.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        opacity: theme === 'dark' ? 0.08 : 0.12,
+      }} />
+
+      {/* Gradient overlay for readability */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 0,
+        background: 'linear-gradient(135deg, var(--bg) 0%, transparent 40%, var(--bg) 100%)',
+      }} />
+
       {/* Grid overlay */}
       <div className="grid-overlay" style={{
         position: 'absolute', inset: 0,
