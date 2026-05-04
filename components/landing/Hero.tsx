@@ -34,7 +34,7 @@ export default function Hero() {
         backgroundImage: 'url("/url.jpg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        opacity: theme === 'dark' ? 0.08 : 0.12,
+        opacity: theme === 'dark' ? 0.18 : 0.28,
       }} />
 
       {/* Gradient overlay for readability */}
