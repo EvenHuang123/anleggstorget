@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { CheckCircle2, Shield, Users, MapPin, TrendingUp } from 'lucide-react'
 import Navbar from '@/components/shared/Navbar'
 
 export const metadata: Metadata = {
@@ -22,26 +23,26 @@ import CtaSection from '@/components/landing/CtaSection'
 
 const FEATURES = [
   {
-    icon: '✓',
-    iconColor: '#4caf50',
+    icon: CheckCircle2,
+    iconColor: '#10b981',
     heading: 'GRATIS Å BRUKE',
     text: 'Ingen provisjon eller skjulte kostnader',
   },
   {
-    icon: '🔐',
-    iconColor: undefined,
+    icon: Shield,
+    iconColor: '#3b82f6',
     heading: 'VERIFISERTE BEDRIFTER',
     text: 'Sjekket mot Brønnøysundregisteret',
   },
   {
-    icon: '🤝',
-    iconColor: undefined,
+    icon: Users,
+    iconColor: '#8b5cf6',
     heading: 'TRYGG KOMMUNIKASJON',
     text: 'Direkte kontakt mellom bedrifter',
   },
   {
-    icon: '🇳🇴',
-    iconColor: undefined,
+    icon: MapPin,
+    iconColor: '#ef4444',
     heading: 'NORSK PLATTFORM',
     text: 'Bygget for norske bedrifter',
   },
@@ -120,8 +121,8 @@ export default function HomePage() {
             }}>
               {FEATURES.map(f => (
                 <div key={f.heading}>
-                  <div style={{ fontSize: 48, marginBottom: 12, lineHeight: 1, color: f.iconColor }}>
-                    {f.icon}
+                  <div style={{ marginBottom: 12, lineHeight: 1 }}>
+                    <f.icon size={40} strokeWidth={2} style={{ color: f.iconColor }} />
                   </div>
                   <div style={{
                     fontFamily: 'Barlow Condensed, sans-serif',
@@ -145,7 +146,9 @@ export default function HomePage() {
                 href="/markedsinnsikt"
                 className="feature-teaser-link"
               >
-                <div style={{ fontSize: 48, marginBottom: 12, lineHeight: 1 }}>📊</div>
+                <div style={{ marginBottom: 12, lineHeight: 1 }}>
+                  <TrendingUp size={40} strokeWidth={2} style={{ color: '#C8953A' }} />
+                </div>
                 <div style={{
                   fontFamily: 'Barlow Condensed, sans-serif',
                   fontWeight: 700,
