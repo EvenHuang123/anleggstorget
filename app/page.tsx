@@ -122,7 +122,7 @@ export default function HomePage() {
               {FEATURES.map(f => (
                 <div key={f.heading}>
                   <div style={{ marginBottom: 12, lineHeight: 1 }}>
-                    <f.icon size={40} strokeWidth={2} style={{ color: f.iconColor }} />
+                    <f.icon size={40} strokeWidth={2} style={{ color: f.iconColor, display: 'block', margin: '0 auto' }} />
                   </div>
                   <div style={{
                     fontFamily: 'Barlow Condensed, sans-serif',
@@ -147,7 +147,7 @@ export default function HomePage() {
                 className="feature-teaser-link"
               >
                 <div style={{ marginBottom: 12, lineHeight: 1 }}>
-                  <TrendingUp size={40} strokeWidth={2} style={{ color: '#C8953A' }} />
+                  <TrendingUp size={40} strokeWidth={2} style={{ color: '#C8953A', display: 'block', margin: '0 auto' }} />
                 </div>
                 <div style={{
                   fontFamily: 'Barlow Condensed, sans-serif',
