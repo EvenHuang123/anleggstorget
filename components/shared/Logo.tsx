@@ -26,7 +26,7 @@ export default function Logo({ variant = 'navbar', size = 'md', href = '/' }: Lo
   const { theme } = useTheme()
   const [imgError, setImgError] = useState(false)
   const h = IMG_HEIGHTS[size]
-  const src = theme === 'dark' ? '/logo-light.png' : '/logo-dark.png'
+  const src = theme === 'dark' ? '/logo-dark-mode.png' : '/logo-dark.png'
 
   if (imgError) {
     const { icon, text, gap } = SVG_SIZES[size]
