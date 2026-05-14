@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 interface LogoProps {
   variant?: 'navbar' | 'footer'
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   href?: string
 }
 
@@ -13,12 +13,14 @@ const IMG_HEIGHTS = {
   sm: 32,
   md: 44,
   lg: 60,
+  xl: 68,
 }
 
 const SVG_SIZES = {
   sm: { icon: 26, text: 15, gap: 8 },
   md: { icon: 32, text: 18, gap: 10 },
   lg: { icon: 52, text: 28, gap: 14 },
+  xl: { icon: 58, text: 32, gap: 14 },
 }
 
 export default function Logo({ variant = 'navbar', size = 'md', href = '/' }: LogoProps) {
@@ -43,6 +45,8 @@ export default function Logo({ variant = 'navbar', size = 'md', href = '/' }: Lo
     )
   }
 
+  const isNavbarXl = size === 'xl'
+
   return (
     <Link href={href} style={{ display: 'block', lineHeight: 0, flexShrink: 0 }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -50,9 +54,16 @@ export default function Logo({ variant = 'navbar', size = 'md', href = '/' }: Lo
         src={src}
         alt="Anleggstorget – B2B markedsplass for anleggsmaskiner"
         height={h}
+        className={isNavbarXl ? 'logo-navbar' : undefined}
         style={{ height: h, width: 'auto', maxWidth: '100%', display: 'block' }}
         onError={() => setImgError(true)}
       />
+      {isNavbarXl && (
+        <style>{`
+          @media (max-width: 768px) { .logo-navbar { height: 44px !important; } }
+          @media (min-width: 769px) and (max-width: 1024px) { .logo-navbar { height: 56px !important; } }
+        `}</style>
+      )}
     </Link>
   )
 }
