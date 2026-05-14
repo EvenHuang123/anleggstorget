@@ -453,7 +453,7 @@ export default function NyAnnonsePage() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
                     {form.imagePreviewUrls.map((url, i) => (
                       <div key={url} style={{ position: 'relative', aspectRatio: '1', borderRadius: 3, overflow: 'hidden' }}>
-                        <img src={url} alt={`Bilde ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={url} alt={`Bilde ${i + 1}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         {i === 0 && (
                           <div style={{ position: 'absolute', bottom: 4, left: 4 }}>
                             <span className="tag tag-gold" style={{ fontSize: 9 }}>Hovedbilde</span>
@@ -502,7 +502,7 @@ export default function NyAnnonsePage() {
                 <div style={{ background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: 4, overflow: 'hidden', marginBottom: 28 }}>
                   {/* Preview image */}
                   {form.imagePreviewUrls[0] ? (
-                    <img src={form.imagePreviewUrls[0]} alt={form.title} style={{ width: '100%', height: 200, objectFit: 'cover' }} />
+                    <img src={form.imagePreviewUrls[0]} alt={form.title} loading="lazy" style={{ width: '100%', height: 200, objectFit: 'cover' }} />
                   ) : (
                     <div style={{ height: 140, background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <ImageIcon size={32} style={{ color: 'var(--t3)' }} />

@@ -4,7 +4,7 @@ import { CheckCircle2, Sparkles } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Velkommen til Anleggstorget',
-  description: 'Din bedrift er nå registrert og verifisert på Anleggstorget. Start med å legge ut din første annonse gratis.',
+  description: 'Din bedrift er nå registrert og verifisert på Anleggstorget. Start med å legge ut din første maskinannonse gratis og nå kjøpere i hele Norge.',
   robots: { index: false },
 }
 

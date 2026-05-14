@@ -108,7 +108,7 @@ export default function InquiriesList({ inquiries: initial }: { inquiries: Inqui
                 background: 'var(--bg3)', border: '1px solid var(--border)',
                 flexShrink: 0, display: 'block',
               }}>
-                <img src={imgSrc} alt={inq.listing.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={imgSrc} alt={inq.listing.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </Link>
 
               <div style={{ flex: 1, minWidth: 0 }}>

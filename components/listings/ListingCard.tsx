@@ -24,6 +24,7 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
           <img
             src={imageUrl}
             alt={`${listing.title}${listing.location ? ` – ${listing.location}` : ''} – ${CATEGORIES[listing.category]?.label || listing.category} til salgs`}
+            loading="lazy"
             onError={e => {
               const el = e.currentTarget as HTMLImageElement
               el.src = getListingFallbackImage(listing.category)
