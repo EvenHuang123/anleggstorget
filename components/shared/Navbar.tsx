@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { Menu, X, ChevronDown, LogOut, LayoutDashboard, PlusSquare, Settings, Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import ThemeToggle from './ThemeToggle'
 import Logo from './Logo'
 
 const NAV_LINKS = [
@@ -155,7 +154,6 @@ export default function Navbar() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="hidden-mobile">
             {user ? (
               <>
-                <ThemeToggle variant="navbar" />
                 <Link href="/ny-annonse" className="btn-primary" style={{ fontSize: 12, padding: '8px 16px' }}>
                   <PlusSquare size={14} />
                   Legg ut annonse
@@ -254,7 +252,6 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <ThemeToggle variant="navbar" />
                 <Link href="/logg-inn" className="btn-ghost">Logg inn</Link>
                 <Link href="/ny-annonse" className="btn-primary" style={{ fontSize: 12, padding: '8px 16px' }}>
                   <PlusSquare size={14} />

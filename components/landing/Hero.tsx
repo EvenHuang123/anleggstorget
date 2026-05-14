@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { ArrowRight, Shield, TrendingUp, Clock } from 'lucide-react'
 import { formatPrice } from '@/lib/utils/format'
-import { useTheme } from '@/lib/context/ThemeContext'
 
 const FEATURED_PREVIEW = {
   title: 'Volvo EC480E Gravemaskin',
@@ -15,8 +14,6 @@ const FEATURED_PREVIEW = {
 }
 
 export default function Hero() {
-  const { theme } = useTheme()
-
   return (
     <section style={{
       position: 'relative',
@@ -33,7 +30,7 @@ export default function Hero() {
         backgroundImage: 'url("/url.jpg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        opacity: theme === 'dark' ? 0.18 : 0.28,
+        opacity: 0.28,
       }} />
 
       {/* Gradient overlay for readability */}

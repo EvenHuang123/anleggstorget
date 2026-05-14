@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useTheme } from '@/lib/context/ThemeContext'
 
 interface LogoProps {
   variant?: 'navbar' | 'footer'
@@ -23,10 +22,9 @@ const SVG_SIZES = {
 }
 
 export default function Logo({ variant = 'navbar', size = 'md', href = '/' }: LogoProps) {
-  const { theme } = useTheme()
   const [imgError, setImgError] = useState(false)
   const h = IMG_HEIGHTS[size]
-  const src = theme === 'dark' ? '/logo-dark-mode.png' : '/logo-dark.png'
+  const src = '/logo-dark.png'
 
   if (imgError) {
     const { icon, text, gap } = SVG_SIZES[size]
