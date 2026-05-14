@@ -16,17 +16,6 @@ const SORT_OPTIONS = [
   { value: 'hours_asc', label: 'Færrest timer' },
 ]
 
-// Demo listings when no Supabase connection
-const DEMO: Listing[] = [
-  { id: '1', seller_id: 'a', category: 'gravemaskin', title: 'Volvo EC480E Gravemaskin', description: null, brand: 'Volvo', model: 'EC480E', year: 2021, operating_hours: 3200, weight_class: '40-50 tonn', price: 3850000, price_type: 'fast_price', location: 'Vestland', status: 'active', images: [], featured: true, views: 142, created_at: '2026-04-15T08:00:00Z', updated_at: '2026-04-15T08:00:00Z', profiles: { id: 'a', company_name: 'Bergvik Maskin AS', org_number: '123456789', contact_person: null, phone: null, verified: true, created_at: '2026-01-01T00:00:00Z' } },
-  { id: '2', seller_id: 'b', category: 'traktor', title: 'John Deere 6175R Autopowr', description: null, brand: 'John Deere', model: '6175R', year: 2022, operating_hours: 1800, weight_class: '8-10 tonn', price: 1250000, price_type: 'negotiable', location: 'Innlandet', status: 'active', images: [], featured: false, views: 98, created_at: '2026-04-14T10:00:00Z', updated_at: '2026-04-14T10:00:00Z', profiles: { id: 'b', company_name: 'Hauge Gård AS', org_number: '987654321', contact_person: null, phone: null, verified: true, created_at: '2026-01-01T00:00:00Z' } },
-  { id: '3', seller_id: 'c', category: 'hjullaster', title: 'Caterpillar 950M Hjullaster', description: null, brand: 'Caterpillar', model: '950M', year: 2020, operating_hours: 5100, weight_class: '15-20 tonn', price: 2100000, price_type: 'fast_price', location: 'Trøndelag', status: 'active', images: [], featured: false, views: 76, created_at: '2026-04-13T09:00:00Z', updated_at: '2026-04-13T09:00:00Z', profiles: { id: 'c', company_name: 'Trøndermaskin AS', org_number: '111222333', contact_person: null, phone: null, verified: false, created_at: '2026-01-01T00:00:00Z' } },
-  { id: '4', seller_id: 'd', category: 'dumper', title: 'Komatsu HM400-5 Dumper', description: null, brand: 'Komatsu', model: 'HM400-5', year: 2019, operating_hours: 7200, weight_class: 'Over 40 tonn', price: 2650000, price_type: 'fast_price', location: 'Rogaland', status: 'active', images: [], featured: false, views: 54, created_at: '2026-04-12T11:00:00Z', updated_at: '2026-04-12T11:00:00Z', profiles: { id: 'd', company_name: 'Sørvestmaskin AS', org_number: '444555666', contact_person: null, phone: null, verified: true, created_at: '2026-01-01T00:00:00Z' } },
-  { id: '5', seller_id: 'e', category: 'kranbil', title: 'Liebherr LTM 1060 Mobilkran', description: null, brand: 'Liebherr', model: 'LTM 1060', year: 2018, operating_hours: 4800, weight_class: 'Over 40 tonn', price: 4200000, price_type: 'negotiable', location: 'Oslo', status: 'active', images: [], featured: false, views: 210, created_at: '2026-04-11T07:00:00Z', updated_at: '2026-04-11T07:00:00Z', profiles: { id: 'e', company_name: 'Oslo Kran & Lift AS', org_number: '777888999', contact_person: null, phone: null, verified: true, created_at: '2026-01-01T00:00:00Z' } },
-  { id: '6', seller_id: 'f', category: 'gravemaskin', title: 'Hitachi ZX350LC-7 Gravemaskin', description: null, brand: 'Hitachi', model: 'ZX350LC-7', year: 2023, operating_hours: 1100, weight_class: '30-40 tonn', price: 4900000, price_type: 'fast_price', location: 'Viken', status: 'active', images: [], featured: true, views: 189, created_at: '2026-04-10T08:30:00Z', updated_at: '2026-04-10T08:30:00Z', profiles: { id: 'f', company_name: 'Østlandet Maskin AS', org_number: '321654987', contact_person: null, phone: null, verified: true, created_at: '2026-01-01T00:00:00Z' } },
-  { id: '7', seller_id: 'g', category: 'skogsutstyr', title: 'Ponsse Beaver Hogstmaskin', description: null, brand: 'Ponsse', model: 'Beaver', year: 2020, operating_hours: 8200, weight_class: '15-20 tonn', price: 2800000, price_type: 'fast_price', location: 'Troms og Finnmark', status: 'active', images: [], featured: false, views: 31, created_at: '2026-04-09T10:00:00Z', updated_at: '2026-04-09T10:00:00Z', profiles: { id: 'g', company_name: 'Nord-Skog AS', org_number: '654321987', contact_person: null, phone: null, verified: false, created_at: '2026-01-01T00:00:00Z' } },
-  { id: '8', seller_id: 'h', category: 'hjullaster', title: 'Volvo L90H Hjullaster', description: null, brand: 'Volvo', model: 'L90H', year: 2021, operating_hours: 2600, weight_class: '10-20 tonn', price: 1650000, price_type: 'fast_price', location: 'Agder', status: 'active', images: [], featured: false, views: 67, created_at: '2026-04-08T09:00:00Z', updated_at: '2026-04-08T09:00:00Z', profiles: { id: 'h', company_name: 'Sørlandsmaskin AS', org_number: '135792468', contact_person: null, phone: null, verified: true, created_at: '2026-01-01T00:00:00Z' } },
-]
 
 export default function SokContent() {
   const searchParams = useSearchParams()
@@ -75,9 +64,9 @@ export default function SokContent() {
       else if (sort === 'hours_asc') qb = qb.order('operating_hours', { ascending: true })
 
       const { data } = await qb.limit(48)
-      setListings((data as Listing[]) || DEMO)
+      setListings((data as Listing[]) || [])
     } catch {
-      setListings(DEMO)
+      setListings([])
     } finally {
       setLoading(false)
     }

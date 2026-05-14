@@ -52,20 +52,10 @@ async function getSellers(): Promise<SellerRow[]> {
   }
 }
 
-const DEMO_SELLERS: SellerRow[] = [
-  { id: 'a', company_name: 'Bergvik Maskin AS', org_number: '123456789', contact_person: 'Lars Bergvik', phone: '+47 900 00 001', bio: 'Spesialist på gravemaskiner og anleggsutstyr i Vestland. 20 års erfaring i bransjen.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 8 },
-  { id: 'b', company_name: 'Hauge Gård AS', org_number: '987654321', contact_person: 'Kari Hauge', phone: '+47 900 00 002', bio: 'Kjøp, salg og utleie av landbruksmaskiner i Innlandet.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 5 },
-  { id: 'c', company_name: 'Trøndermaskin AS', org_number: '111222333', contact_person: null, phone: null, bio: null, verified: false, created_at: '2026-01-01T00:00:00Z', active_count: 3 },
-  { id: 'd', company_name: 'Sørvestmaskin AS', org_number: '444555666', contact_person: 'Tor Magne', phone: '+47 900 00 004', bio: 'Dumpere og hjullastere i Rogaland og omegn.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 4 },
-  { id: 'e', company_name: 'Oslo Kran & Lift AS', org_number: '777888999', contact_person: 'Ole Kristiansen', phone: '+47 900 00 005', bio: 'Norges ledende aktør innen mobile kraner og løfteutstyr.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 12 },
-  { id: 'f', company_name: 'Østlandet Maskin AS', org_number: '321654987', contact_person: null, phone: null, bio: 'Vi kjøper, selger og leier ut tunge maskiner i hele Østlandet.', verified: true, created_at: '2026-01-01T00:00:00Z', active_count: 6 },
-]
-
 export const dynamic = 'force-dynamic'
 
 export default async function SelgerePage() {
-  const dbSellers = await getSellers()
-  const sellers = dbSellers.length > 0 ? dbSellers : DEMO_SELLERS
+  const sellers = await getSellers()
   const verifiedCount = sellers.filter(s => s.verified).length
 
   return (
@@ -112,6 +102,19 @@ export default async function SelgerePage() {
         {/* Grid */}
         <div style={{ padding: '56px 0 80px' }}>
           <div className="container-main">
+            {sellers.length === 0 ? (
+              <div style={{
+                textAlign: 'center', padding: '80px 24px',
+                background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4,
+              }}>
+                <p style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 20, color: 'var(--t1)', marginBottom: 8 }}>
+                  Ingen bedrifter registrert ennå
+                </p>
+                <p style={{ color: 'var(--t3)', fontSize: 14 }}>
+                  Vær den første til å registrere deg på Anleggstorget.
+                </p>
+              </div>
+            ) : (
             <div className="sellers-grid" style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(4, 1fr)',
@@ -206,6 +209,7 @@ export default async function SelgerePage() {
                 )
               })}
             </div>
+            )}
           </div>
         </div>
 
