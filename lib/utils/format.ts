@@ -49,6 +49,7 @@ export const CATEGORIES: Record<string, { label: string; icon: string }> = {
   dumper: { label: 'Dumpere', icon: '🚧' },
   kranbil: { label: 'Kranbiler', icon: '🏗️' },
   skogsutstyr: { label: 'Skogsutstyr', icon: '🌲' },
+  betong: { label: 'Betongmaskiner', icon: '🏗️' },
   annet: { label: 'Annet', icon: '⚙️' },
 }
 
@@ -97,6 +98,7 @@ export const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
   dumper: 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&q=75',
   kranbil: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=75',
   skogsutstyr: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=75',
+  betong: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=75',
   annet: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=75',
 }
 

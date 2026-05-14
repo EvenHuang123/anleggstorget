@@ -5,6 +5,7 @@ export type Category =
   | 'dumper'
   | 'kranbil'
   | 'skogsutstyr'
+  | 'betong'
   | 'annet'
 
 export type PriceType = 'fast_price' | 'negotiable' | 'auction'

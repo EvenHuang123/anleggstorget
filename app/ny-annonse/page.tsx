@@ -274,7 +274,7 @@ export default function NyAnnonsePage() {
                         display: 'flex', alignItems: 'center', gap: 12,
                       }}
                     >
-                      <span style={{ fontSize: 20 }}>{key === 'gravemaskin' ? '🏗️' : key === 'traktor' ? '🚜' : key === 'hjullaster' ? '🚛' : key === 'dumper' ? '🚧' : key === 'kranbil' ? '🏗️' : key === 'skogsutstyr' ? '🌲' : '⚙️'}</span>
+                      <span style={{ fontSize: 20 }}>{key === 'gravemaskin' ? '🏗️' : key === 'traktor' ? '🚜' : key === 'hjullaster' ? '🚛' : key === 'dumper' ? '🚧' : key === 'kranbil' ? '🏗️' : key === 'skogsutstyr' ? '🌲' : key === 'betong' ? '🏗️' : '⚙️'}</span>
                       <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 15, color: form.category === key ? 'var(--gold)' : 'var(--t1)' }}>
                         {label}
                       </span>
