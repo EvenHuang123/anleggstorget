@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { ArrowRight, Search, Shield, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/shared/Navbar'
-import SubNav from '@/components/shared/SubNav'
 import Footer from '@/components/shared/Footer'
 import ListingCard from '@/components/listings/ListingCard'
 import type { Listing } from '@/lib/supabase/types'
@@ -38,7 +37,6 @@ export default async function CategoryPageTemplate({ config }: { config: Categor
   return (
     <>
       <Navbar />
-      <SubNav />
       <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
 
         {/* Hero */}

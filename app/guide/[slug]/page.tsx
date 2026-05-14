@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, Clock, Calendar, ChevronRight, BookOpen } from 'lucide-react'
 import Navbar from '@/components/shared/Navbar'
-import SubNav from '@/components/shared/SubNav'
 import Footer from '@/components/shared/Footer'
 import { articles, getArticle } from '@/lib/guides/articles'
 import type { ContentBlock } from '@/lib/guides/articles'
@@ -155,7 +154,6 @@ export default async function GuideArticlePage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <Navbar />
-      <SubNav />
       <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
 
         {/* Hero */}

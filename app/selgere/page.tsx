@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { Building2, ArrowRight, Package, TrendingUp } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/shared/Navbar'
-import SubNav from '@/components/shared/SubNav'
 import Footer from '@/components/shared/Footer'
 import type { Profile } from '@/lib/supabase/types'
 
@@ -72,7 +71,6 @@ export default async function SelgerePage() {
   return (
     <>
       <Navbar />
-      <SubNav />
       <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
 
         {/* Hero */}

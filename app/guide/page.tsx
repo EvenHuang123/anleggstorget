@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight, Clock, BookOpen, ChevronRight } from 'lucide-react'
 import Navbar from '@/components/shared/Navbar'
-import SubNav from '@/components/shared/SubNav'
 import Footer from '@/components/shared/Footer'
 import { articles } from '@/lib/guides/articles'
 
@@ -26,7 +25,6 @@ export default function GuidePage() {
   return (
     <>
       <Navbar />
-      <SubNav />
       <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
 
         {/* Hero */}

@@ -7,6 +7,7 @@ import { Menu, X, ChevronDown, LogOut, LayoutDashboard, PlusSquare, Settings, Be
 import { createClient } from '@/lib/supabase/client'
 import ThemeToggle from './ThemeToggle'
 import Logo from './Logo'
+import SubNav from './SubNav'
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -99,6 +100,7 @@ export default function Navbar() {
   }
 
   return (
+    <>
     <nav
       style={{
         position: 'sticky',
@@ -301,5 +303,7 @@ export default function Navbar() {
         .dropdown-item:hover { background: var(--gold4) !important; color: var(--t1) !important; }
       `}</style>
     </nav>
+    <SubNav />
+    </>
   )
 }

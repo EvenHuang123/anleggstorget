@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Mail, MapPin, Send, CheckCircle2, AlertCircle, Clock } from 'lucide-react'
 import Navbar from '@/components/shared/Navbar'
-import SubNav from '@/components/shared/SubNav'
 import Footer from '@/components/shared/Footer'
 
 interface FormState {
@@ -67,7 +66,6 @@ export default function KontaktPage() {
   return (
     <>
       <Navbar />
-      <SubNav />
       <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
 
         {/* Hero header */}
