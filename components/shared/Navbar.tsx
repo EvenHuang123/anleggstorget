@@ -11,7 +11,6 @@ import Logo from './Logo'
 const NAV_LINKS = [
   { href: '/',         label: 'Hjem',       exact: true  },
   { href: '/sok',      label: 'Finn maskin', exact: false },
-  { href: '/selgere',  label: 'Selgere',     exact: false },
   { href: '/om-oss',   label: 'Om oss',      exact: false },
   { href: '/guide',    label: 'Guider',      exact: false },
 ]
