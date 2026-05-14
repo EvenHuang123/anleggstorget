@@ -24,7 +24,7 @@ const SVG_SIZES = {
 export default function Logo({ variant = 'navbar', size = 'md', href = '/' }: LogoProps) {
   const [imgError, setImgError] = useState(false)
   const h = IMG_HEIGHTS[size]
-  const src = '/logo-dark.png'
+  const src = '/at-2.png'
 
   if (imgError) {
     const { icon, text, gap } = SVG_SIZES[size]
