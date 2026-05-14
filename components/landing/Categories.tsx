@@ -121,7 +121,7 @@ const CATEGORIES = [
     ),
   },
   {
-    key: 'betong', label: 'Betongmaskiner', count: 54,
+    key: 'betong', label: 'Betongmaskiner',
     description: 'Betongbiler, betongpumper, betongmiksere og glattmaskiner',
     svgPath: (
       <svg viewBox="0 0 48 32" style={{ width: 36, height: 24 }} aria-hidden>
