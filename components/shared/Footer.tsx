@@ -12,7 +12,7 @@ const FOOTER_LINKS = {
   ],
   'Tjenester': [
     { label: 'Legg ut annonse', href: '/ny-annonse' },
-    { label: 'Bedriftsverifisering', href: '/verifisering' },
+    { label: 'Bedriftsverifisering', href: '/registrer' },
     { label: 'Søk maskiner', href: '/sok' },
     { label: 'Min side', href: '/dashboard' },
   ],
@@ -95,7 +95,7 @@ export default function Footer() {
           <div style={{ display: 'flex', gap: 20 }}>
             <Link href="/personvern" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Personvern</Link>
             <Link href="/vilkar" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Vilkår</Link>
-            <Link href="/cookies" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Cookies</Link>
+            <Link href="/personvern" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Cookies</Link>
           </div>
         </div>
       </div>
