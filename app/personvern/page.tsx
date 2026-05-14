@@ -1,5 +1,16 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'Personvernserklæring | Anleggstorget',
+  description: 'Les hvordan Anleggstorget behandler personopplysninger, bruker informasjonskapsler og sikrer dataen til bedrifter på plattformen vår.',
+  openGraph: {
+    title: 'Personvernserklæring | Anleggstorget',
+    description: 'Les om behandling av personopplysninger og informasjonskapsler på Anleggstorget.',
+    url: 'https://anleggstorget.no/personvern',
+  },
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

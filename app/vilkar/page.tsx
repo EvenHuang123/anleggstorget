@@ -1,5 +1,16 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'Vilkår for bruk | Anleggstorget',
+  description: 'Les vilkårene for bruk av Anleggstorget – Norges B2B-markedsplass for kjøp, salg og utleie av anleggsmaskiner mellom verifiserte bedrifter.',
+  openGraph: {
+    title: 'Vilkår for bruk | Anleggstorget',
+    description: 'Brukervilkår for Anleggstorget – B2B-markedsplass for anleggsmaskiner.',
+    url: 'https://anleggstorget.no/vilkar',
+  },
+}
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

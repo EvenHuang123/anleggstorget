@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Building2, Mail, Phone, Star, TrendingUp, Package, ArrowLeft, CheckCircle } from 'lucide-react'
@@ -10,6 +11,31 @@ import type { Listing, Profile, Review } from '@/lib/supabase/types'
 
 interface PageProps {
   params: Promise<{ id: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id: slugOrId } = await params
+  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('profiles')
+    .select('company_name, org_number')
+    .or(`slug.eq.${slugOrId},id.eq.${slugOrId}`)
+    .maybeSingle() as { data: { company_name: string; org_number: string } | null }
+
+  if (!data) return { title: 'Maskinselger | Anleggstorget' }
+
+  const title = `${data.company_name} – Verifisert maskinselger | Anleggstorget`
+  const description = `Se anleggsmaskiner til salgs fra ${data.company_name}. Verifisert norsk bedrift på Anleggstorget – trygg B2B-handel uten mellomledd.`
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `https://anleggstorget.no/selgere/${slugOrId}`,
+    },
+  }
 }
 
 function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {

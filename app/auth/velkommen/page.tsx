@@ -1,5 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { CheckCircle2, Sparkles } from 'lucide-react'
+
+export const metadata: Metadata = {
+  title: 'Velkommen til Anleggstorget',
+  description: 'Din bedrift er nå registrert og verifisert på Anleggstorget. Start med å legge ut din første annonse gratis.',
+  robots: { index: false },
+}
 
 export default function VelkommenPage() {
   return (

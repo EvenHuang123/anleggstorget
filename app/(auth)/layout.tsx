@@ -1,5 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import Logo from '@/components/shared/Logo'
+
+export const metadata: Metadata = {
+  title: 'Logg inn eller registrer deg | Anleggstorget',
+  description: 'Logg inn eller opprett en gratis bedriftskonto på Anleggstorget. Verifisering via Brønnøysundregisteret. Kom i gang på under 5 minutter.',
+  robots: { index: false },
+}
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
