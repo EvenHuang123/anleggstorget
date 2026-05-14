@@ -13,7 +13,7 @@ const IMG_HEIGHTS = {
   sm: 32,
   md: 44,
   lg: 60,
-  xl: 68,
+  xl: 120,
 }
 
 const SVG_SIZES = {
