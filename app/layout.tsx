@@ -31,8 +31,12 @@ export const metadata: Metadata = {
     'maskin utleie', 'anleggsmaskiner', 'Brønnøysund verifisert', 'maskinsalg Norge',
   ],
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
+      { url: '/icon.png',    sizes: '192x192', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
   },
   openGraph: {
     type: 'website',
