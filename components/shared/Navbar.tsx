@@ -101,14 +101,15 @@ export default function Navbar() {
   return (
     <nav
       style={{
-        position: 'fixed',
-        top: 0, left: 0, right: 0,
-        zIndex: 100,
-        background: scrolled ? 'color-mix(in srgb, var(--bg) 95%, transparent)' : 'color-mix(in srgb, var(--bg) 75%, transparent)',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        background: 'color-mix(in srgb, var(--bg) 95%, transparent)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
-        borderBottom: `1px solid ${scrolled ? 'rgba(255,255,255,0.09)' : 'transparent'}`,
-        transition: 'all 0.3s ease',
+        borderBottom: '1px solid var(--border)',
+        boxShadow: scrolled ? '0 2px 12px rgba(0,0,0,0.15)' : 'none',
+        transition: 'box-shadow 0.3s ease',
       }}
     >
       <div className="container-main">

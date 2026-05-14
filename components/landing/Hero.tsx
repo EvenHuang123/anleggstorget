@@ -24,7 +24,6 @@ export default function Hero() {
       display: 'flex',
       alignItems: 'center',
       overflow: 'hidden',
-      paddingTop: 80,
     }}>
       {/* Background photo */}
       <div style={{
