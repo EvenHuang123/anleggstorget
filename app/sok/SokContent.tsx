@@ -37,7 +37,10 @@ export default function SokContent() {
   const maxPrice = searchParams.get('maxPrice') || ''
   const minYear = searchParams.get('minYear') || ''
   const maxYear = searchParams.get('maxYear') || ''
+  const minHours = searchParams.get('minHours') || ''
   const maxHours = searchParams.get('maxHours') || ''
+  const weightClass = searchParams.get('weightClass') || ''
+  const priceType = searchParams.get('priceType') || ''
   const brand = searchParams.get('brand') || ''
 
   const fetchListings = useCallback(async () => {
@@ -56,7 +59,10 @@ export default function SokContent() {
       if (maxPrice) qb = qb.lte('price', parseInt(maxPrice))
       if (minYear) qb = qb.gte('year', parseInt(minYear))
       if (maxYear) qb = qb.lte('year', parseInt(maxYear))
+      if (minHours) qb = qb.gte('operating_hours', parseInt(minHours))
       if (maxHours) qb = qb.lte('operating_hours', parseInt(maxHours))
+      if (weightClass) qb = qb.eq('weight_class', weightClass)
+      if (priceType) qb = qb.eq('price_type', priceType)
 
       if (sort === 'newest') qb = qb.order('created_at', { ascending: false })
       else if (sort === 'price_asc') qb = qb.order('price', { ascending: true })
@@ -70,7 +76,7 @@ export default function SokContent() {
     } finally {
       setLoading(false)
     }
-  }, [q, category, location, brand, minPrice, maxPrice, minYear, maxYear, maxHours, sort])
+  }, [q, category, location, brand, minPrice, maxPrice, minYear, maxYear, minHours, maxHours, weightClass, priceType, sort])
 
   useEffect(() => { fetchListings() }, [fetchListings])
 
