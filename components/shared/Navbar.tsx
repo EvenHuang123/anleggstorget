@@ -7,7 +7,14 @@ import { Menu, X, ChevronDown, LogOut, LayoutDashboard, PlusSquare, Settings, Be
 import { createClient } from '@/lib/supabase/client'
 import ThemeToggle from './ThemeToggle'
 import Logo from './Logo'
-import SubNav from './SubNav'
+
+const NAV_LINKS = [
+  { href: '/',         label: 'Hjem',       exact: true  },
+  { href: '/sok',      label: 'Finn maskin', exact: false },
+  { href: '/selgere',  label: 'Selgere',     exact: false },
+  { href: '/om-oss',   label: 'Om oss',      exact: false },
+  { href: '/guide',    label: 'Guider',      exact: false },
+]
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -68,7 +75,6 @@ export default function Navbar() {
       if (!session) { setUser(null); setUnreadCount(0) }
     })
 
-    // Realtime — re-count when any inquiry changes
     const channel = supabase
       .channel('navbar-inquiries')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'inquiries' }, () => {
@@ -100,7 +106,6 @@ export default function Navbar() {
   }
 
   return (
-    <>
     <nav
       style={{
         position: 'sticky',
@@ -115,25 +120,44 @@ export default function Navbar() {
       }}
     >
       <div className="container-main">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 80 }}>
-          {/* Logo */}
-          <Logo size="lg" variant="navbar" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
 
-          {/* Desktop nav */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="hidden-mobile">
-            <Link href="/sok" className={`nav-link ${pathname.startsWith('/sok') ? 'active' : ''}`}>
-              Finn maskin
-            </Link>
-            <Link href="/selgere" className="nav-link">Selgere</Link>
-            <Link href="/om-oss" className="nav-link">Om oss</Link>
+          {/* Logo */}
+          <Logo size="md" variant="navbar" />
+
+          {/* Center nav links */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} className="hidden-mobile">
+            {NAV_LINKS.map(({ href, label, exact }) => {
+              const isActive = exact ? pathname === href : pathname.startsWith(href)
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  style={{
+                    padding: '6px 12px',
+                    fontSize: 14,
+                    fontWeight: isActive ? 600 : 400,
+                    fontFamily: 'Barlow, sans-serif',
+                    color: isActive ? 'var(--gold)' : 'var(--t2)',
+                    textDecoration: 'none',
+                    borderRadius: 4,
+                    transition: 'color 0.15s',
+                    whiteSpace: 'nowrap',
+                  }}
+                  className="navbar-link"
+                >
+                  {label}
+                </Link>
+              )
+            })}
           </div>
 
-          {/* Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }} className="hidden-mobile">
+          {/* Right side actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="hidden-mobile">
             {user ? (
               <>
                 <ThemeToggle variant="navbar" />
-                <Link href="/ny-annonse" className="btn-primary" style={{ fontSize: 12, padding: '9px 18px' }}>
+                <Link href="/ny-annonse" className="btn-primary" style={{ fontSize: 12, padding: '8px 16px' }}>
                   <PlusSquare size={14} />
                   Legg ut annonse
                 </Link>
@@ -143,7 +167,7 @@ export default function Navbar() {
                   href="/dashboard/foresporsel"
                   style={{
                     position: 'relative', flexShrink: 0,
-                    width: 38, height: 38, borderRadius: 3,
+                    width: 36, height: 36, borderRadius: 3,
                     background: unreadCount > 0 ? 'var(--gold3)' : 'var(--bg3)',
                     border: `1px solid ${unreadCount > 0 ? 'rgba(200,149,58,0.4)' : 'var(--border)'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -233,7 +257,7 @@ export default function Navbar() {
               <>
                 <ThemeToggle variant="navbar" />
                 <Link href="/logg-inn" className="btn-ghost">Logg inn</Link>
-                <Link href="/ny-annonse" className="btn-primary" style={{ fontSize: 12, padding: '9px 18px' }}>
+                <Link href="/ny-annonse" className="btn-primary" style={{ fontSize: 12, padding: '8px 16px' }}>
                   <PlusSquare size={14} />
                   Legg ut annonse
                 </Link>
@@ -260,16 +284,27 @@ export default function Navbar() {
           padding: '16px 24px 24px',
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <Link href="/sok" className="nav-link" style={{ padding: '10px 0', fontSize: 15 }} onClick={() => setMobileOpen(false)}>
-              Finn maskin
-            </Link>
-            <Link href="/selgere" className="nav-link" style={{ padding: '10px 0', fontSize: 15 }} onClick={() => setMobileOpen(false)}>
-              Selgere
-            </Link>
-            <Link href="/om-oss" className="nav-link" style={{ padding: '10px 0', fontSize: 15 }} onClick={() => setMobileOpen(false)}>
-              Om oss
-            </Link>
-            <div style={{ height: 1, background: 'var(--border)', margin: '8px 0' }} />
+            {NAV_LINKS.map(({ href, label, exact }) => {
+              const isActive = exact ? pathname === href : pathname.startsWith(href)
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  style={{
+                    padding: '10px 0',
+                    fontSize: 15,
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive ? 'var(--gold)' : 'var(--t2)',
+                    textDecoration: 'none',
+                    borderBottom: '1px solid var(--border)',
+                  }}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {label}
+                </Link>
+              )
+            })}
+            <div style={{ height: 8 }} />
             {user ? (
               <>
                 <Link href="/dashboard" className="btn-secondary" style={{ justifyContent: 'center', marginBottom: 8 }} onClick={() => setMobileOpen(false)}>
@@ -296,14 +331,13 @@ export default function Navbar() {
       <style>{`
         .hidden-mobile { display: flex !important; }
         .show-mobile { display: none !important; }
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
           .hidden-mobile { display: none !important; }
           .show-mobile { display: flex !important; }
         }
+        .navbar-link:hover { color: var(--t1) !important; }
         .dropdown-item:hover { background: var(--gold4) !important; color: var(--t1) !important; }
       `}</style>
     </nav>
-    <SubNav />
-    </>
   )
 }
