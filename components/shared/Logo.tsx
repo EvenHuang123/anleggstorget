@@ -13,7 +13,7 @@ const IMG_HEIGHTS = {
   sm: 32,
   md: 44,
   lg: 60,
-  xl: 120,
+  xl: 72,
 }
 
 const SVG_SIZES = {
@@ -61,7 +61,7 @@ export default function Logo({ variant = 'navbar', size = 'md', href = '/' }: Lo
       {isNavbarXl && (
         <style>{`
           @media (max-width: 768px) { .logo-navbar { height: 44px !important; } }
-          @media (min-width: 769px) and (max-width: 1024px) { .logo-navbar { height: 56px !important; } }
+          @media (min-width: 769px) and (max-width: 1024px) { .logo-navbar { height: 60px !important; } }
         `}</style>
       )}
     </Link>

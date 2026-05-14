@@ -118,7 +118,7 @@ export default function Navbar() {
       }}
     >
       <div className="container-main">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 140 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 80 }}>
 
           {/* Logo */}
           <Logo size="xl" variant="navbar" />
