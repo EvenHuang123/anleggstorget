@@ -118,14 +118,12 @@ export default function NyAnnonsePage() {
       }
 
       // Ensure profile exists (foreign key requirement for listings.seller_id).
-      // org_number is NOT NULL + UNIQUE in the schema; use email as a unique
-      // placeholder so new users never collide on the constraint.
       const meta = session.user.user_metadata ?? {}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: profileErr } = await (supabase as any).from('profiles').upsert({
         id: session.user.id,
         company_name: meta.company_name ?? session.user.email?.split('@')[0] ?? 'Ukjent bedrift',
-        org_number: meta.org_number || session.user.email || session.user.id,
+        org_number: meta.org_number ?? null,
         contact_person: meta.contact_person ?? null,
         phone: meta.phone ?? null,
       }, { onConflict: 'id', ignoreDuplicates: true })
