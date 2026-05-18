@@ -110,8 +110,6 @@ export default function NyAnnonsePage() {
         router.push('/logg-inn')
         return
       }
-      console.log('DEBUG session.user.id:', session.user.id, '| email:', session.user.email)
-
       const price = Number(form.price)
       if (!form.price || isNaN(price) || price <= 0) {
         setError('Ugyldig pris. Gå tilbake og fyll inn et gyldig beløp.')
@@ -119,31 +117,24 @@ export default function NyAnnonsePage() {
         return
       }
 
-      // Ensure profile exists (foreign key requirement for listings.seller_id)
+      // Ensure profile exists (foreign key requirement for listings.seller_id).
+      // org_number is NOT NULL + UNIQUE in the schema; use email as a unique
+      // placeholder so new users never collide on the constraint.
+      const meta = session.user.user_metadata ?? {}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: existingProfile } = await (supabase as any)
-        .from('profiles')
-        .select('id')
-        .eq('id', session.user.id)
-        .maybeSingle() as { data: { id: string } | null }
+      const { error: profileErr } = await (supabase as any).from('profiles').upsert({
+        id: session.user.id,
+        company_name: meta.company_name ?? session.user.email?.split('@')[0] ?? 'Ukjent bedrift',
+        org_number: meta.org_number || session.user.email || session.user.id,
+        contact_person: meta.contact_person ?? null,
+        phone: meta.phone ?? null,
+      }, { onConflict: 'id', ignoreDuplicates: true })
 
-      if (!existingProfile) {
-        const meta = session.user.user_metadata ?? {}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: profileErr } = await (supabase as any).from('profiles').insert({
-          id: session.user.id,
-          company_name: meta.company_name ?? session.user.email?.split('@')[0] ?? 'Ukjent bedrift',
-          org_number: meta.org_number ?? null,
-          contact_person: meta.contact_person ?? null,
-          phone: meta.phone ?? null,
-        })
-        // 23505 = unique_violation: profile already exists but RLS hides it from SELECT — safe to continue
-        if (profileErr && profileErr.code !== '23505') {
-          console.error('Profile creation failed:', profileErr.code, profileErr.message)
-          setError('Profil mangler. Gå til Innstillinger og fyll inn bedriftsinfo.')
-          setLoading(false)
-          return
-        }
+      if (profileErr) {
+        console.error('Profile upsert failed:', profileErr.code, profileErr.message)
+        setError('Profil mangler. Gå til Innstillinger og fyll inn bedriftsinfo.')
+        setLoading(false)
+        return
       }
 
       // Upload images
