@@ -110,6 +110,7 @@ export default function NyAnnonsePage() {
         router.push('/logg-inn')
         return
       }
+      console.log('DEBUG session.user.id:', session.user.id, '| email:', session.user.email)
 
       const price = Number(form.price)
       if (!form.price || isNaN(price) || price <= 0) {
