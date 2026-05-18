@@ -136,8 +136,9 @@ export default function NyAnnonsePage() {
           contact_person: meta.contact_person ?? null,
           phone: meta.phone ?? null,
         })
-        if (profileErr) {
-          console.error('Profile creation failed:', profileErr.message)
+        // 23505 = unique_violation: profile already exists but RLS hides it from SELECT — safe to continue
+        if (profileErr && profileErr.code !== '23505') {
+          console.error('Profile creation failed:', profileErr.code, profileErr.message)
           setError('Profil mangler. Gå til Innstillinger og fyll inn bedriftsinfo.')
           setLoading(false)
           return
