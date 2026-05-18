@@ -40,11 +40,13 @@ export default function AnnonseContent({ listing, related }: Props) {
   const [inquiry, setInquiry] = useState({ name: '', email: '', phone: '', message: '' })
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   // Pre-fill inquiry form + check favorite status
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session?.user) return
+      setCurrentUserId(data.session.user.id)
       setInquiry(prev => ({ ...prev, email: data.session!.user.email || '' }))
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: fav } = await (supabase as any)
@@ -406,7 +408,15 @@ export default function AnnonseContent({ listing, related }: Props) {
             </div>
 
             {/* Inquiry CTA */}
-            {!sent ? (
+            {currentUserId === listing.seller_id ? (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px',
+                background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 4,
+              }}>
+                <MessageSquare size={15} style={{ color: 'var(--t3)' }} />
+                <span style={{ color: 'var(--t3)', fontSize: 13 }}>Dette er din egen annonse</span>
+              </div>
+            ) : !sent ? (
               <button
                 onClick={() => setInquiryOpen(true)}
                 className="btn-primary"
