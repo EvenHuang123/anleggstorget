@@ -260,16 +260,51 @@ export default function AnnonserPage() {
               </div>
 
               {/* Actions */}
-              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                <Link href={`/annonse/${listing.slug || listing.id}`} title="Se annonse" style={{
-                  background: 'var(--bg3)', border: '1px solid var(--border)',
-                  borderRadius: 3, width: 32, height: 32,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'var(--t2)', textDecoration: 'none',
-                }}>
-                  <ExternalLink size={12} />
-                </Link>
-                {listing.status !== 'sold' && (
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'center' }}>
+                {/* Drafts: prominent Rediger + Publiser */}
+                {listing.status === 'draft' && (
+                  <>
+                    <Link
+                      href={`/ny-annonse?id=${listing.id}`}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        background: 'var(--bg3)', border: '1px solid var(--border)',
+                        borderRadius: 3, padding: '0 12px', height: 32,
+                        color: 'var(--t1)', textDecoration: 'none',
+                        fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 12,
+                        letterSpacing: '0.04em', textTransform: 'uppercase',
+                      }}
+                    >
+                      <Edit size={11} /> Rediger
+                    </Link>
+                    <button
+                      onClick={() => toggleStatus(listing.id, 'draft')}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        background: 'var(--gold)', border: 'none',
+                        borderRadius: 3, padding: '0 12px', height: 32,
+                        color: '#0d0c0a', cursor: 'pointer',
+                        fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 12,
+                        letterSpacing: '0.04em', textTransform: 'uppercase',
+                      }}
+                    >
+                      <CheckSquare size={11} /> Publiser
+                    </button>
+                  </>
+                )}
+
+                {/* Active/reserved/sold: view + mark-sold + toggle + delete */}
+                {listing.status !== 'draft' && (
+                  <Link href={`/annonse/${listing.slug || listing.id}`} title="Se annonse" style={{
+                    background: 'var(--bg3)', border: '1px solid var(--border)',
+                    borderRadius: 3, width: 32, height: 32,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'var(--t2)', textDecoration: 'none',
+                  }}>
+                    <ExternalLink size={12} />
+                  </Link>
+                )}
+                {listing.status === 'active' && (
                   <button
                     onClick={() => setMarkSoldTarget(listing)}
                     title="Merk som solgt"
@@ -283,18 +318,20 @@ export default function AnnonserPage() {
                     <CheckSquare size={12} />
                   </button>
                 )}
-                <button
-                  onClick={() => toggleStatus(listing.id, listing.status)}
-                  title={listing.status === 'active' ? 'Deaktiver' : 'Publiser'}
-                  style={{
-                    background: 'var(--bg3)', border: '1px solid var(--border)',
-                    borderRadius: 3, width: 32, height: 32,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--t2)', cursor: 'pointer',
-                  }}
-                >
-                  <Edit size={12} />
-                </button>
+                {listing.status === 'active' && (
+                  <button
+                    onClick={() => toggleStatus(listing.id, 'active')}
+                    title="Deaktiver"
+                    style={{
+                      background: 'var(--bg3)', border: '1px solid var(--border)',
+                      borderRadius: 3, width: 32, height: 32,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--t2)', cursor: 'pointer',
+                    }}
+                  >
+                    <Edit size={12} />
+                  </button>
+                )}
                 <button
                   onClick={() => deleteListing(listing.id)}
                   title="Slett"

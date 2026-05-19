@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/shared/Navbar'
 import { Upload, X, ChevronRight, ChevronLeft, Check, Image as ImageIcon, AlertCircle, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { CATEGORIES, WEIGHT_CLASSES, NORWEGIAN_COUNTIES, POPULAR_BRANDS, slugify } from '@/lib/utils/format'
+import { CATEGORIES, WEIGHT_CLASSES, NORWEGIAN_COUNTIES, POPULAR_BRANDS, slugify, getListingImageUrl } from '@/lib/utils/format'
 import toast from 'react-hot-toast'
 import type { Category, PriceType } from '@/lib/supabase/types'
 
@@ -145,6 +145,7 @@ interface FormState {
   price_type: PriceType
   images: File[]
   imagePreviewUrls: string[]
+  existingImages: string[]  // paths already stored in Supabase
 }
 
 const INIT: FormState = {
@@ -161,6 +162,7 @@ const INIT: FormState = {
   price_type: 'fast_price',
   images: [],
   imagePreviewUrls: [],
+  existingImages: [],
 }
 
 const CATEGORY_LIST = Object.entries(CATEGORIES) as [Category, { label: string; icon: string }][]
@@ -187,14 +189,48 @@ interface NominatimResult {
 
 export default function NyAnnonsePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const editId = searchParams.get('id')
   const supabase = createClient()
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormState>(INIT)
   const [loading, setLoading] = useState(false)
+  const [initLoading, setInitLoading] = useState(!!editId)
   const [error, setError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const dragRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [editSlug, setEditSlug] = useState<string | null>(null)
+
+  // Load existing listing when editing
+  useEffect(() => {
+    if (!editId) return
+    supabase.from('listings').select('*').eq('id', editId).single()
+      .then(({ data }) => {
+        if (!data) { setInitLoading(false); return }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const d = data as any
+        setEditSlug(d.slug || null)
+        setForm({
+          category: d.category || '',
+          title: d.title || '',
+          description: d.description || '',
+          brand: d.brand || '',
+          model: d.model || '',
+          year: d.year?.toString() || '',
+          operating_hours: d.operating_hours?.toString() || '',
+          weight_class: d.weight_class || '',
+          location: d.location || '',
+          price: d.price?.toString() || '',
+          price_type: d.price_type || 'fast_price',
+          images: [],
+          imagePreviewUrls: [],
+          existingImages: d.images || [],
+        })
+        setInitLoading(false)
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editId])
 
   // Address autocomplete (Nominatim / OpenStreetMap)
   const [addressQuery, setAddressQuery] = useState('')
@@ -236,17 +272,22 @@ export default function NyAnnonsePage() {
   const set = (field: keyof FormState, value: unknown) =>
     setForm(prev => ({ ...prev, [field]: value }))
 
+  const totalImages = form.existingImages.length + form.images.length
+
   const handleFiles = (files: FileList | null) => {
     if (!files) return
-    const existing = form.images.length
-    const allowed = Math.min(files.length, 20 - existing)
+    const allowed = Math.min(files.length, 20 - totalImages)
     const newFiles = Array.from(files).slice(0, allowed)
     const newUrls = newFiles.map(f => URL.createObjectURL(f))
     set('images', [...form.images, ...newFiles])
     set('imagePreviewUrls', [...form.imagePreviewUrls, ...newUrls])
   }
 
-  const removeImage = (i: number) => {
+  const removeExistingImage = (i: number) => {
+    set('existingImages', form.existingImages.filter((_, idx) => idx !== i))
+  }
+
+  const removeNewImage = (i: number) => {
     URL.revokeObjectURL(form.imagePreviewUrls[i])
     set('images', form.images.filter((_, idx) => idx !== i))
     set('imagePreviewUrls', form.imagePreviewUrls.filter((_, idx) => idx !== i))
@@ -275,11 +316,8 @@ export default function NyAnnonsePage() {
 
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        setLoading(false)
-        router.push('/logg-inn')
-        return
-      }
+      if (!session) { setLoading(false); router.push('/logg-inn'); return }
+
       const price = Number(form.price)
       if (!form.price || isNaN(price) || price <= 0) {
         setError('Ugyldig pris. Gå tilbake og fyll inn et gyldig beløp.')
@@ -287,7 +325,7 @@ export default function NyAnnonsePage() {
         return
       }
 
-      // Ensure profile exists (foreign key requirement for listings.seller_id).
+      // Ensure profile exists
       const meta = session.user.user_metadata ?? {}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: profileErr } = await (supabase as any).from('profiles').upsert({
@@ -299,13 +337,12 @@ export default function NyAnnonsePage() {
       }, { onConflict: 'id', ignoreDuplicates: true })
 
       if (profileErr) {
-        console.error('Profile upsert failed:', profileErr.code, profileErr.message)
         setError('Profil mangler. Gå til Innstillinger og fyll inn bedriftsinfo.')
         setLoading(false)
         return
       }
 
-      // Upload images
+      // Upload any new images
       const uploadedUrls: string[] = []
       for (const file of form.images) {
         const ext = file.name.split('.').pop() ?? 'jpg'
@@ -313,57 +350,69 @@ export default function NyAnnonsePage() {
         const { error: uploadErr } = await supabase.storage
           .from('listing-images')
           .upload(path, file, { contentType: file.type, upsert: false })
-        if (uploadErr) {
-          console.warn('Image upload failed:', uploadErr.message)
+        if (!uploadErr) uploadedUrls.push(path)
+      }
+
+      const allImages = [...form.existingImages, ...uploadedUrls]
+
+      const listingPayload = {
+        category: form.category as Category,
+        title: form.title,
+        description: form.description || null,
+        brand: form.brand || null,
+        model: form.model || null,
+        year: form.year ? parseInt(form.year) : null,
+        operating_hours: form.operating_hours ? parseInt(form.operating_hours) : null,
+        weight_class: form.weight_class || null,
+        price,
+        price_type: form.price_type,
+        location: form.location || null,
+        status,
+        images: allImages,
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any
+
+      if (editId) {
+        // ── EDIT MODE: update existing listing ──
+        const { error: updateErr } = await sb.from('listings').update(listingPayload).eq('id', editId)
+        setLoading(false)
+        if (updateErr) { setError(`Lagring feilet: ${updateErr.message}`); return }
+
+        if (status === 'active') {
+          const slug = editSlug || `${slugify(form.title)}-${editId.slice(0, 6)}`
+          if (!editSlug) await sb.from('listings').update({ slug }).eq('id', editId)
+          toast.success('Annonse publisert!')
+          router.push(`/annonse/${slug}`)
         } else {
-          uploadedUrls.push(path)
+          toast.success('Kladd lagret.')
+          router.push('/dashboard/annonser')
+        }
+      } else {
+        // ── CREATE MODE: insert new listing ──
+        const { data: newListing, error: insertErr } = await sb
+          .from('listings')
+          .insert({ seller_id: session.user.id, ...listingPayload })
+          .select('id')
+          .single() as { data: { id: string } | null; error: { message: string; code: string } | null }
+
+        setLoading(false)
+        if (insertErr) { setError(`Publisering feilet: ${insertErr.message}`); return }
+
+        toast.success(status === 'active' ? 'Annonsen er publisert!' : 'Lagret som kladd.')
+
+        if (status === 'active' && newListing?.id) {
+          const slug = `${slugify(form.title)}-${newListing.id.slice(0, 6)}`
+          await sb.from('listings').update({ slug }).eq('id', newListing.id)
+          router.push(`/annonse/${slug}`)
+        } else {
+          router.push('/dashboard/annonser')
         }
       }
-
-      // Insert listing
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: newListing, error: insertErr } = await (supabase as any)
-        .from('listings')
-        .insert({
-          seller_id: session.user.id,
-          category: form.category as Category,
-          title: form.title,
-          description: form.description || null,
-          brand: form.brand || null,
-          model: form.model || null,
-          year: form.year ? parseInt(form.year) : null,
-          operating_hours: form.operating_hours ? parseInt(form.operating_hours) : null,
-          weight_class: form.weight_class || null,
-          price,
-          price_type: form.price_type,
-          location: form.location || null,
-          status,
-          images: uploadedUrls,
-        })
-        .select('id')
-        .single() as { data: { id: string } | null; error: { message: string; code: string } | null }
-
-      setLoading(false)
-
-      if (insertErr) {
-        console.error('Listing insert error:', insertErr.code, insertErr.message)
-        setError(`Publisering feilet: ${insertErr.message}`)
-        return
-      }
-
-      toast.success(status === 'active' ? 'Annonsen er publisert!' : 'Lagret som kladd.')
-
-      // Generate and store SEO slug after we have the ID
-      let destination = '/dashboard/annonser'
-      if (status === 'active' && newListing?.id) {
-        const slug = `${slugify(form.title)}-${newListing.id.slice(0, 6)}`
-        await (supabase as any).from('listings').update({ slug }).eq('id', newListing.id)
-        destination = `/annonse/${slug}`
-      }
-      router.push(destination)
     } catch (err) {
-      console.error('Unexpected error in publishListing:', err)
-      setError('En uventet feil oppstod. Sjekk konsollen og prøv igjen.')
+      console.error('Unexpected error:', err)
+      setError('En uventet feil oppstod. Prøv igjen.')
       setLoading(false)
     }
   }
@@ -375,9 +424,9 @@ export default function NyAnnonsePage() {
         <div className="container-main" style={{ padding: '48px 24px' }}>
           {/* Page header */}
           <div style={{ marginBottom: 40 }}>
-            <p className="section-label" style={{ marginBottom: 8 }}>Ny annonse</p>
+            <p className="section-label" style={{ marginBottom: 8 }}>{editId ? 'Rediger kladd' : 'Ny annonse'}</p>
             <h1 className="section-title" style={{ fontSize: 'clamp(24px, 3vw, 36px)' }}>
-              Legg ut maskin til salgs
+              {initLoading ? 'Laster...' : editId ? form.title || 'Rediger annonse' : 'Legg ut maskin til salgs'}
             </h1>
           </div>
 
@@ -631,7 +680,7 @@ export default function NyAnnonsePage() {
             {step === 5 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <h2 style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 22, color: 'var(--t1)' }}>
-                  Bilder ({form.images.length}/20)
+                  Bilder ({totalImages}/20)
                 </h2>
 
                 {/* Drop zone */}
@@ -649,14 +698,7 @@ export default function NyAnnonsePage() {
                     transition: 'all 0.15s ease',
                   }}
                 >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={e => handleFiles(e.target.files)}
-                    style={{ display: 'none' }}
-                  />
+                  <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={e => handleFiles(e.target.files)} style={{ display: 'none' }} />
                   <Upload size={28} style={{ color: isDragging ? 'var(--gold)' : 'var(--t3)', marginBottom: 12 }} />
                   <p style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 16, color: 'var(--t1)', marginBottom: 6 }}>
                     Dra og slipp bilder her
@@ -666,41 +708,31 @@ export default function NyAnnonsePage() {
                   </p>
                 </div>
 
-                {/* Preview grid */}
-                {form.imagePreviewUrls.length > 0 && (
+                {/* Preview grid: existing + new */}
+                {totalImages > 0 && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-                    {form.imagePreviewUrls.map((url, i) => (
-                      <div key={url} style={{ position: 'relative', aspectRatio: '1', borderRadius: 3, overflow: 'hidden' }}>
-                        <img src={url} alt={`Bilde ${i + 1}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        {i === 0 && (
-                          <div style={{ position: 'absolute', bottom: 4, left: 4 }}>
-                            <span className="tag tag-gold" style={{ fontSize: 9 }}>Hovedbilde</span>
-                          </div>
-                        )}
-                        <button
-                          onClick={() => removeImage(i)}
-                          style={{
-                            position: 'absolute', top: 4, right: 4,
-                            background: 'rgba(0,0,0,0.7)', border: 'none',
-                            borderRadius: '50%', width: 22, height: 22,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            cursor: 'pointer', color: 'white',
-                          }}
-                        >
+                    {/* Existing images from storage */}
+                    {form.existingImages.map((path, i) => (
+                      <div key={`ex-${path}`} style={{ position: 'relative', aspectRatio: '1', borderRadius: 3, overflow: 'hidden' }}>
+                        <img src={getListingImageUrl(path)} alt={`Bilde ${i + 1}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        {i === 0 && <div style={{ position: 'absolute', bottom: 4, left: 4 }}><span className="tag tag-gold" style={{ fontSize: 9 }}>Hovedbilde</span></div>}
+                        <button onClick={() => removeExistingImage(i)} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
                           <X size={12} />
                         </button>
                       </div>
                     ))}
-                    {form.images.length < 20 && (
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        style={{
-                          aspectRatio: '1', borderRadius: 3,
-                          border: '2px dashed var(--border)', background: 'var(--bg3)',
-                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                          cursor: 'pointer', gap: 4, color: 'var(--t3)',
-                        }}
-                      >
+                    {/* New images (not yet uploaded) */}
+                    {form.imagePreviewUrls.map((url, i) => (
+                      <div key={`new-${url}`} style={{ position: 'relative', aspectRatio: '1', borderRadius: 3, overflow: 'hidden' }}>
+                        <img src={url} alt={`Nytt bilde ${i + 1}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        {form.existingImages.length === 0 && i === 0 && <div style={{ position: 'absolute', bottom: 4, left: 4 }}><span className="tag tag-gold" style={{ fontSize: 9 }}>Hovedbilde</span></div>}
+                        <button onClick={() => removeNewImage(i)} style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                    {totalImages < 20 && (
+                      <button onClick={() => fileInputRef.current?.click()} style={{ aspectRatio: '1', borderRadius: 3, border: '2px dashed var(--border)', background: 'var(--bg3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', gap: 4, color: 'var(--t3)' }}>
                         <ImageIcon size={18} />
                         <span style={{ fontSize: 11 }}>Legg til</span>
                       </button>
@@ -719,8 +751,11 @@ export default function NyAnnonsePage() {
 
                 <div style={{ background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: 4, overflow: 'hidden', marginBottom: 28 }}>
                   {/* Preview image */}
-                  {form.imagePreviewUrls[0] ? (
-                    <img src={form.imagePreviewUrls[0]} alt={form.title} loading="lazy" style={{ width: '100%', height: 200, objectFit: 'cover' }} />
+                  {(form.existingImages[0] || form.imagePreviewUrls[0]) ? (
+                    <img
+                      src={form.existingImages[0] ? getListingImageUrl(form.existingImages[0]) : form.imagePreviewUrls[0]}
+                      alt={form.title} loading="lazy" style={{ width: '100%', height: 200, objectFit: 'cover' }}
+                    />
                   ) : (
                     <div style={{ height: 140, background: 'var(--bg3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <ImageIcon size={32} style={{ color: 'var(--t3)' }} />
