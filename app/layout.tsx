@@ -19,9 +19,13 @@ const barlowCondensed = Barlow_Condensed({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://anleggstorget.no'),
   title: {
     default: 'Anleggstorget – Kjøp og selg tunge maskiner | B2B Maskinmarkedsplass',
     template: '%s | Anleggstorget',
+  },
+  alternates: {
+    canonical: 'https://anleggstorget.no',
   },
   description:
     'Norges B2B-markedsplass for verifiserte bedrifter. Kjøp, selg og leie gravemaskiner, hjullastere, dumpere og anleggsutstyr trygt og gratis.',

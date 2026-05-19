@@ -2,7 +2,9 @@ import type { MetadataRoute } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { articles } from '@/lib/guides/articles'
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL || 'https://anleggstorget.no'
+// Force HTTPS — env var may be http:// on local/staging but sitemap must always be HTTPS in prod
+const rawBase = process.env.NEXT_PUBLIC_SITE_URL || 'https://anleggstorget.no'
+const BASE = rawBase.includes('localhost') ? rawBase : rawBase.replace(/^http:\/\//, 'https://')
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date()
