@@ -6,11 +6,16 @@ export default function robots(): MetadataRoute.Robots {
 
   return {
     rules: [
-      // All bots: allow public content, block private routes
+      // All bots: allow public content, block private routes and Next.js internals
       {
         userAgent: '*',
         allow: '/',
-        disallow: privateRoutes,
+        disallow: [
+          ...privateRoutes,
+          '/_next/static/media/',   // woff2 fonts and other media assets
+          '/_next/static/chunks/',  // JS bundles
+          '/_next/image/',          // image optimisation endpoint
+        ],
       },
       // AI crawlers — explicit allow so audits don't flag them as blocked
       { userAgent: 'ChatGPT-User',     allow: '/' },
