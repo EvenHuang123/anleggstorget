@@ -127,10 +127,10 @@ export default function AnnonseContent({ listing, related }: Props) {
         </nav>
 
         {/* Main grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 40, alignItems: 'flex-start' }} className="annonse-grid">
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 380px', gap: 40, alignItems: 'flex-start' }} className="annonse-grid">
 
           {/* LEFT: Images + Details */}
-          <div>
+          <div style={{ minWidth: 0 }}>
             {/* Gallery */}
             <div style={{ marginBottom: 24 }}>
               {/* Main image */}
@@ -682,7 +682,7 @@ export default function AnnonseContent({ listing, related }: Props) {
       )}
 
       <style>{`
-        .annonse-grid { grid-template-columns: 1fr 380px !important; }
+        .annonse-grid { grid-template-columns: minmax(0, 1fr) 380px !important; }
         .stats-row { grid-template-columns: repeat(4, 1fr) !important; }
         .related-grid { grid-template-columns: repeat(3, 1fr) !important; }
         @media (max-width: 960px) {
