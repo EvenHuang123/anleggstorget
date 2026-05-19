@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/shared/Navbar'
-import { Upload, X, ChevronRight, ChevronLeft, Check, Image as ImageIcon, AlertCircle } from 'lucide-react'
+import { Upload, X, ChevronRight, ChevronLeft, Check, Image as ImageIcon, AlertCircle, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { CATEGORIES, WEIGHT_CLASSES, NORWEGIAN_COUNTIES, POPULAR_BRANDS, slugify } from '@/lib/utils/format'
 import toast from 'react-hot-toast'
@@ -165,6 +165,26 @@ const INIT: FormState = {
 
 const CATEGORY_LIST = Object.entries(CATEGORIES) as [Category, { label: string; icon: string }][]
 
+// Maps Nominatim state/county strings → official Norwegian fylke names
+const COUNTY_MAP: Record<string, string> = {
+  'agder': 'Agder', 'aust-agder': 'Agder', 'vest-agder': 'Agder',
+  'innlandet': 'Innlandet', 'hedmark': 'Innlandet', 'oppland': 'Innlandet',
+  'møre og romsdal': 'Møre og Romsdal', 'more og romsdal': 'Møre og Romsdal',
+  'nordland': 'Nordland',
+  'oslo': 'Oslo',
+  'rogaland': 'Rogaland',
+  'troms og finnmark': 'Troms og Finnmark', 'troms': 'Troms og Finnmark', 'finnmark': 'Troms og Finnmark',
+  'trøndelag': 'Trøndelag', 'trondelag': 'Trøndelag', 'nord-trøndelag': 'Trøndelag', 'sør-trøndelag': 'Trøndelag',
+  'vestfold og telemark': 'Vestfold og Telemark', 'vestfold': 'Vestfold og Telemark', 'telemark': 'Vestfold og Telemark',
+  'vestland': 'Vestland', 'hordaland': 'Vestland', 'bergen': 'Vestland', 'sogn og fjordane': 'Vestland',
+  'viken': 'Viken', 'akershus': 'Viken', 'buskerud': 'Viken', 'østfold': 'Viken', 'ostfold': 'Viken',
+}
+
+interface NominatimResult {
+  display_name: string
+  address: Record<string, string>
+}
+
 export default function NyAnnonsePage() {
   const router = useRouter()
   const supabase = createClient()
@@ -176,13 +196,50 @@ export default function NyAnnonsePage() {
   const dragRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
 
+  // Address autocomplete (Nominatim / OpenStreetMap)
+  const [addressQuery, setAddressQuery] = useState('')
+  const [addressSuggestions, setAddressSuggestions] = useState<NominatimResult[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [detectedCounty, setDetectedCounty] = useState('')
+  const addressDebounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  const handleAddressInput = (val: string) => {
+    setAddressQuery(val)
+    if (!val) { set('location', ''); setDetectedCounty(''); setAddressSuggestions([]); return }
+    clearTimeout(addressDebounce.current)
+    if (val.length < 2) { setAddressSuggestions([]); return }
+    addressDebounce.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&countrycodes=no&addressdetails=1&limit=6&q=${encodeURIComponent(val)}`,
+          { headers: { 'Accept-Language': 'no' } }
+        )
+        const data: NominatimResult[] = await res.json()
+        setAddressSuggestions(data)
+        setShowSuggestions(data.length > 0)
+      } catch { setAddressSuggestions([]) }
+    }, 380)
+  }
+
+  const selectAddress = (item: NominatimResult) => {
+    const stateRaw = (item.address.state || item.address.county || '').toLowerCase()
+    const county = COUNTY_MAP[stateRaw] || ''
+    const city = item.address.city || item.address.town || item.address.municipality || item.address.village || item.display_name.split(',')[0]
+    const locationStr = county ? (city ? `${city}, ${county}` : county) : city
+    set('location', locationStr)
+    setAddressQuery(city)
+    setDetectedCounty(county)
+    setShowSuggestions(false)
+    setAddressSuggestions([])
+  }
+
   const set = (field: keyof FormState, value: unknown) =>
     setForm(prev => ({ ...prev, [field]: value }))
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return
     const existing = form.images.length
-    const allowed = Math.min(files.length, 8 - existing)
+    const allowed = Math.min(files.length, 20 - existing)
     const newFiles = Array.from(files).slice(0, allowed)
     const newUrls = newFiles.map(f => URL.createObjectURL(f))
     set('images', [...form.images, ...newFiles])
@@ -449,8 +506,65 @@ export default function NyAnnonsePage() {
                 </div>
                 <div>
                   <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Lokasjon</label>
-                  <select value={form.location} onChange={e => set('location', e.target.value)} className="input-base" style={{ cursor: 'pointer' }}>
-                    <option value="">Velg fylke</option>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      value={addressQuery}
+                      onChange={e => handleAddressInput(e.target.value)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 180)}
+                      onFocus={() => addressSuggestions.length > 0 && setShowSuggestions(true)}
+                      placeholder="Søk by eller sted i Norge..."
+                      className="input-base"
+                      autoComplete="off"
+                    />
+                    {showSuggestions && addressSuggestions.length > 0 && (
+                      <div style={{
+                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100,
+                        background: 'var(--bg2)', border: '1px solid var(--border2)',
+                        borderRadius: 4, marginTop: 3, overflow: 'hidden',
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
+                      }}>
+                        {addressSuggestions.map((s, i) => {
+                          const city = s.address.city || s.address.town || s.address.municipality || s.address.village || s.display_name.split(',')[0]
+                          const county = COUNTY_MAP[(s.address.state || s.address.county || '').toLowerCase()] || ''
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onMouseDown={() => selectAddress(s)}
+                              style={{
+                                width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                                padding: '10px 14px', cursor: 'pointer',
+                                borderBottom: i < addressSuggestions.length - 1 ? '1px solid var(--border)' : 'none',
+                                display: 'flex', alignItems: 'center', gap: 8,
+                              }}
+                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg3)')}
+                              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                            >
+                              <MapPin size={11} style={{ color: 'var(--gold)', flexShrink: 0 }} />
+                              <span style={{ fontSize: 13, color: 'var(--t1)' }}>{city}</span>
+                              {county && <span style={{ fontSize: 12, color: 'var(--t3)', marginLeft: 2 }}>{county}</span>}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                  {detectedCounty && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6 }}>
+                      <MapPin size={11} style={{ color: 'var(--gold)' }} />
+                      <span style={{ fontSize: 12, color: 'var(--t3)' }}>
+                        Fylke: <strong style={{ color: 'var(--gold)' }}>{detectedCounty}</strong>
+                      </span>
+                    </div>
+                  )}
+                  <select
+                    value={detectedCounty || (NORWEGIAN_COUNTIES.includes(form.location) ? form.location : '')}
+                    onChange={e => { set('location', e.target.value); setDetectedCounty(e.target.value) }}
+                    className="input-base"
+                    style={{ cursor: 'pointer', marginTop: 8, fontSize: 12, color: 'var(--t3)' }}
+                  >
+                    <option value="">Velg fylke manuelt</option>
                     {NORWEGIAN_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
@@ -517,7 +631,7 @@ export default function NyAnnonsePage() {
             {step === 5 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <h2 style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 22, color: 'var(--t1)' }}>
-                  Bilder ({form.images.length}/8)
+                  Bilder ({form.images.length}/20)
                 </h2>
 
                 {/* Drop zone */}
@@ -548,7 +662,7 @@ export default function NyAnnonsePage() {
                     Dra og slipp bilder her
                   </p>
                   <p style={{ fontSize: 13, color: 'var(--t3)' }}>
-                    eller klikk for å velge · JPEG, PNG, WebP · Maks 8 bilder
+                    eller klikk for å velge · JPEG, PNG, WebP · Maks 20 bilder
                   </p>
                 </div>
 
@@ -577,7 +691,7 @@ export default function NyAnnonsePage() {
                         </button>
                       </div>
                     ))}
-                    {form.images.length < 8 && (
+                    {form.images.length < 20 && (
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         style={{
