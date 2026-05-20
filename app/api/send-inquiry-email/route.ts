@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
     const { inquiryId } = await request.json()
     if (!inquiryId) return NextResponse.json({ error: 'inquiryId required' }, { status: 400 })
 
-    const supabase = await createClient()
+    const supabase = await createServiceClient()
 
     // Fetch inquiry with listing + profiles
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
