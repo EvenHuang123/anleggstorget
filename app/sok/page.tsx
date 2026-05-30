@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   title: 'Finn maskiner – Søk brukte gravemaskiner og anleggsutstyr',
   description: 'Søk blant brukte gravemaskiner, hjullastere, dumpere, traktorer og annet anleggsutstyr fra verifiserte norske bedrifter. Gratis å browse.',
   keywords: ['søk maskin', 'finn gravemaskin', 'brukt hjullaster', 'dumper til salgs', 'traktor Norge', 'anleggsutstyr', 'maskin søk'],
+  alternates: {
+    canonical: 'https://anleggstorget.no/sok',
+  },
   openGraph: {
     title: 'Finn maskiner | Anleggstorget',
     description: 'Søk blant brukte gravemaskiner, hjullastere og anleggsutstyr fra verifiserte norske bedrifter.',
