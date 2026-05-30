@@ -322,24 +322,23 @@ async function main() {
   console.log(`\n🔍 NASTA scraper — ${DRY_RUN ? 'DRY RUN' : 'LIVE'}`)
   console.log(`   Seller: ${NASTA_SELLER_ID}\n`)
 
-  // 1. Fetch existing NASTA listings — dedup by title+year+price so same model
-  //    at different specs each get their own listing
+  // 1. Fetch existing NASTA listings — dedup by source_external_id (NASTA UUID)
   const { data: existing } = await supabase
     .from('listings')
-    .select('title, year, price')
+    .select('id, title, year, price, source_external_id, status')
     .eq('seller_id', NASTA_SELLER_ID)
 
-  const existingKeys = new Set(
-    (existing || []).map(l => `${l.title.toLowerCase()}|${l.year}|${l.price}`)
-  )
-  console.log(`   ${existingKeys.size} existing listings found.\n`)
+  const existingById  = new Map((existing || []).filter(l => l.source_external_id).map(l => [l.source_external_id, l]))
+  const existingKeys  = new Set((existing || []).map(l => `${l.title.toLowerCase()}|${l.year}|${l.price}`))
+  console.log(`   ${existing?.length ?? 0} existing listings found.\n`)
 
   // 2. Discover all listing URLs
   console.log('📋 Discovering listing URLs...')
   const paths = await discoverListingUrls()
   console.log(`   Found ${paths.length} unique listing paths.\n`)
 
-  const stats = { created: 0, skipped: 0, failed: 0 }
+  const stats = { created: 0, skipped: 0, failed: 0, removed: 0 }
+  const seenIds = new Set()
 
   // 3. Process each listing
   for (let i = 0; i < paths.length; i++) {
@@ -357,10 +356,19 @@ async function main() {
     }
 
     const parsed = parseListing(html, listingPath)
+    seenIds.add(parsed.nastuuid)
 
+    // Skip if already tracked by source_external_id
+    if (existingById.has(parsed.nastuuid)) {
+      console.log(`⏭  skip (already exists): "${parsed.title}" ${parsed.year} ${parsed.price}kr`)
+      stats.skipped++
+      continue
+    }
+
+    // Fallback dedup for listings imported before source_external_id existed
     const dedupKey = `${parsed.title.toLowerCase()}|${parsed.year}|${parsed.price}`
     if (existingKeys.has(dedupKey)) {
-      console.log(`⏭  skip (already exists): "${parsed.title}" ${parsed.year} ${parsed.price}kr`)
+      console.log(`⏭  skip (legacy dedup): "${parsed.title}" ${parsed.year} ${parsed.price}kr`)
       stats.skipped++
       continue
     }
@@ -392,22 +400,23 @@ async function main() {
 
     // Insert listing
     const payload = {
-      id:              listingId,
-      seller_id:       NASTA_SELLER_ID,
-      title:           parsed.title,
-      category:        parsed.category,
-      brand:           parsed.brand,
-      model:           parsed.model,
-      year:            parsed.year,
-      operating_hours: parsed.operating_hours,
-      weight_class:    parsed.weight_class ?? null,
-      price:           parsed.price,
-      price_type:      parsed.priceType,
-      location:        parsed.location,
-      description:     parsed.description,
-      images:          uploadedPaths,
-      status:          'draft',
-      views:           0,
+      id:                 listingId,
+      seller_id:          NASTA_SELLER_ID,
+      source_external_id: parsed.nastuuid,
+      title:              parsed.title,
+      category:           parsed.category,
+      brand:              parsed.brand,
+      model:              parsed.model,
+      year:               parsed.year,
+      operating_hours:    parsed.operating_hours,
+      weight_class:       parsed.weight_class ?? null,
+      price:              parsed.price,
+      price_type:         parsed.priceType,
+      location:           parsed.location,
+      description:        parsed.description,
+      images:             uploadedPaths,
+      status:             'active',
+      views:              0,
       slug,
     }
 
@@ -416,7 +425,7 @@ async function main() {
       console.log(`   ❌ insert failed: ${insertErr.message}`)
       stats.failed++
     } else {
-      console.log(`   ✅ created draft: ${slug}`)
+      console.log(`   ✅ created: ${slug}`)
       existingKeys.add(dedupKey)
       stats.created++
     }
@@ -424,7 +433,23 @@ async function main() {
     await sleep(300)
   }
 
-  console.log(`\n📊 Done! Created: ${stats.created} | Skipped: ${stats.skipped} | Failed: ${stats.failed}`)
+  // 4. Mark listings no longer on NASTA as removed (status = draft)
+  if (!DRY_RUN) {
+    for (const [extId, row] of existingById.entries()) {
+      if (!seenIds.has(extId) && row.status === 'active') {
+        const { error } = await supabase
+          .from('listings')
+          .update({ status: 'draft' })
+          .eq('id', row.id)
+        if (!error) {
+          console.log(`🗑  removed (not on NASTA): "${row.title}" ${row.year} ${row.price}kr`)
+          stats.removed++
+        }
+      }
+    }
+  }
+
+  console.log(`\n📊 Done! Created: ${stats.created} | Skipped: ${stats.skipped} | Removed: ${stats.removed} | Failed: ${stats.failed}`)
 }
 
 main().catch(err => {
