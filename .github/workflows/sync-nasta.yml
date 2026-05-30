@@ -19,6 +19,15 @@ jobs:
       - name: Installer avhengigheter
         run: npm ci
 
+      - name: Sjekk miljøvariabler
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ]; then echo "FEIL: NEXT_PUBLIC_SUPABASE_URL er tom"; exit 1; fi
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then echo "FEIL: SUPABASE_SERVICE_ROLE_KEY er tom"; exit 1; fi
+          echo "Miljøvariabler OK"
+
       - name: Kjør NASTA sync
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
