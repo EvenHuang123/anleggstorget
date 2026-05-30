@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ArrowRight, Shield, TrendingUp, Clock } from 'lucide-react'
 import { formatPrice } from '@/lib/utils/format'
+import { useEffect, useRef } from 'react'
 
 const FEATURED_PREVIEW = {
   title: 'Volvo EC480E Gravemaskin',
@@ -14,6 +15,18 @@ const FEATURED_PREVIEW = {
 }
 
 export default function Hero() {
+  const bgRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onScroll = () => {
+      if (bgRef.current) {
+        bgRef.current.style.transform = `translateY(${window.scrollY * 0.3}px)`
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
     <section style={{
       position: 'relative',
@@ -22,8 +35,8 @@ export default function Hero() {
       alignItems: 'center',
       overflow: 'hidden',
     }}>
-      {/* Background photo */}
-      <div style={{
+      {/* Background photo — parallax */}
+      <div ref={bgRef} style={{
         position: 'absolute',
         inset: 0,
         zIndex: 0,
@@ -31,6 +44,7 @@ export default function Hero() {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         opacity: 0.28,
+        willChange: 'transform',
       }} />
 
       {/* Gradient overlay for readability */}

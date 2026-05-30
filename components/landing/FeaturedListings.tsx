@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
-import ListingCard from '@/components/listings/ListingCard'
+import AnimatedListingGrid from '@/components/landing/AnimatedListingGrid'
 import type { Listing } from '@/lib/supabase/types'
 
 async function getFeaturedListings(): Promise<Listing[]> {
@@ -43,23 +43,8 @@ export default async function FeaturedListings() {
           </Link>
         </div>
 
-        {/* Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: 20,
-        }} className="listing-grid-3">
-          {listings.slice(0, 6).map((listing, i) => (
-            <div
-              key={listing.id}
-              style={{
-                animation: `fadeInUp 0.5s ease ${i * 0.08}s both`,
-              }}
-            >
-              <ListingCard listing={listing} />
-            </div>
-          ))}
-        </div>
+        {/* Grid — scroll-triggered staggered animation */}
+        <AnimatedListingGrid listings={listings.slice(0, 6)} />
 
         {/* Bottom CTA */}
         <div style={{ textAlign: 'center', marginTop: 48 }}>
@@ -74,10 +59,6 @@ export default async function FeaturedListings() {
         .listing-grid-3 { grid-template-columns: repeat(3,1fr) !important; }
         @media (max-width: 900px) { .listing-grid-3 { grid-template-columns: repeat(2,1fr) !important; } }
         @media (max-width: 560px) { .listing-grid-3 { grid-template-columns: 1fr !important; } }
-        @keyframes fadeInUp {
-          from { opacity:0; transform:translateY(20px); }
-          to { opacity:1; transform:translateY(0); }
-        }
       `}</style>
     </section>
   )

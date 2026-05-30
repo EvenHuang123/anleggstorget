@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ArrowRight, Clock, BookOpen, ChevronRight } from 'lucide-react'
 import Navbar from '@/components/shared/Navbar'
 import Footer from '@/components/shared/Footer'
+import AnimatedSection from '@/components/shared/AnimatedSection'
 import { articles } from '@/lib/guides/articles'
 
 export const metadata: Metadata = {
@@ -64,11 +65,11 @@ export default function GuidePage() {
         <section style={{ padding: '56px 0' }}>
           <div className="container-main">
             <div className="guide-grid">
-              {articles.map(article => (
+              {articles.map((article, i) => (
+                <AnimatedSection key={article.slug} delay={i * 100}>
                 <Link
-                  key={article.slug}
                   href={`/guide/${article.slug}`}
-                  style={{ textDecoration: 'none', display: 'block' }}
+                  style={{ textDecoration: 'none', display: 'block', height: '100%' }}
                   className="guide-card"
                 >
                   <article style={{
@@ -137,6 +138,7 @@ export default function GuidePage() {
                     </div>
                   </article>
                 </Link>
+                </AnimatedSection>
               ))}
             </div>
           </div>
