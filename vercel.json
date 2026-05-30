@@ -4,5 +4,10 @@
       "path": "/api/cron/sync-nasta",
       "schedule": "0 3 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "app/api/cron/sync-nasta/route.ts": {
+      "maxDuration": 300
+    }
+  }
 }
