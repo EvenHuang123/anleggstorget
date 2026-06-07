@@ -416,6 +416,7 @@ async function main() {
       description:        parsed.description,
       images:             uploadedPaths,
       status:             'active',
+      listing_type:       'sale',
       views:              0,
       slug,
     }

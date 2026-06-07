@@ -59,6 +59,7 @@ export interface Listing {
   weight_class: string | null
   price: number
   price_type: PriceType
+  listing_type?: ListingType
   location: string | null
   status: ListingStatus
   images: string[]

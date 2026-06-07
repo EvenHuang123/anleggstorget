@@ -7,7 +7,7 @@ import { Upload, X, ChevronRight, ChevronLeft, Check, Image as ImageIcon, AlertC
 import { createClient } from '@/lib/supabase/client'
 import { CATEGORIES, WEIGHT_CLASSES, NORWEGIAN_COUNTIES, POPULAR_BRANDS, slugify, getListingImageUrl } from '@/lib/utils/format'
 import toast from 'react-hot-toast'
-import type { Category, PriceType } from '@/lib/supabase/types'
+import type { Category, PriceType, ListingType } from '@/lib/supabase/types'
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   gravemaskin: (
@@ -120,6 +120,33 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
       </g>
     </svg>
   ),
+  teleskoplaster: (
+    <svg viewBox="0 0 48 32" style={{ width: 28, height: 19 }} aria-hidden>
+      <g fill="currentColor" opacity="0.9">
+        <rect x="6" y="14" width="22" height="12" rx="2" />
+        <rect x="8" y="8" width="10" height="8" rx="2" />
+        <rect x="9.5" y="9.5" width="7" height="5" rx="1" fill="var(--bg4)" />
+        <rect x="14" y="4" width="24" height="3" rx="1.5" transform="rotate(-18 14 4)" />
+        <rect x="28" y="1" width="14" height="2" rx="1" transform="rotate(-18 28 1)" />
+        <path d="M39 6 L44 8 L43 12 L38 11 Z" />
+        <circle cx="12" cy="26" r="5" /><circle cx="12" cy="26" r="3" fill="var(--bg4)" />
+        <circle cx="26" cy="26" r="5" /><circle cx="26" cy="26" r="3" fill="var(--bg4)" />
+      </g>
+    </svg>
+  ),
+  kompaktlaster: (
+    <svg viewBox="0 0 48 32" style={{ width: 28, height: 19 }} aria-hidden>
+      <g fill="currentColor" opacity="0.9">
+        <rect x="10" y="12" width="22" height="14" rx="2" />
+        <rect x="14" y="14" width="10" height="7" rx="1" fill="var(--bg4)" />
+        <rect x="8" y="9" width="3" height="13" rx="1.5" />
+        <rect x="31" y="9" width="3" height="13" rx="1.5" />
+        <rect x="6" y="7" width="30" height="4" rx="1.5" />
+        <circle cx="14" cy="26" r="5" /><circle cx="14" cy="26" r="3" fill="var(--bg4)" />
+        <circle cx="30" cy="26" r="5" /><circle cx="30" cy="26" r="3" fill="var(--bg4)" />
+      </g>
+    </svg>
+  ),
 }
 
 const STEPS = [
@@ -143,6 +170,7 @@ interface FormState {
   location: string
   price: string
   price_type: PriceType
+  listing_type: ListingType
   images: File[]
   imagePreviewUrls: string[]
   existingImages: string[]  // paths already stored in Supabase
@@ -160,6 +188,7 @@ const INIT: FormState = {
   location: '',
   price: '',
   price_type: 'fast_price',
+  listing_type: 'sale',
   images: [],
   imagePreviewUrls: [],
   existingImages: [],
@@ -223,6 +252,7 @@ export default function NyAnnonsePage() {
           location: d.location || '',
           price: d.price?.toString() || '',
           price_type: d.price_type || 'fast_price',
+          listing_type: d.listing_type || 'sale',
           images: [],
           imagePreviewUrls: [],
           existingImages: d.images || [],
@@ -366,6 +396,7 @@ export default function NyAnnonsePage() {
         weight_class: form.weight_class || null,
         price,
         price_type: form.price_type,
+        listing_type: form.listing_type,
         location: form.location || null,
         status,
         images: allImages,
@@ -426,7 +457,7 @@ export default function NyAnnonsePage() {
           <div style={{ marginBottom: 40 }}>
             <p className="section-label" style={{ marginBottom: 8 }}>{editId ? 'Rediger kladd' : 'Ny annonse'}</p>
             <h1 className="section-title" style={{ fontSize: 'clamp(24px, 3vw, 36px)' }}>
-              {initLoading ? 'Laster...' : editId ? form.title || 'Rediger annonse' : 'Legg ut maskin til salgs'}
+              {initLoading ? 'Laster...' : editId ? form.title || 'Rediger annonse' : 'Legg ut maskin'}
             </h1>
           </div>
 
@@ -620,14 +651,46 @@ export default function NyAnnonsePage() {
               </div>
             )}
 
-            {/* Step 4: Price */}
+            {/* Step 4: Type + Price */}
             {step === 4 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                 <h2 style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 22, color: 'var(--t1)' }}>
-                  Prissetting
+                  Type annonse og pris
                 </h2>
+
+                {/* Listing type */}
                 <div>
-                  <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Pris (NOK) *</label>
+                  <label className="label-sm" style={{ display: 'block', marginBottom: 10 }}>Hva tilbyr du?</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                    {([
+                      { value: 'sale', label: 'Til salgs', desc: 'Maskinen selges' },
+                      { value: 'rent', label: 'Til leie',  desc: 'Maskinen leies ut' },
+                      { value: 'both', label: 'Begge',     desc: 'Salg og utleie' },
+                    ] as const).map(lt => (
+                      <label key={lt.value} style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                        background: form.listing_type === lt.value ? 'var(--gold4)' : 'var(--bg3)',
+                        border: `1px solid ${form.listing_type === lt.value ? 'rgba(200,149,58,0.4)' : 'var(--border)'}`,
+                        borderRadius: 4, padding: '14px 10px', cursor: 'pointer',
+                        transition: 'all 0.15s', textAlign: 'center',
+                      }}>
+                        <input
+                          type="radio" name="listing_type" value={lt.value}
+                          checked={form.listing_type === lt.value}
+                          onChange={() => set('listing_type', lt.value)}
+                          style={{ accentColor: 'var(--gold)' }}
+                        />
+                        <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 15, color: form.listing_type === lt.value ? 'var(--gold)' : 'var(--t1)' }}>{lt.label}</span>
+                        <span style={{ fontSize: 11, color: 'var(--t3)', lineHeight: 1.3 }}>{lt.desc}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>
+                    {form.listing_type === 'rent' ? 'Pris (NOK per dag/uke/måned) *' : 'Pris (NOK ekskl. MVA) *'}
+                  </label>
                   <div style={{ position: 'relative' }}>
                     <span style={{
                       position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
