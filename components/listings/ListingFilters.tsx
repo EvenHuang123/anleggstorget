@@ -56,11 +56,9 @@ export default function ListingFilters({ onClose, resultCount }: Props) {
 
   // ── Read filter state directly from URL — no shadow state ──────────────────
   const selectedCats = (params.get('category') || '').split(',').filter(Boolean)
-  const subcategory   = params.get('subcategory')  || ''
-  const location      = params.get('location')     || ''
-  const listingType   = params.get('listingType')  || ''
-  const vatMode       = params.get('vatMode')      || 'ex'
-  const sort          = params.get('sort')         || 'newest'
+  const subcategory  = params.get('subcategory') || ''
+  const location     = params.get('location')    || ''
+  const listingType  = params.get('listingType') || ''
 
   // Price inputs need local state so typing feels smooth; debounced push to URL
   const [localMin, setLocalMin] = useState(params.get('minPrice') || '')
@@ -258,27 +256,6 @@ export default function ListingFilters({ onClose, resultCount }: Props) {
       <SectionHeader label="Pris (NOK)" active={!!(params.get('minPrice') || params.get('maxPrice'))} open={openSections.pris} onToggle={() => toggleSection('pris')} />
       {openSections.pris && (
         <div style={{ paddingBottom: 6 }}>
-          {/* Eks/Inkl. MVA toggle */}
-          <div style={{ display: 'flex', gap: 4, marginBottom: 8, marginTop: 4 }}>
-            {[{ v: 'ex', l: 'Ekskl. MVA' }, { v: 'inc', l: 'Inkl. MVA' }].map(({ v, l }) => (
-              <button
-                key={v}
-                onClick={() => setParam({ vatMode: v })}
-                style={{
-                  flex: 1, padding: '5px 4px', borderRadius: 3,
-                  border: `1px solid ${vatMode === v ? 'rgba(200,149,58,0.5)' : 'var(--border)'}`,
-                  background: vatMode === v ? 'var(--gold3)' : 'var(--bg3)',
-                  color: vatMode === v ? 'var(--gold)' : 'var(--t3)',
-                  fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 10,
-                  letterSpacing: '0.06em', textTransform: 'uppercase',
-                  cursor: 'pointer', transition: 'all 0.1s',
-                }}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
-
           {/* Presets */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 8 }}>
             {PRICE_PRESETS.map(p => {

@@ -32,7 +32,6 @@ export default function SokContent() {
   const subcategory  = searchParams.get('subcategory') || ''
   const location     = searchParams.get('location')    || ''
   const listingType  = searchParams.get('listingType') || ''
-  const vatMode      = searchParams.get('vatMode')     || 'ex'
   const minPrice     = searchParams.get('minPrice')    || ''
   const maxPrice     = searchParams.get('maxPrice')    || ''
   const sort         = searchParams.get('sort')        || 'newest'
@@ -85,10 +84,9 @@ export default function SokContent() {
       if (listingType === 'sale') qb = qb.eq('listing_type', 'sale')
       else if (listingType === 'rent') qb = qb.eq('listing_type', 'rent')
 
-      // Price filter — uses price_ex_vat or price_inc_vat based on vatMode
-      const priceCol = vatMode === 'inc' ? 'price_inc_vat' : 'price_ex_vat'
-      if (minPrice) qb = qb.gte(priceCol, parseInt(minPrice))
-      if (maxPrice) qb = qb.lte(priceCol, parseInt(maxPrice))
+      // Price filter always on price_ex_vat (eks. mva)
+      if (minPrice) qb = qb.gte('price_ex_vat', parseInt(minPrice))
+      if (maxPrice) qb = qb.lte('price_ex_vat', parseInt(maxPrice))
 
       // Sort
       if (sort === 'newest')     qb = qb.order('created_at',  { ascending: false })
@@ -102,7 +100,7 @@ export default function SokContent() {
     } finally {
       setLoading(false)
     }
-  }, [q, categoryParam, subcategory, location, listingType, vatMode, minPrice, maxPrice, sort])
+  }, [q, categoryParam, subcategory, location, listingType, minPrice, maxPrice, sort])
 
   useEffect(() => { fetchListings() }, [fetchListings])
 
