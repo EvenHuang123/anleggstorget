@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Search, SortDesc, Grid3X3, LayoutList, X, SlidersHorizontal, ChevronDown } from 'lucide-react'
+import { Search, SortDesc, Grid3X3, LayoutList, X, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import ListingCard from '@/components/listings/ListingCard'
 import ListingFilters from '@/components/listings/ListingFilters'
 import { createClient } from '@/lib/supabase/client'
@@ -15,18 +15,73 @@ const SORT_OPTIONS = [
   { value: 'price_desc', label: 'Høyeste pris' },
 ]
 
+const PAGE_SIZE = 24
+
+// ── Pagination component ───────────────────────────────────────────────────
+function Pagination({ page, total, onPage }: { page: number; total: number; onPage: (p: number) => void }) {
+  const totalPages = Math.ceil(total / PAGE_SIZE)
+  if (totalPages <= 1) return null
+
+  // Build page list: 1 ... X-1 X X+1 ... N
+  const pages: (number | '…')[] = []
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i)
+  } else {
+    pages.push(1)
+    if (page > 3) pages.push('…')
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i)
+    if (page < totalPages - 2) pages.push('…')
+    pages.push(totalPages)
+  }
+
+  const btn = (content: React.ReactNode, onClick: () => void, active = false, disabled = false) => (
+    <button
+      key={String(content)}
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        minWidth: 38, height: 38, padding: '0 8px', borderRadius: 3,
+        border: `1px solid ${active ? 'var(--gold)' : 'var(--border)'}`,
+        background: active ? 'var(--gold)' : 'var(--bg3)',
+        color: active ? '#0d0c0a' : disabled ? 'var(--t3)' : 'var(--t2)',
+        fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 14,
+        cursor: disabled ? 'default' : 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+        transition: 'all 0.1s',
+        opacity: disabled ? 0.45 : 1,
+      }}
+    >
+      {content}
+    </button>
+  )
+
+  return (
+    <div style={{ display: 'flex', gap: 5, alignItems: 'center', justifyContent: 'center', marginTop: 36, flexWrap: 'wrap' }}>
+      {btn(<><ChevronLeft size={14} /> Forrige</>, () => onPage(page - 1), false, page === 1)}
+      {pages.map((p, i) =>
+        p === '…'
+          ? <span key={`ellipsis-${i}`} style={{ color: 'var(--t3)', padding: '0 4px', fontSize: 14 }}>…</span>
+          : btn(p, () => onPage(p as number), p === page)
+      )}
+      {btn(<>Neste <ChevronRight size={14} /></>, () => onPage(page + 1), false, page === totalPages)}
+    </div>
+  )
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
 export default function SokContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const supabase = createClient()
 
   const [listings, setListings]           = useState<Listing[]>([])
+  const [totalCount, setTotalCount]       = useState(0)
   const [loading, setLoading]             = useState(true)
   const [viewMode, setViewMode]           = useState<'grid' | 'list'>('grid')
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [searchInput, setSearchInput]     = useState(searchParams.get('q') || '')
 
-  // Read ALL filter params from URL
+  // Read ALL filter + pagination params from URL
   const q            = searchParams.get('q')           || ''
   const categoryParam= searchParams.get('category')    || ''
   const subcategory  = searchParams.get('subcategory') || ''
@@ -35,76 +90,72 @@ export default function SokContent() {
   const minPrice     = searchParams.get('minPrice')    || ''
   const maxPrice     = searchParams.get('maxPrice')    || ''
   const sort         = searchParams.get('sort')        || 'newest'
+  const page         = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
 
   const treeKeys = categoryParam.split(',').filter(Boolean)
 
-  // Count active filter groups for the badge
   const activeFilterCount = [
-    treeKeys.length > 0,
-    !!subcategory,
-    !!location,
-    !!listingType,
-    !!(minPrice || maxPrice),
+    treeKeys.length > 0, !!subcategory, !!location, !!listingType, !!(minPrice || maxPrice),
   ].filter(Boolean).length
 
-  // Instant URL update (used by search bar + sort)
+  // Filter changes → reset page to 1
   const setParam = useCallback((updates: Record<string, string>) => {
     const p = new URLSearchParams(searchParams.toString())
     for (const [k, v] of Object.entries(updates)) {
       if (v) p.set(k, v); else p.delete(k)
     }
+    p.delete('page') // always reset page when filters change
     router.replace(`/sok?${p.toString()}`, { scroll: false })
   }, [searchParams, router])
 
-  // ── Fetch listings ─────────────────────────────────────────────────────────
+  // Page navigation — preserves all other params
+  const goToPage = useCallback((newPage: number) => {
+    const p = new URLSearchParams(searchParams.toString())
+    if (newPage <= 1) p.delete('page'); else p.set('page', String(newPage))
+    router.replace(`/sok?${p.toString()}`, { scroll: true })
+  }, [searchParams, router])
+
+  // ── Fetch listings with count ────────────────────────────────────────────
   const fetchListings = useCallback(async () => {
     setLoading(true)
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let qb = (supabase as any)
         .from('listings')
-        .select('*, profiles(company_name, verified, org_number), favorites_count:favorites(count)')
+        .select('*, profiles(company_name, verified, org_number), favorites_count:favorites(count)', { count: 'exact' })
         .eq('status', 'active')
 
-      // Category: resolve tree keys → DB enum values
       const dbCats = treeKeysToDbValues(treeKeys)
-      if (dbCats.length === 1)      qb = qb.eq('category', dbCats[0])
-      else if (dbCats.length > 1)   qb = qb.in('category', dbCats)
+      if (dbCats.length === 1)    qb = qb.eq('category', dbCats[0])
+      else if (dbCats.length > 1) qb = qb.in('category', dbCats)
 
-      // Subcategory
       if (subcategory) qb = qb.eq('subcategory', subcategory)
-
-      // Text search
-      if (q) qb = qb.ilike('title', `%${q}%`)
-
-      // Location
-      if (location) qb = qb.ilike('location', `%${location}%`)
-
-      // Type annonse
+      if (q)           qb = qb.ilike('title', `%${q}%`)
+      if (location)    qb = qb.ilike('location', `%${location}%`)
       if (listingType === 'sale') qb = qb.eq('listing_type', 'sale')
       else if (listingType === 'rent') qb = qb.eq('listing_type', 'rent')
-
-      // Price filter always on price_ex_vat (eks. mva)
       if (minPrice) qb = qb.gte('price_ex_vat', parseInt(minPrice))
       if (maxPrice) qb = qb.lte('price_ex_vat', parseInt(maxPrice))
 
-      // Sort
-      if (sort === 'newest')     qb = qb.order('created_at',  { ascending: false })
+      if (sort === 'newest')          qb = qb.order('created_at',  { ascending: false })
       else if (sort === 'price_asc')  qb = qb.order('price_ex_vat', { ascending: true,  nullsFirst: false })
       else if (sort === 'price_desc') qb = qb.order('price_ex_vat', { ascending: false, nullsFirst: false })
 
-      const { data } = await qb.limit(48)
+      const from = (page - 1) * PAGE_SIZE
+      const to   = from + PAGE_SIZE - 1
+      const { data, count } = await qb.range(from, to)
+
       setListings((data as Listing[]) || [])
+      setTotalCount(count ?? 0)
     } catch {
       setListings([])
+      setTotalCount(0)
     } finally {
       setLoading(false)
     }
-  }, [q, categoryParam, subcategory, location, listingType, minPrice, maxPrice, sort])
+  }, [q, categoryParam, subcategory, location, listingType, minPrice, maxPrice, sort, page])
 
   useEffect(() => { fetchListings() }, [fetchListings])
-
-  // Keep search input in sync with URL
   useEffect(() => { setSearchInput(searchParams.get('q') || '') }, [searchParams])
 
   const handleSearch = (e: React.FormEvent) => {
@@ -112,61 +163,61 @@ export default function SokContent() {
     setParam({ q: searchInput })
   }
 
-  // Remove one filter chip
   const removeChip = (key: string, value?: string) => {
     if (key === 'category' && value) {
-      // Remove one tree key from comma-separated list
       const next = treeKeys.filter(k => k !== value)
       const p = new URLSearchParams(searchParams.toString())
       if (next.length > 0) p.set('category', next.join(','))
       else p.delete('category')
       p.delete('subcategory')
+      p.delete('page')
       router.replace(`/sok?${p.toString()}`, { scroll: false })
     } else {
       setParam({ [key]: '' })
     }
   }
 
-  // Build active filter chips
   const chips = [
-    ...treeKeys.map(k => ({
-      key: 'category', value: k,
-      label: CATEGORY_TREE[k]?.label ?? k,
-    })),
-    subcategory && { key: 'subcategory', value: subcategory,
-      label: (() => {
-        for (const node of Object.values(CATEGORY_TREE)) {
-          if (node.subcategories[subcategory]) return node.subcategories[subcategory]
-        }
-        return subcategory
-      })(),
-    },
-    location && { key: 'location', value: location, label: location },
+    ...treeKeys.map(k => ({ key: 'category', value: k, label: CATEGORY_TREE[k]?.label ?? k })),
+    subcategory && { key: 'subcategory', value: subcategory, label: (() => {
+      for (const node of Object.values(CATEGORY_TREE)) {
+        if (node.subcategories[subcategory]) return node.subcategories[subcategory]
+      }
+      return subcategory
+    })() },
+    location    && { key: 'location',    value: location,    label: location },
     listingType === 'sale' && { key: 'listingType', value: 'sale', label: 'Til salgs' },
     listingType === 'rent' && { key: 'listingType', value: 'rent', label: 'Til leie' },
-    minPrice && { key: 'minPrice', value: minPrice, label: `Fra ${Number(minPrice).toLocaleString('nb-NO')} kr` },
-    maxPrice && { key: 'maxPrice', value: maxPrice, label: `Til ${Number(maxPrice).toLocaleString('nb-NO')} kr` },
+    minPrice    && { key: 'minPrice',    value: minPrice,    label: `Fra ${Number(minPrice).toLocaleString('nb-NO')} kr` },
+    maxPrice    && { key: 'maxPrice',    value: maxPrice,    label: `Til ${Number(maxPrice).toLocaleString('nb-NO')} kr` },
   ].filter(Boolean) as { key: string; value: string; label: string }[]
 
-  // Page heading
   const headingLabel = treeKeys.length > 0
     ? treeKeys.map(k => CATEGORY_TREE[k]?.label ?? k).join(', ')
     : 'Alle maskiner'
 
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE)
+  const fromItem   = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1
+  const toItem     = Math.min(page * PAGE_SIZE, totalCount)
+
   return (
     <div className="container-main" style={{ padding: '28px 24px 80px' }}>
 
-      {/* ── Page header ─────────────────────────────────────────────────────── */}
+      {/* Page header */}
       <div style={{ marginBottom: 16 }}>
         <h1 style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 26, color: 'var(--t1)', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: 2 }}>
           {headingLabel}
         </h1>
         <p style={{ color: 'var(--t3)', fontSize: 13 }}>
-          {loading ? 'Søker...' : `Viser ${formatNumber(listings.length)} maskin${listings.length !== 1 ? 'er' : ''}`}
+          {loading
+            ? 'Søker...'
+            : totalCount === 0
+              ? 'Ingen maskiner funnet'
+              : `Viser ${formatNumber(fromItem)}–${formatNumber(toItem)} av ${formatNumber(totalCount)} maskiner${totalPages > 1 ? ` — side ${page} av ${totalPages}` : ''}`}
         </p>
       </div>
 
-      {/* ── Search row ─────────────────────────────────────────────────────── */}
+      {/* Search row */}
       <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8, marginBottom: chips.length > 0 ? 10 : 16 }}>
         <div style={{ position: 'relative', flex: 1 }}>
           <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--t3)', pointerEvents: 'none' }} />
@@ -179,8 +230,6 @@ export default function SokContent() {
           />
         </div>
         <button type="submit" className="btn-primary" style={{ padding: '0 18px', height: 46, flexShrink: 0 }}>Søk</button>
-
-        {/* Mobile filter toggle with count badge */}
         <button
           type="button"
           onClick={() => setShowMobileFilters(f => !f)}
@@ -204,7 +253,7 @@ export default function SokContent() {
         </button>
       </form>
 
-      {/* ── Active chips ───────────────────────────────────────────────────── */}
+      {/* Active chips */}
       {chips.length > 0 && (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
           {chips.map((chip, i) => (
@@ -224,17 +273,11 @@ export default function SokContent() {
         </div>
       )}
 
-      {/* ── Mobile collapsible filter panel ─────────────────────────────────── */}
-      <div className="show-filter-btn" style={{ marginBottom: showMobileFilters ? 0 : 0 }}>
+      {/* Mobile collapsible filters */}
+      <div className="show-filter-btn">
         {showMobileFilters && (
-          <div style={{
-            background: 'var(--bg2)', border: '1px solid var(--border)',
-            borderRadius: 4, marginBottom: 16, overflow: 'hidden',
-          }}>
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '10px 16px', borderBottom: '1px solid var(--border)',
-            }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, marginBottom: 16, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
               <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 13, color: 'var(--t1)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                 Filtrer maskiner
               </span>
@@ -242,25 +285,18 @@ export default function SokContent() {
                 <X size={16} />
               </button>
             </div>
-            <ListingFilters
-              onClose={() => setShowMobileFilters(false)}
-              resultCount={listings.length}
-            />
+            <ListingFilters onClose={() => setShowMobileFilters(false)} resultCount={totalCount} />
           </div>
         )}
       </div>
 
-      {/* ── Main layout ────────────────────────────────────────────────────── */}
+      {/* Main layout */}
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-
-        {/* Desktop sidebar */}
         <div className="filters-sidebar">
           <ListingFilters />
         </div>
 
-        {/* Results column */}
         <div style={{ flex: 1, minWidth: 0 }}>
-
           {/* Sort + view toggle */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -295,10 +331,10 @@ export default function SokContent() {
             </div>
           </div>
 
-          {/* Results grid */}
+          {/* Results */}
           {loading ? (
             <div className="results-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
-              {Array.from({ length: 6 }).map((_, i) => (
+              {Array.from({ length: PAGE_SIZE }).map((_, i) => (
                 <div key={i} className="card shimmer" style={{ height: 280 }} />
               ))}
             </div>
@@ -316,14 +352,17 @@ export default function SokContent() {
               </button>
             </div>
           ) : (
-            <div
-              className="results-grid"
-              style={{ display: 'grid', gridTemplateColumns: viewMode === 'grid' ? 'repeat(3,1fr)' : '1fr', gap: viewMode === 'grid' ? 14 : 10 }}
-            >
-              {listings.map(listing => (
-                <ListingCard key={listing.id} listing={listing} />
-              ))}
-            </div>
+            <>
+              <div
+                className="results-grid"
+                style={{ display: 'grid', gridTemplateColumns: viewMode === 'grid' ? 'repeat(3,1fr)' : '1fr', gap: viewMode === 'grid' ? 14 : 10 }}
+              >
+                {listings.map(listing => <ListingCard key={listing.id} listing={listing} />)}
+              </div>
+
+              {/* Pagination */}
+              <Pagination page={page} total={totalCount} onPage={goToPage} />
+            </>
           )}
         </div>
       </div>
