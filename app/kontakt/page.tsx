@@ -155,7 +155,7 @@ export default function KontaktPage() {
                         width: '100%', resize: 'vertical', minHeight: 140,
                         background: 'var(--bg3)', border: '1px solid var(--border2)',
                         borderRadius: 3, padding: '12px 14px',
-                        color: 'var(--t1)', fontSize: 14, fontFamily: 'Barlow, sans-serif',
+                        color: 'var(--t1)', fontSize: 16, fontFamily: 'Barlow, sans-serif',
                         lineHeight: 1.6, outline: 'none', boxSizing: 'border-box',
                       }}
                       onFocus={e => { e.currentTarget.style.borderColor = 'rgba(200,149,58,0.5)' }}

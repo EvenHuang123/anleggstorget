@@ -52,7 +52,7 @@ function ListingsSkeleton() {
   return (
     <section style={{ padding: '80px 0', background: 'var(--bg)' }}>
       <div className="container-main">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
+        <div className="listing-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="card shimmer" style={{ height: 320 }} />
           ))}

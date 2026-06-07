@@ -261,11 +261,12 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Mobile hamburger */}
+          {/* Mobile hamburger — min 44×44px touch target */}
           <button
             className="btn-ghost show-mobile"
             onClick={() => setMobileOpen(!mobileOpen)}
-            style={{ padding: 8 }}
+            aria-label={mobileOpen ? 'Lukk meny' : 'Åpne meny'}
+            style={{ padding: 12 }}
           >
             {mobileOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -287,12 +288,15 @@ export default function Navbar() {
                   key={href}
                   href={href}
                   style={{
-                    padding: '10px 0',
+                    padding: '12px 0',
                     fontSize: 15,
                     fontWeight: isActive ? 600 : 400,
                     color: isActive ? 'var(--gold)' : 'var(--t2)',
                     textDecoration: 'none',
                     borderBottom: '1px solid var(--border)',
+                    minHeight: 44,
+                    display: 'flex',
+                    alignItems: 'center',
                   }}
                   onClick={() => setMobileOpen(false)}
                 >

@@ -90,7 +90,7 @@ export default function SearchBar() {
                 borderRadius: 3, padding: '0 14px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
                 color: category ? 'var(--t1)' : 'var(--t3)',
-                fontFamily: 'Barlow', fontSize: 14, cursor: 'pointer',
+                fontFamily: 'Barlow', fontSize: 16, cursor: 'pointer',
                 transition: 'border-color 0.15s',
               }}
             >
@@ -152,7 +152,7 @@ export default function SearchBar() {
               onClick={() => handleQuickFilter(filter.value)}
               style={{
                 background: 'var(--bg3)', border: '1px solid var(--border)',
-                color: 'var(--t2)', borderRadius: 20, padding: '5px 14px',
+                color: 'var(--t2)', borderRadius: 20, padding: '10px 16px',
                 fontFamily: 'Barlow', fontSize: 13, cursor: 'pointer',
                 transition: 'all 0.15s ease', whiteSpace: 'nowrap',
               }}

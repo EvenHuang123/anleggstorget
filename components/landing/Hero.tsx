@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, Shield, TrendingUp, Clock } from 'lucide-react'
 import { formatPrice } from '@/lib/utils/format'
 import { useEffect, useRef } from 'react'
@@ -19,9 +20,9 @@ export default function Hero() {
 
   useEffect(() => {
     const onScroll = () => {
-      if (bgRef.current) {
-        bgRef.current.style.transform = `translateY(${window.scrollY * 0.3}px)`
-      }
+      // Parallax is skipped on mobile — saves CPU and avoids LCP regression
+      if (!bgRef.current || window.innerWidth < 768) return
+      bgRef.current.style.transform = `translateY(${window.scrollY * 0.3}px)`
     }
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
@@ -35,17 +36,23 @@ export default function Hero() {
       alignItems: 'center',
       overflow: 'hidden',
     }}>
-      {/* Background photo — parallax */}
+      {/* Background photo — parallax. Extended vertically so the image always covers during scroll. */}
       <div ref={bgRef} style={{
         position: 'absolute',
-        inset: 0,
+        inset: '-15% 0',
         zIndex: 0,
-        backgroundImage: 'url("/url.jpg")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
         opacity: 0.28,
         willChange: 'transform',
-      }} />
+      }}>
+        <Image
+          src="/url.jpg"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          style={{ objectFit: 'cover', objectPosition: 'center' }}
+        />
+      </div>
 
       {/* Gradient overlay for readability */}
       <div style={{
