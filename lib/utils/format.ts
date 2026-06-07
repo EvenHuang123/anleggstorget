@@ -43,14 +43,16 @@ export function formatHours(hours: number): string {
 }
 
 export const CATEGORIES: Record<string, { label: string; icon: string }> = {
-  gravemaskin: { label: 'Gravemaskiner', icon: '🏗️' },
-  traktor: { label: 'Traktorer', icon: '🚜' },
-  hjullaster: { label: 'Hjullastere', icon: '🚛' },
-  dumper: { label: 'Dumpere', icon: '🚧' },
-  kranbil: { label: 'Kranbiler', icon: '🏗️' },
-  skogsutstyr: { label: 'Skogsutstyr', icon: '🌲' },
-  betong: { label: 'Betongmaskiner', icon: '🏗️' },
-  annet: { label: 'Annet', icon: '⚙️' },
+  gravemaskin:    { label: 'Gravemaskiner',    icon: '🏗️' },
+  dumper:         { label: 'Dumpere',          icon: '🚧' },
+  hjullaster:     { label: 'Hjullastere',      icon: '🚛' },
+  teleskoplaster: { label: 'Teleskoplastere',  icon: '🚜' },
+  kompaktlaster:  { label: 'Kompaktlastere',   icon: '🚛' },
+  traktor:        { label: 'Traktorer',        icon: '🚜' },
+  kranbil:        { label: 'Kranbiler',        icon: '🏗️' },
+  skogsutstyr:    { label: 'Skogsutstyr',      icon: '🌲' },
+  betong:         { label: 'Betongmaskiner',   icon: '🏗️' },
+  annet:          { label: 'Annet',            icon: '⚙️' },
 }
 
 export const NORWEGIAN_COUNTIES = [

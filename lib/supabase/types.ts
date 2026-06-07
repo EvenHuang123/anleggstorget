@@ -7,8 +7,17 @@ export type Category =
   | 'skogsutstyr'
   | 'betong'
   | 'annet'
+  | 'teleskoplaster'
+  | 'kompaktlaster'
 
 export type PriceType = 'fast_price' | 'negotiable' | 'auction'
+
+// listing_type requires DB migration:
+// ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'teleskoplaster';
+// ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'kompaktlaster';
+// CREATE TYPE listing_type AS ENUM ('sale', 'rent', 'both');
+// ALTER TABLE public.listings ADD COLUMN IF NOT EXISTS listing_type listing_type NOT NULL DEFAULT 'sale';
+export type ListingType = 'sale' | 'rent' | 'both'
 
 export type ListingStatus = 'active' | 'sold' | 'reserved' | 'draft'
 
