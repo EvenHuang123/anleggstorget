@@ -65,16 +65,19 @@ export default function SearchBar() {
         }} className="search-form">
           {/* Text search */}
           <div style={{ position: 'relative' }}>
-            <Search size={15} style={{
+            <Search size={15} aria-hidden="true" style={{
               position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
               color: 'var(--t3)', pointerEvents: 'none',
             }} />
+            <label htmlFor="search-query" className="sr-only">Søk etter maskin</label>
             <input
+              id="search-query"
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Søk etter maskin, merke, modell..."
               className="input-base"
+              autoComplete="off"
               style={{ paddingLeft: 40, border: 'none', background: 'transparent', height: 52 }}
             />
           </div>
@@ -84,6 +87,9 @@ export default function SearchBar() {
             <button
               type="button"
               onClick={() => setCatOpen(!catOpen)}
+              aria-expanded={catOpen}
+              aria-haspopup="listbox"
+              aria-label={`Kategori: ${category ? CATEGORIES[category]?.label : 'Alle kategorier'}`}
               style={{
                 width: '100%', height: 52,
                 background: 'var(--bg3)', border: '1px solid var(--border)',
@@ -116,29 +122,37 @@ export default function SearchBar() {
           </div>
 
           {/* Max price */}
-          <input
-            type="number"
-            value={maxPrice}
-            onChange={e => setMaxPrice(e.target.value)}
-            placeholder="Maks pris (NOK)"
-            className="input-base"
-            style={{ width: 180, height: 52, background: 'var(--bg3)' }}
-          />
+          <div>
+            <label htmlFor="search-maxprice" className="sr-only">Maks pris</label>
+            <input
+              id="search-maxprice"
+              type="number"
+              value={maxPrice}
+              onChange={e => setMaxPrice(e.target.value)}
+              placeholder="Maks pris (NOK)"
+              className="input-base"
+              style={{ width: 180, height: 52, background: 'var(--bg3)' }}
+            />
+          </div>
 
           {/* Location */}
-          <input
-            type="text"
-            value={location}
-            onChange={e => setLocation(e.target.value)}
-            placeholder="Område"
-            className="input-base"
-            style={{ width: 140, height: 52, background: 'var(--bg3)' }}
-          />
+          <div>
+            <label htmlFor="search-location" className="sr-only">Område</label>
+            <input
+              id="search-location"
+              type="text"
+              value={location}
+              onChange={e => setLocation(e.target.value)}
+              placeholder="Område"
+              className="input-base"
+              style={{ width: 140, height: 52, background: 'var(--bg3)' }}
+            />
+          </div>
 
           {/* Search button */}
           <button type="submit" className="btn-primary" style={{ height: 52, padding: '0 28px', whiteSpace: 'nowrap', borderRadius: 2 }}>
             Søk
-            <Search size={15} />
+            <Search size={15} aria-hidden="true" />
           </button>
         </form>
 

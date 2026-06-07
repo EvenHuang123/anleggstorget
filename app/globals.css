@@ -36,14 +36,29 @@ html { scroll-behavior: smooth; }
   --border2: rgba(0,0,0,0.15);
   --t1: #1a1714;
   --t2: #3d3830;
-  --t3: #7a7268;
+  --t3: #5f5b59; /* darkened from #7a7268 — passes 4.5:1 on all bg levels */
   --gold: #a87030;
   --gold2: #c08838;
+  /* --gold-text is a darker gold for small text — passes 4.5:1 on light bg */
+  --gold-text: #8B5A10;
   --gold3: rgba(168,112,48,0.12);
   --gold4: rgba(168,112,48,0.06);
 }
 
 * { box-sizing: border-box; }
+
+/* Screen-reader-only — visually hidden but accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 html { scroll-behavior: smooth; }
 
@@ -78,6 +93,7 @@ body {
   color: var(--t1);
   font-family: 'Barlow', sans-serif;
   font-weight: 400;
+  line-height: 1.6; /* WCAG recommends min 1.5 for body text */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
@@ -241,21 +257,23 @@ body {
   font-size: 16px; /* 16px min prevents iOS auto-zoom on focus */
   padding: 11px 14px;
   border-radius: 3px;
-  outline: none;
+  outline: 2px solid transparent; /* visible on focus-visible, hidden otherwise */
+  outline-offset: 2px;
   width: 100%;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.15s ease, outline-color 0.15s ease;
 }
 .input-base::placeholder { color: var(--t3); }
 .input-base:focus { border-color: var(--gold); }
+.input-base:focus-visible { outline-color: var(--gold); }
 
 /* Labels */
 .label-sm {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
+  font-size: 12px; /* increased from 10px for readability */
+  font-weight: 600;
+  letter-spacing: 0.10em;
   text-transform: uppercase;
-  color: var(--t3);
+  color: var(--t2); /* darkened from t3 — passes 4.5:1 on all backgrounds */
 }
 
 /* Tags */
@@ -378,11 +396,11 @@ body {
 /* Section headings */
 .section-label {
   font-family: 'Barlow Condensed', sans-serif;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: 12px; /* increased from 11px */
+  font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--gold-text); /* accessible gold — passes 4.5:1 on light bg */
 }
 
 .section-title {
@@ -441,8 +459,10 @@ input[type="range"] {
   height: 2px;
   background: var(--bg5);
   border-radius: 1px;
-  outline: none;
+  outline: 2px solid transparent;
+  outline-offset: 4px;
 }
+input[type="range"]:focus-visible { outline-color: var(--gold); }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 14px;
@@ -473,8 +493,8 @@ input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
   border-color: var(--gold);
 }
 
-/* Focus visible outline */
+/* Focus visible outline — keyboard navigation indicator */
 :focus-visible {
-  outline: 1px solid var(--gold);
-  outline-offset: 2px;
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
 }

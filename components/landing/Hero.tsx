@@ -34,6 +34,7 @@ export default function Hero() {
       display: 'flex',
       alignItems: 'center',
       overflow: 'hidden',
+      background: '#0d0c0a', /* dark base so text is always on dark bg */
     }}>
       {/* Background photo — parallax */}
       <div ref={bgRef} style={{
@@ -43,34 +44,36 @@ export default function Hero() {
         backgroundImage: 'url("/url.jpg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        opacity: 0.28,
+        opacity: 0.45, /* more visible on dark bg */
         willChange: 'transform',
       }} />
 
-      {/* Gradient overlay for readability */}
+      {/* Dark overlay — ensures white text meets 4.5:1 contrast on image */}
       <div style={{
         position: 'absolute',
         inset: 0,
         zIndex: 0,
-        background: 'linear-gradient(135deg, var(--bg) 0%, transparent 40%, var(--bg) 100%)',
+        background: 'linear-gradient(135deg, rgba(10,9,7,0.88) 0%, rgba(10,9,7,0.55) 50%, rgba(10,9,7,0.88) 100%)',
       }} />
 
-      {/* Grid overlay */}
-      <div className="grid-overlay" style={{
-        position: 'absolute', inset: 0,
-        opacity: 0.6,
-      }} />
-
-      {/* Radial gradient spotlight */}
+      {/* Subtle grid overlay */}
       <div style={{
-        position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse 60% 70% at 30% 50%, rgba(200,149,58,0.06) 0%, transparent 60%)',
+        position: 'absolute', inset: 0, zIndex: 0,
+        backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
+        backgroundSize: '60px 60px',
+        opacity: 0.8,
+      }} />
+
+      {/* Radial gold spotlight */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 0,
+        background: 'radial-gradient(ellipse 60% 70% at 30% 50%, rgba(200,149,58,0.10) 0%, transparent 60%)',
         pointerEvents: 'none',
       }} />
 
-      {/* Bottom fade */}
+      {/* Bottom fade to site bg */}
       <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: 200,
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 200, zIndex: 0,
         background: 'linear-gradient(to top, var(--bg), transparent)',
         pointerEvents: 'none',
       }} />
@@ -84,11 +87,11 @@ export default function Hero() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 8,
-                background: 'var(--bg3)', border: '1px solid var(--border)',
+                background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
                 borderRadius: 20, padding: '6px 14px',
               }}>
                 <span className="live-dot" />
-                <span style={{ fontFamily: 'Barlow Condensed', fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--t2)' }}>
+                <span style={{ fontFamily: 'Barlow Condensed', fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)' }}>
                   Live markedsplass
                 </span>
               </div>
@@ -103,7 +106,7 @@ export default function Hero() {
               lineHeight: 0.92,
               letterSpacing: '0.01em',
               textTransform: 'uppercase',
-              color: 'var(--t1)',
+              color: '#ffffff',
               marginBottom: 28,
             }}>
               Norges{' '}
@@ -119,14 +122,14 @@ export default function Hero() {
               markedsplass
             </h1>
 
-            {/* Subheading */}
+            {/* Subheading — white on dark: ~14:1 contrast */}
             <p style={{
-              color: 'var(--t2)',
+              color: 'rgba(255,255,255,0.82)',
               fontSize: 17,
               lineHeight: 1.65,
               maxWidth: 480,
               marginBottom: 40,
-              fontWeight: 300,
+              fontWeight: 400,
             }}>
               Kjøp, selg og leie tunge maskiner direkte mellom verifiserte norske bedrifter —
               trygt, effektivt og uten mellomledd.
@@ -140,8 +143,8 @@ export default function Hero() {
                 { icon: Clock, text: 'Rask saksbehandling' },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Icon size={14} style={{ color: 'var(--gold)' }} />
-                  <span style={{ fontSize: 13, color: 'var(--t2)', fontFamily: 'Barlow' }}>{text}</span>
+                  <Icon size={14} aria-hidden="true" style={{ color: 'var(--gold)' }} />
+                  <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.80)', fontFamily: 'Barlow', fontWeight: 400 }}>{text}</span>
                 </div>
               ))}
             </div>
@@ -150,9 +153,9 @@ export default function Hero() {
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <Link href="/sok" className="btn-primary" style={{ fontSize: 14, padding: '14px 28px' }}>
                 Finn maskiner
-                <ArrowRight size={16} />
+                <ArrowRight size={16} aria-hidden="true" />
               </Link>
-              <Link href="/ny-annonse" className="btn-secondary" style={{ padding: '14px 28px' }}>
+              <Link href="/ny-annonse" className="btn-secondary" style={{ padding: '14px 28px', color: 'rgba(255,255,255,0.90)', borderColor: 'rgba(255,255,255,0.25)' }}>
                 Legg ut gratis
               </Link>
             </div>

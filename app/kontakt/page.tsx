@@ -136,18 +136,20 @@ export default function KontaktPage() {
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }} className="form-row">
-                    <Field label="Navn *" type="text" value={form.name} onChange={set('name')} placeholder="Ola Nordmann" required />
-                    <Field label="E-post *" type="email" value={form.email} onChange={set('email')} placeholder="ola@bedrift.no" required />
+                    <Field id="kontakt-navn" label="Navn *" type="text" value={form.name} onChange={set('name')} placeholder="Ola Nordmann" required autoComplete="name" />
+                    <Field id="kontakt-epost" label="E-post *" type="email" value={form.email} onChange={set('email')} placeholder="ola@bedrift.no" required autoComplete="email" />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }} className="form-row">
-                    <Field label="Bedrift" type="text" value={form.company} onChange={set('company')} placeholder="Bedrift AS" />
-                    <Field label="Telefon" type="tel" value={form.phone} onChange={set('phone')} placeholder="+47 000 00 000" />
+                    <Field id="kontakt-bedrift" label="Bedrift" type="text" value={form.company} onChange={set('company')} placeholder="Bedrift AS" autoComplete="organization" />
+                    <Field id="kontakt-tlf" label="Telefon" type="tel" value={form.phone} onChange={set('phone')} placeholder="+47 000 00 000" autoComplete="tel" />
                   </div>
                   <div>
-                    <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Melding *</label>
+                    <label htmlFor="kontakt-melding" className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Melding *</label>
                     <textarea
+                      id="kontakt-melding"
                       value={form.message}
                       onChange={set('message')}
+                      aria-required="true"
                       placeholder="Skriv din melding her..."
                       rows={6}
                       required
@@ -195,20 +197,23 @@ export default function KontaktPage() {
   )
 }
 
-function Field({ label, type, value, onChange, placeholder, required }: {
-  label: string; type: string; value: string
+function Field({ label, type, value, onChange, placeholder, required, id, autoComplete }: {
+  label: string; type: string; value: string; id: string
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  placeholder?: string; required?: boolean
+  placeholder?: string; required?: boolean; autoComplete?: string
 }) {
   return (
     <div>
-      <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>{label}</label>
+      <label htmlFor={id} className="label-sm" style={{ display: 'block', marginBottom: 6 }}>{label}</label>
       <input
+        id={id}
         type={type}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
         required={required}
+        autoComplete={autoComplete}
+        aria-required={required}
         className="input-base"
       />
     </div>
