@@ -1,29 +1,16 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState } from 'react'
-import { SlidersHorizontal, X, ChevronDown } from 'lucide-react'
-import { CATEGORIES, NORWEGIAN_COUNTIES, POPULAR_BRANDS } from '@/lib/utils/format'
+import { useState, useCallback, useRef, useEffect } from 'react'
+import { X, ChevronDown, ChevronRight } from 'lucide-react'
+import { CATEGORY_TREE, NORWEGIAN_COUNTIES } from '@/lib/utils/format'
 
 interface Props {
   onClose?: () => void
   resultCount?: number
 }
 
-const YEAR_PRESETS = [
-  { label: '2020–i dag', min: '2020', max: '' },
-  { label: '2015–2019', min: '2015', max: '2019' },
-  { label: '2010–2014', min: '2010', max: '2014' },
-  { label: 'Før 2010',  min: '',     max: '2009' },
-]
-
-const HOURS_PRESETS = [
-  { label: 'Under 1 000',  min: '0',     max: '1000'  },
-  { label: '1 000–3 000',  min: '1000',  max: '3000'  },
-  { label: '3 000–5 000',  min: '3000',  max: '5000'  },
-  { label: '5 000–10 000', min: '5000',  max: '10000' },
-  { label: '10 000+',      min: '10000', max: ''      },
-]
+// ── helpers ───────────────────────────────────────────────────────────────────
 
 const PRICE_PRESETS = [
   { label: 'Under 500k', min: '',        max: '500000'  },
@@ -33,327 +20,323 @@ const PRICE_PRESETS = [
   { label: 'Over 5M',    min: '5000000', max: ''        },
 ]
 
-const QUICK_BRANDS = ['Volvo', 'CAT', 'Komatsu', 'Hitachi', 'JCB', 'John Deere', 'Liebherr', 'Doosan']
+function Divider() {
+  return <div style={{ height: 1, background: 'var(--border)', margin: '2px 0' }} />
+}
 
-function Section({
-  title, isOpen, onToggle, active, children,
-}: {
-  title: string; isOpen: boolean; onToggle: () => void; active?: boolean; children: React.ReactNode
+function SectionHeader({ label, active, open, onToggle }: {
+  label: string; active?: boolean; open: boolean; onToggle: () => void
 }) {
   return (
-    <div>
-      <button
-        onClick={onToggle}
-        style={{
-          width: '100%', background: 'none', border: 'none',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 0', cursor: 'pointer',
-        }}
-      >
-        <span style={{
-          fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 11,
-          letterSpacing: '0.1em', textTransform: 'uppercase',
-          color: active ? 'var(--gold)' : 'var(--t2)',
-        }}>
-          {title}{active ? ' ●' : ''}
-        </span>
-        <ChevronDown
-          size={12}
-          style={{ color: 'var(--t3)', transition: 'transform 0.15s', transform: isOpen ? 'rotate(180deg)' : 'none' }}
-        />
-      </button>
-      {isOpen && <div style={{ paddingBottom: 8 }}>{children}</div>}
-    </div>
+    <button
+      onClick={onToggle}
+      style={{
+        width: '100%', background: 'none', border: 'none',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '10px 0', cursor: 'pointer',
+      }}
+    >
+      <span style={{
+        fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 11,
+        letterSpacing: '0.1em', textTransform: 'uppercase',
+        color: active ? 'var(--gold)' : 'var(--t2)',
+      }}>
+        {label}{active ? ' ●' : ''}
+      </span>
+      <ChevronDown size={12} style={{ color: 'var(--t3)', transition: 'transform 0.15s', transform: open ? 'rotate(180deg)' : 'none' }} />
+    </button>
   )
 }
 
-function Presets({
-  presets, minVal, maxVal, onSelect,
-}: {
-  presets: { label: string; min: string; max: string }[]
-  minVal: string; maxVal: string
-  onSelect: (min: string, max: string) => void
-}) {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, marginBottom: 8 }}>
-      {presets.map(p => {
-        const active = minVal === p.min && maxVal === p.max
-        return (
-          <button
-            key={p.label}
-            onClick={() => onSelect(active ? '' : p.min, active ? '' : p.max)}
-            style={{
-              background: active ? 'var(--gold3)' : 'var(--bg3)',
-              border: `1px solid ${active ? 'rgba(200,149,58,0.5)' : 'var(--border)'}`,
-              borderRadius: 3, padding: '5px 7px',
-              fontSize: 11, color: active ? 'var(--gold)' : 'var(--t2)',
-              cursor: 'pointer', textAlign: 'left',
-              fontFamily: 'Barlow Condensed', fontWeight: 600,
-              transition: 'all 0.1s', lineHeight: 1.3,
-            }}
-          >
-            {p.label}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-const divider = <div style={{ height: 1, background: 'var(--border)' }} />
+// ── component ─────────────────────────────────────────────────────────────────
 
 export default function ListingFilters({ onClose, resultCount }: Props) {
   const router = useRouter()
   const params = useSearchParams()
 
-  // Multi-select category — stored as array, URL as "gravemaskin,dumper"
-  const [categories, setCategories] = useState<string[]>(
-    () => (params.get('category') || '').split(',').filter(Boolean)
-  )
-  const [listingType, setListingType] = useState(params.get('listingType') || '')
-  const [brand,       setBrand]      = useState(params.get('brand')      || '')
-  const [minYear,     setMinYear]    = useState(params.get('minYear')    || '')
-  const [maxYear,     setMaxYear]    = useState(params.get('maxYear')    || '')
-  const [minHours,    setMinHours]   = useState(params.get('minHours')   || '')
-  const [maxHours,    setMaxHours]   = useState(params.get('maxHours')   || '')
-  const [weightClass, setWeightClass]= useState(params.get('weightClass')|| '')
-  const [minPrice,    setMinPrice]   = useState(params.get('minPrice')   || '')
-  const [maxPrice,    setMaxPrice]   = useState(params.get('maxPrice')   || '')
-  const [location,    setLocation]   = useState(params.get('location')   || '')
+  // ── Read filter state directly from URL — no shadow state ──────────────────
+  const selectedCats = (params.get('category') || '').split(',').filter(Boolean)
+  const subcategory   = params.get('subcategory')  || ''
+  const location      = params.get('location')     || ''
+  const listingType   = params.get('listingType')  || ''
+  const vatMode       = params.get('vatMode')      || 'ex'
+  const sort          = params.get('sort')         || 'newest'
 
-  const [open, setOpen] = useState({
-    kategori: true,
-    type: true,
-    omrade: true,
-    pris: true,
-    merke: false,
-    aar: false,
-    timer: false,
-    vekt: false,
+  // Price inputs need local state so typing feels smooth; debounced push to URL
+  const [localMin, setLocalMin] = useState(params.get('minPrice') || '')
+  const [localMax, setLocalMax] = useState(params.get('maxPrice') || '')
+  useEffect(() => {
+    setLocalMin(params.get('minPrice') || '')
+    setLocalMax(params.get('maxPrice') || '')
+  }, [params])
+
+  // Collapsible sections
+  const [openSections, setOpenSections] = useState({
+    kategori: true, type: true, omrade: true, pris: true,
   })
-  const toggle = (k: keyof typeof open) => setOpen(o => ({ ...o, [k]: !o[k] }))
+  const toggleSection = (k: keyof typeof openSections) =>
+    setOpenSections(s => ({ ...s, [k]: !s[k] }))
 
-  const toggleCategory = (key: string) => {
-    setCategories(prev =>
-      prev.includes(key) ? prev.filter(c => c !== key) : [...prev, key]
-    )
+  // ── Instant URL update ────────────────────────────────────────────────────
+  const setParam = useCallback((updates: Record<string, string>) => {
+    const p = new URLSearchParams(params.toString())
+    for (const [k, v] of Object.entries(updates)) {
+      if (v) p.set(k, v); else p.delete(k)
+    }
+    router.replace(`/sok?${p.toString()}`, { scroll: false })
+  }, [params, router])
+
+  // Toggle a main category (multi-select); also clears subcategory
+  const toggleCat = (treeKey: string) => {
+    const next = selectedCats.includes(treeKey)
+      ? selectedCats.filter(c => c !== treeKey)
+      : [...selectedCats, treeKey]
+    const p = new URLSearchParams(params.toString())
+    if (next.length > 0) p.set('category', next.join(','))
+    else p.delete('category')
+    p.delete('subcategory')
+    router.replace(`/sok?${p.toString()}`, { scroll: false })
   }
 
-  const apply = () => {
+  // Toggle subcategory (click same = deselect)
+  const toggleSub = (sub: string) =>
+    setParam({ subcategory: subcategory === sub ? '' : sub })
+
+  // Debounced price update
+  const priceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const handlePrice = (key: 'minPrice' | 'maxPrice', value: string) => {
+    if (key === 'minPrice') setLocalMin(value); else setLocalMax(value)
+    clearTimeout(priceTimer.current)
+    priceTimer.current = setTimeout(() => setParam({ [key]: value }), 400)
+  }
+
+  const resetAll = () => {
     const p = new URLSearchParams()
     const q = params.get('q')
-    if (q)                     p.set('q', q)
-    if (categories.length > 0) p.set('category', categories.join(','))
-    if (listingType)           p.set('listingType', listingType)
-    if (brand)                 p.set('brand', brand)
-    if (minYear)               p.set('minYear', minYear)
-    if (maxYear)               p.set('maxYear', maxYear)
-    if (minHours)              p.set('minHours', minHours)
-    if (maxHours)              p.set('maxHours', maxHours)
-    if (weightClass)           p.set('weightClass', weightClass)
-    if (minPrice)              p.set('minPrice', minPrice)
-    if (maxPrice)              p.set('maxPrice', maxPrice)
-    if (location)              p.set('location', location)
-    router.push(`/sok?${p.toString()}`)
+    if (q) p.set('q', q)
+    router.replace(`/sok?${p.toString()}`, { scroll: false })
     onClose?.()
   }
 
-  const reset = () => {
-    setCategories([]); setListingType(''); setBrand('')
-    setMinYear(''); setMaxYear(''); setMinHours(''); setMaxHours('')
-    setWeightClass(''); setMinPrice(''); setMaxPrice(''); setLocation('')
-    router.push('/sok')
-    onClose?.()
-  }
-
-  const hasFilters = categories.length > 0 || !!(
-    listingType || brand || minYear || maxYear || minHours || maxHours ||
-    weightClass || minPrice || maxPrice || location
+  const hasFilters = selectedCats.length > 0 || !!(
+    subcategory || location || listingType || params.get('minPrice') || params.get('maxPrice')
   )
 
-  const inputStyle: React.CSSProperties = { fontSize: 14, padding: '7px 9px', width: '100%' }
-  const halfInput: React.CSSProperties = { fontSize: 13, padding: '6px 8px', width: '100%' }
+  // Subcategories to show: only when exactly one main category is selected
+  const activeNode = selectedCats.length === 1 ? CATEGORY_TREE[selectedCats[0]] : null
 
   return (
     <aside style={{
-      width: onClose ? '100%' : 240,
+      width: onClose ? '100%' : 260,
       flexShrink: 0,
       background: 'var(--bg2)',
       border: onClose ? 'none' : '1px solid var(--border)',
       borderRadius: onClose ? 0 : 4,
-      padding: onClose ? '0 20px 100px' : '16px 18px',
-      height: onClose ? 'auto' : 'fit-content',
+      padding: onClose ? '4px 20px 88px' : '14px 16px',
       position: onClose ? 'static' : 'sticky',
       top: onClose ? undefined : 100,
       maxHeight: onClose ? 'none' : 'calc(100vh - 120px)',
       overflowY: onClose ? 'visible' : 'auto',
     }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, paddingTop: onClose ? 4 : 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <SlidersHorizontal size={13} style={{ color: 'var(--gold)' }} />
-          <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 14, color: 'var(--t1)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-            Filtre
-          </span>
-        </div>
+
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 13, color: 'var(--t1)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          Filtre
+        </span>
         {hasFilters && (
-          <button onClick={reset} style={{ background: 'none', border: 'none', color: 'var(--t3)', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-            <X size={10} /> Nullstill
+          <button onClick={resetAll} style={{ background: 'none', border: 'none', color: 'var(--t3)', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
+            <X size={10} /> Nullstill alle
           </button>
         )}
       </div>
 
-      {/* Kategori — checkboxes (multi-select) */}
-      <Section title="Kategori" isOpen={open.kategori} onToggle={() => toggle('kategori')} active={categories.length > 0}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 4 }}>
-          {Object.entries(CATEGORIES).map(([key, { label }]) => {
-            const checked = categories.includes(key)
+      {/* ── Kategori ──────────────────────────────────────────────────────── */}
+      <Divider />
+      <SectionHeader label="Kategori" active={selectedCats.length > 0} open={openSections.kategori} onToggle={() => toggleSection('kategori')} />
+      {openSections.kategori && (
+        <div style={{ paddingBottom: 4 }}>
+          {Object.entries(CATEGORY_TREE).map(([key, node]) => {
+            const checked = selectedCats.includes(key)
             return (
-              <label
-                key={key}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 6px', cursor: 'pointer', borderRadius: 3, background: checked ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleCategory(key)}
-                  style={{ accentColor: 'var(--gold)', flexShrink: 0, width: 14, height: 14 }}
-                />
-                <span style={{ fontSize: 13, color: checked ? 'var(--t1)' : 'var(--t2)', fontWeight: checked ? 600 : 400 }}>{label}</span>
-              </label>
+              <div key={key}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', cursor: 'pointer', borderRadius: 3, background: checked ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleCat(key)}
+                    style={{ accentColor: 'var(--gold)', width: 14, height: 14, flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: 13, color: checked ? 'var(--t1)' : 'var(--t2)', fontWeight: checked ? 600 : 400 }}>
+                    {node.label}
+                  </span>
+                  {node.subcategories && Object.keys(node.subcategories).length > 0 && (
+                    <ChevronRight size={11} style={{ color: 'var(--t3)', marginLeft: 'auto', transform: checked ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
+                  )}
+                </label>
+
+                {/* Subcategories — only for this node if it's the single selected cat */}
+                {checked && activeNode === node && (
+                  <div style={{ marginLeft: 22, marginBottom: 4 }}>
+                    {Object.entries(node.subcategories).map(([subKey, subLabel]) => {
+                      const subActive = subcategory === subKey
+                      return (
+                        <label key={subKey} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '3px 6px', cursor: 'pointer', borderRadius: 3, background: subActive ? 'var(--gold4)' : 'transparent' }}>
+                          <input
+                            type="radio"
+                            name="subcategory"
+                            checked={subActive}
+                            onChange={() => toggleSub(subKey)}
+                            style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }}
+                          />
+                          <span style={{ fontSize: 12, color: subActive ? 'var(--gold)' : 'var(--t3)', fontWeight: subActive ? 600 : 400 }}>{subLabel}</span>
+                        </label>
+                      )
+                    })}
+                    {/* Deselect subcategory */}
+                    {subcategory && (
+                      <button
+                        onClick={() => setParam({ subcategory: '' })}
+                        style={{ fontSize: 11, color: 'var(--t3)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', textDecoration: 'underline' }}
+                      >
+                        Alle {node.label.toLowerCase()}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             )
           })}
         </div>
-      </Section>
+      )}
 
-      {divider}
-
-      {/* Type annonse */}
-      <Section title="Type annonse" isOpen={open.type} onToggle={() => toggle('type')} active={!!listingType}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
+      {/* ── Type annonse ───────────────────────────────────────────────────── */}
+      <Divider />
+      <SectionHeader label="Type annonse" active={!!listingType} open={openSections.type} onToggle={() => toggleSection('type')} />
+      {openSections.type && (
+        <div style={{ display: 'flex', gap: 6, paddingBottom: 6, paddingTop: 2 }}>
           {[
-            { value: '',     label: 'Alle annonser' },
-            { value: 'sale', label: 'Til salgs' },
-            { value: 'rent', label: 'Til leie' },
-          ].map(({ value, label }) => (
-            <label key={value} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 6px', cursor: 'pointer', borderRadius: 3, background: listingType === value ? 'var(--gold4)' : 'transparent' }}>
-              <input
-                type="radio"
-                name="listingType"
-                checked={listingType === value}
-                onChange={() => setListingType(value)}
-                style={{ accentColor: 'var(--gold)', flexShrink: 0 }}
-              />
-              <span style={{ fontSize: 13, color: listingType === value ? 'var(--t1)' : 'var(--t2)', fontWeight: listingType === value ? 600 : 400 }}>{label}</span>
-            </label>
+            { v: '',     l: 'Alle' },
+            { v: 'sale', l: 'Til salgs' },
+            { v: 'rent', l: 'Til leie' },
+          ].map(({ v, l }) => (
+            <button
+              key={v}
+              onClick={() => setParam({ listingType: v })}
+              style={{
+                flex: 1, padding: '7px 4px', borderRadius: 3,
+                border: `1px solid ${listingType === v ? 'rgba(200,149,58,0.5)' : 'var(--border)'}`,
+                background: listingType === v ? 'var(--gold3)' : 'var(--bg3)',
+                color: listingType === v ? 'var(--gold)' : 'var(--t2)',
+                fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 12,
+                cursor: 'pointer', transition: 'all 0.1s',
+              }}
+            >
+              {l}
+            </button>
           ))}
         </div>
-      </Section>
+      )}
 
-      {divider}
-
-      {/* Område */}
-      <Section title="Område" isOpen={open.omrade} onToggle={() => toggle('omrade')} active={!!location}>
+      {/* ── Område ─────────────────────────────────────────────────────────── */}
+      <Divider />
+      <SectionHeader label="Område" active={!!location} open={openSections.omrade} onToggle={() => toggleSection('omrade')} />
+      {openSections.omrade && (
         <select
-          value={location} onChange={e => setLocation(e.target.value)}
-          className="input-base" style={{ ...inputStyle, cursor: 'pointer', marginTop: 4 }}
+          value={location}
+          onChange={e => setParam({ location: e.target.value })}
+          className="input-base"
+          style={{ fontSize: 13, padding: '7px 9px', cursor: 'pointer', marginTop: 2, marginBottom: 6 }}
         >
           <option value="">Hele Norge</option>
           {NORWEGIAN_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-      </Section>
+      )}
 
-      {divider}
-
-      {/* Pris */}
-      <Section title="Pris (NOK)" isOpen={open.pris} onToggle={() => toggle('pris')} active={!!(minPrice || maxPrice)}>
-        <div style={{ marginTop: 6 }}>
-          <Presets
-            presets={PRICE_PRESETS} minVal={minPrice} maxVal={maxPrice}
-            onSelect={(min, max) => { setMinPrice(min); setMaxPrice(max) }}
-          />
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input type="number" value={minPrice} onChange={e => setMinPrice(e.target.value)} placeholder="Min kr" min="0" className="input-base" style={halfInput} />
-            <span style={{ color: 'var(--t3)', fontSize: 11, flexShrink: 0 }}>–</span>
-            <input type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} placeholder="Maks kr" min="0" className="input-base" style={halfInput} />
-          </div>
-        </div>
-      </Section>
-
-      {divider}
-
-      {/* Merke */}
-      <Section title="Merke" isOpen={open.merke} onToggle={() => toggle('merke')} active={!!brand}>
-        <div style={{ marginTop: 4 }}>
-          <input
-            type="text" value={brand} onChange={e => setBrand(e.target.value)}
-            placeholder="Søk merke..." list="brands-filter"
-            className="input-base" style={inputStyle}
-          />
-          <datalist id="brands-filter">{POPULAR_BRANDS.map(b => <option key={b} value={b} />)}</datalist>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 7 }}>
-            {QUICK_BRANDS.map(b => (
+      {/* ── Pris ───────────────────────────────────────────────────────────── */}
+      <Divider />
+      <SectionHeader label="Pris (NOK)" active={!!(params.get('minPrice') || params.get('maxPrice'))} open={openSections.pris} onToggle={() => toggleSection('pris')} />
+      {openSections.pris && (
+        <div style={{ paddingBottom: 6 }}>
+          {/* Eks/Inkl. MVA toggle */}
+          <div style={{ display: 'flex', gap: 4, marginBottom: 8, marginTop: 4 }}>
+            {[{ v: 'ex', l: 'Ekskl. MVA' }, { v: 'inc', l: 'Inkl. MVA' }].map(({ v, l }) => (
               <button
-                key={b}
-                onClick={() => setBrand(brand === b ? '' : b)}
+                key={v}
+                onClick={() => setParam({ vatMode: v })}
                 style={{
-                  background: brand === b ? 'var(--gold3)' : 'var(--bg3)',
-                  border: `1px solid ${brand === b ? 'rgba(200,149,58,0.5)' : 'var(--border)'}`,
-                  borderRadius: 3, padding: '3px 7px',
-                  fontSize: 10, color: brand === b ? 'var(--gold)' : 'var(--t3)',
-                  cursor: 'pointer', fontFamily: 'Barlow Condensed', fontWeight: 600,
-                  transition: 'all 0.1s',
+                  flex: 1, padding: '5px 4px', borderRadius: 3,
+                  border: `1px solid ${vatMode === v ? 'rgba(200,149,58,0.5)' : 'var(--border)'}`,
+                  background: vatMode === v ? 'var(--gold3)' : 'var(--bg3)',
+                  color: vatMode === v ? 'var(--gold)' : 'var(--t3)',
+                  fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 10,
+                  letterSpacing: '0.06em', textTransform: 'uppercase',
+                  cursor: 'pointer', transition: 'all 0.1s',
                 }}
               >
-                {b}
+                {l}
               </button>
             ))}
           </div>
-        </div>
-      </Section>
 
-      {divider}
+          {/* Presets */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 8 }}>
+            {PRICE_PRESETS.map(p => {
+              const curMin = params.get('minPrice') || ''
+              const curMax = params.get('maxPrice') || ''
+              const active = curMin === p.min && curMax === p.max
+              return (
+                <button
+                  key={p.label}
+                  onClick={() => setParam({ minPrice: active ? '' : p.min, maxPrice: active ? '' : p.max })}
+                  style={{
+                    background: active ? 'var(--gold3)' : 'var(--bg3)',
+                    border: `1px solid ${active ? 'rgba(200,149,58,0.5)' : 'var(--border)'}`,
+                    borderRadius: 3, padding: '5px 6px',
+                    fontSize: 10, color: active ? 'var(--gold)' : 'var(--t2)',
+                    cursor: 'pointer', fontFamily: 'Barlow Condensed', fontWeight: 600,
+                    transition: 'all 0.1s', textAlign: 'left',
+                  }}
+                >
+                  {p.label}
+                </button>
+              )
+            })}
+          </div>
 
-      {/* Årsmodell */}
-      <Section title="Årsmodell" isOpen={open.aar} onToggle={() => toggle('aar')} active={!!(minYear || maxYear)}>
-        <div style={{ marginTop: 6 }}>
-          <Presets
-            presets={YEAR_PRESETS} minVal={minYear} maxVal={maxYear}
-            onSelect={(min, max) => { setMinYear(min); setMaxYear(max) }}
-          />
+          {/* Min/max inputs */}
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input type="number" value={minYear} onChange={e => setMinYear(e.target.value)} placeholder="Fra" min="1970" max="2026" className="input-base" style={halfInput} />
+            <input
+              type="number" value={localMin}
+              onChange={e => handlePrice('minPrice', e.target.value)}
+              placeholder="Min kr" min="0"
+              className="input-base"
+              style={{ fontSize: 12, padding: '6px 8px' }}
+            />
             <span style={{ color: 'var(--t3)', fontSize: 11, flexShrink: 0 }}>–</span>
-            <input type="number" value={maxYear} onChange={e => setMaxYear(e.target.value)} placeholder="Til" min="1970" max="2026" className="input-base" style={halfInput} />
+            <input
+              type="number" value={localMax}
+              onChange={e => handlePrice('maxPrice', e.target.value)}
+              placeholder="Maks kr" min="0"
+              className="input-base"
+              style={{ fontSize: 12, padding: '6px 8px' }}
+            />
           </div>
         </div>
-      </Section>
+      )}
 
-      {divider}
-
-      {/* Driftstimer */}
-      <Section title="Driftstimer" isOpen={open.timer} onToggle={() => toggle('timer')} active={!!(minHours || maxHours)}>
-        <div style={{ marginTop: 6 }}>
-          <Presets
-            presets={HOURS_PRESETS} minVal={minHours} maxVal={maxHours}
-            onSelect={(min, max) => { setMinHours(min); setMaxHours(max) }}
-          />
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input type="number" value={minHours} onChange={e => setMinHours(e.target.value)} placeholder="Min" min="0" className="input-base" style={halfInput} />
-            <span style={{ color: 'var(--t3)', fontSize: 11, flexShrink: 0 }}>–</span>
-            <input type="number" value={maxHours} onChange={e => setMaxHours(e.target.value)} placeholder="Maks" min="0" className="input-base" style={halfInput} />
-          </div>
+      {/* ── Mobile CTA (sticky bottom) ─────────────────────────────────────── */}
+      {onClose && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0,
+          background: 'var(--bg2)', padding: '12px 20px',
+          borderTop: '1px solid var(--border)', zIndex: 10,
+        }}>
+          <button onClick={onClose} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: 44, fontSize: 13 }}>
+            {resultCount !== undefined ? `Vis ${resultCount.toLocaleString('nb-NO')} maskiner` : 'Lukk filtre'}
+          </button>
         </div>
-      </Section>
-
-      {/* Apply / bottom CTA */}
-      <div style={{ marginTop: 14, position: onClose ? 'fixed' : 'static', bottom: onClose ? 0 : undefined, left: onClose ? 0 : undefined, right: onClose ? 0 : undefined, background: onClose ? 'var(--bg2)' : 'transparent', padding: onClose ? '12px 20px' : 0, borderTop: onClose ? '1px solid var(--border)' : 'none', zIndex: onClose ? 10 : undefined }}>
-        <button onClick={apply} className="btn-primary" style={{ width: '100%', justifyContent: 'center', height: 44, fontSize: 13 }}>
-          {onClose && resultCount !== undefined
-            ? `Vis ${resultCount.toLocaleString('nb-NO')} maskiner`
-            : 'Bruk filtre'}
-        </button>
-      </div>
+      )}
     </aside>
   )
 }

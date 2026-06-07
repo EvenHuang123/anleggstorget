@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/shared/Navbar'
 import { Upload, X, ChevronRight, ChevronLeft, Check, Image as ImageIcon, AlertCircle, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { CATEGORIES, WEIGHT_CLASSES, NORWEGIAN_COUNTIES, POPULAR_BRANDS, slugify, getListingImageUrl } from '@/lib/utils/format'
+import { CATEGORIES, CATEGORY_TREE, WEIGHT_CLASSES, NORWEGIAN_COUNTIES, POPULAR_BRANDS, slugify, getListingImageUrl } from '@/lib/utils/format'
 import toast from 'react-hot-toast'
 import type { Category, PriceType, ListingType } from '@/lib/supabase/types'
 
@@ -160,6 +160,7 @@ const STEPS = [
 
 interface FormState {
   category: Category | ''
+  subcategory: string
   title: string
   description: string
   brand: string
@@ -168,7 +169,7 @@ interface FormState {
   operating_hours: string
   weight_class: string
   location: string
-  price: string
+  price_ex_vat: string
   price_type: PriceType
   listing_type: ListingType
   images: File[]
@@ -178,6 +179,7 @@ interface FormState {
 
 const INIT: FormState = {
   category: '',
+  subcategory: '',
   title: '',
   description: '',
   brand: '',
@@ -186,7 +188,7 @@ const INIT: FormState = {
   operating_hours: '',
   weight_class: '',
   location: '',
-  price: '',
+  price_ex_vat: '',
   price_type: 'fast_price',
   listing_type: 'sale',
   images: [],
@@ -242,6 +244,7 @@ export default function NyAnnonsePage() {
         setEditSlug(d.slug || null)
         setForm({
           category: d.category || '',
+          subcategory: d.subcategory || '',
           title: d.title || '',
           description: d.description || '',
           brand: d.brand || '',
@@ -250,7 +253,7 @@ export default function NyAnnonsePage() {
           operating_hours: d.operating_hours?.toString() || '',
           weight_class: d.weight_class || '',
           location: d.location || '',
-          price: d.price?.toString() || '',
+          price_ex_vat: (d.price_ex_vat ?? d.price)?.toString() || '',
           price_type: d.price_type || 'fast_price',
           listing_type: d.listing_type || 'sale',
           images: [],
@@ -332,7 +335,7 @@ export default function NyAnnonsePage() {
   const validateStep = (): boolean => {
     if (step === 1 && !form.category) { setError('Velg en kategori'); return false }
     if (step === 2 && !form.title.trim()) { setError('Tittel er påkrevd'); return false }
-    if (step === 4 && !form.price) { setError('Pris er påkrevd'); return false }
+    if (step === 4 && !form.price_ex_vat) { setError('Pris er påkrevd'); return false }
     setError('')
     return true
   }
@@ -348,12 +351,13 @@ export default function NyAnnonsePage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { setLoading(false); router.push('/logg-inn'); return }
 
-      const price = Number(form.price)
-      if (!form.price || isNaN(price) || price <= 0) {
+      const price = Number(form.price_ex_vat)
+      if (!form.price_ex_vat || isNaN(price) || price <= 0) {
         setError('Ugyldig pris. Gå tilbake og fyll inn et gyldig beløp.')
         setLoading(false)
         return
       }
+      const priceIncVat = Math.round(price * 1.25)
 
       // Ensure profile exists
       const meta = session.user.user_metadata ?? {}
@@ -394,7 +398,11 @@ export default function NyAnnonsePage() {
         year: form.year ? parseInt(form.year) : null,
         operating_hours: form.operating_hours ? parseInt(form.operating_hours) : null,
         weight_class: form.weight_class || null,
+        subcategory: form.subcategory || null,
         price,
+        price_ex_vat: price,
+        price_inc_vat: priceIncVat,
+        vat_rate: 25,
         price_type: form.price_type,
         listing_type: form.listing_type,
         location: form.location || null,
@@ -495,34 +503,82 @@ export default function NyAnnonsePage() {
           {/* Step content */}
           <div style={{ maxWidth: 640, margin: '0 auto' }}>
 
-            {/* Step 1: Category */}
+            {/* Step 1: Category + subcategory */}
             {step === 1 && (
               <div>
                 <h2 style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 22, color: 'var(--t1)', marginBottom: 24 }}>
                   Velg kategori
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-                  {CATEGORY_LIST.map(([key, { label }]) => (
-                    <button
-                      key={key}
-                      onClick={() => set('category', key)}
-                      style={{
-                        background: form.category === key ? 'var(--gold3)' : 'var(--bg2)',
-                        border: `1px solid ${form.category === key ? 'rgba(200,149,58,0.4)' : 'var(--border)'}`,
-                        borderRadius: 4, padding: '16px 20px',
-                        textAlign: 'left', cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        display: 'flex', alignItems: 'center', gap: 12,
-                      }}
-                    >
-                      <span style={{ color: form.category === key ? 'var(--gold)' : 'var(--t3)', display: 'flex' }}>{CATEGORY_ICONS[key]}</span>
-                      <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 15, color: form.category === key ? 'var(--gold)' : 'var(--t1)' }}>
-                        {label}
-                      </span>
-                      {form.category === key && <Check size={14} style={{ color: 'var(--gold)', marginLeft: 'auto' }} />}
-                    </button>
-                  ))}
+
+                {/* Main categories — based on CATEGORY_TREE */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10, marginBottom: form.category ? 20 : 0 }}>
+                  {Object.entries(CATEGORY_TREE).map(([treeKey, node]) => {
+                    // Map tree key to DB category key (use first dbValue as the stored category)
+                    const dbKey = node.dbValues[0] as Category
+                    const isSelected = form.category === dbKey ||
+                      node.dbValues.includes(form.category as string)
+                    return (
+                      <button
+                        key={treeKey}
+                        onClick={() => {
+                          set('category', dbKey)
+                          set('subcategory', '') // reset subcategory when main changes
+                        }}
+                        style={{
+                          background: isSelected ? 'var(--gold3)' : 'var(--bg2)',
+                          border: `1px solid ${isSelected ? 'rgba(200,149,58,0.4)' : 'var(--border)'}`,
+                          borderRadius: 4, padding: '14px 18px',
+                          textAlign: 'left', cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          display: 'flex', alignItems: 'center', gap: 12,
+                        }}
+                      >
+                        <span style={{ color: isSelected ? 'var(--gold)' : 'var(--t3)', display: 'flex' }}>
+                          {CATEGORY_ICONS[dbKey] ?? CATEGORY_ICONS['annet']}
+                        </span>
+                        <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 14, color: isSelected ? 'var(--gold)' : 'var(--t1)' }}>
+                          {node.label}
+                        </span>
+                        {isSelected && <Check size={14} style={{ color: 'var(--gold)', marginLeft: 'auto' }} />}
+                      </button>
+                    )
+                  })}
                 </div>
+
+                {/* Subcategories — appear when a main category is selected */}
+                {form.category && (() => {
+                  const treeNode = Object.values(CATEGORY_TREE).find(n => n.dbValues.includes(form.category as string))
+                  if (!treeNode || Object.keys(treeNode.subcategories).length === 0) return null
+                  return (
+                    <div>
+                      <p className="label-sm" style={{ marginBottom: 8 }}>Underkategori (valgfritt)</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                        {Object.entries(treeNode.subcategories).map(([subKey, subLabel]) => {
+                          const isActive = form.subcategory === subKey
+                          return (
+                            <button
+                              key={subKey}
+                              onClick={() => set('subcategory', isActive ? '' : subKey)}
+                              style={{
+                                background: isActive ? 'var(--bg3)' : 'var(--bg)',
+                                border: `1px solid ${isActive ? 'var(--gold)' : 'var(--border)'}`,
+                                borderRadius: 3, padding: '10px 14px',
+                                textAlign: 'left', cursor: 'pointer',
+                                transition: 'all 0.15s',
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                              }}
+                            >
+                              <span style={{ fontSize: 13, color: isActive ? 'var(--gold)' : 'var(--t2)', fontFamily: 'Barlow', fontWeight: isActive ? 600 : 400 }}>
+                                {subLabel}
+                              </span>
+                              {isActive && <Check size={12} style={{ color: 'var(--gold)', flexShrink: 0 }} />}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             )}
 
@@ -689,19 +745,38 @@ export default function NyAnnonsePage() {
 
                 <div>
                   <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>
-                    {form.listing_type === 'rent' ? 'Pris (NOK per dag/uke/måned) *' : 'Pris (NOK ekskl. MVA) *'}
+                    {form.listing_type === 'rent' ? 'Pris ekskl. MVA (NOK per dag/uke/måned) *' : 'Pris ekskl. MVA (NOK) *'}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <span style={{
                       position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
                       color: 'var(--t3)', fontSize: 14, pointerEvents: 'none',
                     }}>kr</span>
-                    <input type="number" value={form.price} onChange={e => set('price', e.target.value)} placeholder="0" min="0" className="input-base" style={{ paddingLeft: 36 }} required />
+                    <input
+                      type="number"
+                      value={form.price_ex_vat}
+                      onChange={e => set('price_ex_vat', e.target.value)}
+                      placeholder="0" min="0"
+                      className="input-base"
+                      style={{ paddingLeft: 36 }}
+                      required
+                    />
                   </div>
-                  {form.price && (
-                    <p style={{ fontSize: 13, color: 'var(--gold)', marginTop: 6, fontFamily: 'Barlow Condensed', fontWeight: 600 }}>
-                      {new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(Number(form.price))}
-                    </p>
+                  {form.price_ex_vat && Number(form.price_ex_vat) > 0 && (
+                    <div style={{ marginTop: 8, padding: '10px 12px', background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 3 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ fontSize: 12, color: 'var(--t3)' }}>Ekskl. MVA (25 %)</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--t1)', fontFamily: 'Barlow Condensed' }}>
+                          {new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(Number(form.price_ex_vat))}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 12, color: 'var(--gold)' }}>+ MVA 25 % = Inkl. MVA</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--gold)', fontFamily: 'Barlow Condensed' }}>
+                          {new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(Math.round(Number(form.price_ex_vat) * 1.25))}
+                        </span>
+                      </div>
+                    </div>
                   )}
                 </div>
 
@@ -844,9 +919,15 @@ export default function NyAnnonsePage() {
                     </div>
                     <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
                       <p className="label-sm" style={{ marginBottom: 4 }}>Pris</p>
-                      <p className="price-display" style={{ fontSize: 24 }}>
-                        {form.price ? new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(Number(form.price)) : '—'}
+                      <p className="price-display" style={{ fontSize: 22 }}>
+                        {form.price_ex_vat ? new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(Number(form.price_ex_vat)) : '—'}
+                        <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--t3)', marginLeft: 4 }}>eks. mva</span>
                       </p>
+                      {form.price_ex_vat && Number(form.price_ex_vat) > 0 && (
+                        <p style={{ fontSize: 12, color: 'var(--t3)', marginTop: 2 }}>
+                          {new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(Math.round(Number(form.price_ex_vat) * 1.25))} inkl. mva
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>

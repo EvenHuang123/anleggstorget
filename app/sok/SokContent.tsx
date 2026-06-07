@@ -2,18 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Search, SortDesc, Grid3X3, LayoutList, X, Filter, SlidersHorizontal } from 'lucide-react'
+import { Search, SortDesc, Grid3X3, LayoutList, X, SlidersHorizontal, ChevronDown } from 'lucide-react'
 import ListingCard from '@/components/listings/ListingCard'
 import ListingFilters from '@/components/listings/ListingFilters'
 import { createClient } from '@/lib/supabase/client'
-import { CATEGORIES, formatNumber } from '@/lib/utils/format'
+import { CATEGORY_TREE, treeKeysToDbValues, formatNumber } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
 
 const SORT_OPTIONS = [
-  { value: 'newest',    label: 'Nyeste først' },
-  { value: 'price_asc', label: 'Pris lav–høy' },
-  { value: 'price_desc',label: 'Pris høy–lav' },
-  { value: 'hours_asc', label: 'Færrest timer' },
+  { value: 'newest',     label: 'Nyeste først' },
+  { value: 'price_asc',  label: 'Laveste pris' },
+  { value: 'price_desc', label: 'Høyeste pris' },
 ]
 
 export default function SokContent() {
@@ -21,41 +20,44 @@ export default function SokContent() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [listings, setListings]         = useState<Listing[]>([])
-  const [loading, setLoading]           = useState(true)
-  const [sort, setSort]                 = useState('newest')
-  const [viewMode, setViewMode]         = useState<'grid' | 'list'>('grid')
+  const [listings, setListings]           = useState<Listing[]>([])
+  const [loading, setLoading]             = useState(true)
+  const [viewMode, setViewMode]           = useState<'grid' | 'list'>('grid')
   const [showMobileFilters, setShowMobileFilters] = useState(false)
-  const [query, setQuery]               = useState(searchParams.get('q') || '')
-  const [favorites, setFavorites]       = useState<Set<string>>(new Set())
+  const [searchInput, setSearchInput]     = useState(searchParams.get('q') || '')
 
-  // Read all active filter params from URL
-  const q            = searchParams.get('q')        || ''
-  const categoryParam= searchParams.get('category') || ''
-  const categories   = categoryParam.split(',').filter(Boolean) // multi-select
-  const location     = searchParams.get('location') || ''
-  const minPrice     = searchParams.get('minPrice') || ''
-  const maxPrice     = searchParams.get('maxPrice') || ''
-  const minYear      = searchParams.get('minYear')  || ''
-  const maxYear      = searchParams.get('maxYear')  || ''
-  const minHours     = searchParams.get('minHours') || ''
-  const maxHours     = searchParams.get('maxHours') || ''
-  const weightClass  = searchParams.get('weightClass') || ''
+  // Read ALL filter params from URL
+  const q            = searchParams.get('q')           || ''
+  const categoryParam= searchParams.get('category')    || ''
+  const subcategory  = searchParams.get('subcategory') || ''
+  const location     = searchParams.get('location')    || ''
   const listingType  = searchParams.get('listingType') || ''
-  const brand        = searchParams.get('brand')    || ''
+  const vatMode      = searchParams.get('vatMode')     || 'ex'
+  const minPrice     = searchParams.get('minPrice')    || ''
+  const maxPrice     = searchParams.get('maxPrice')    || ''
+  const sort         = searchParams.get('sort')        || 'newest'
 
-  // Count active filter groups (for badge on mobile button)
+  const treeKeys = categoryParam.split(',').filter(Boolean)
+
+  // Count active filter groups for the badge
   const activeFilterCount = [
-    categories.length > 0,
+    treeKeys.length > 0,
+    !!subcategory,
     !!location,
-    !!(minPrice || maxPrice),
     !!listingType,
-    !!brand,
-    !!(minYear || maxYear),
-    !!(minHours || maxHours),
-    !!weightClass,
+    !!(minPrice || maxPrice),
   ].filter(Boolean).length
 
+  // Instant URL update (used by search bar + sort)
+  const setParam = useCallback((updates: Record<string, string>) => {
+    const p = new URLSearchParams(searchParams.toString())
+    for (const [k, v] of Object.entries(updates)) {
+      if (v) p.set(k, v); else p.delete(k)
+    }
+    router.replace(`/sok?${p.toString()}`, { scroll: false })
+  }, [searchParams, router])
+
+  // ── Fetch listings ─────────────────────────────────────────────────────────
   const fetchListings = useCallback(async () => {
     setLoading(true)
     try {
@@ -65,28 +67,33 @@ export default function SokContent() {
         .select('*, profiles(company_name, verified, org_number), favorites_count:favorites(count)')
         .eq('status', 'active')
 
-      // Multi-category: use .in() when multiple selected
-      if (categories.length === 1) qb = qb.eq('category', categories[0])
-      else if (categories.length > 1) qb = qb.in('category', categories)
+      // Category: resolve tree keys → DB enum values
+      const dbCats = treeKeysToDbValues(treeKeys)
+      if (dbCats.length === 1)      qb = qb.eq('category', dbCats[0])
+      else if (dbCats.length > 1)   qb = qb.in('category', dbCats)
 
-      if (q)          qb = qb.ilike('title', `%${q}%`)
-      if (location)   qb = qb.ilike('location', `%${location}%`)
-      if (brand)      qb = qb.ilike('brand', `%${brand}%`)
-      if (minPrice)   qb = qb.gte('price', parseInt(minPrice))
-      if (maxPrice)   qb = qb.lte('price', parseInt(maxPrice))
-      if (minYear)    qb = qb.gte('year', parseInt(minYear))
-      if (maxYear)    qb = qb.lte('year', parseInt(maxYear))
-      if (minHours)   qb = qb.gte('operating_hours', parseInt(minHours))
-      if (maxHours)   qb = qb.lte('operating_hours', parseInt(maxHours))
-      if (weightClass)qb = qb.eq('weight_class', weightClass)
-      // listing_type requires DB migration — handled gracefully via try/catch
+      // Subcategory
+      if (subcategory) qb = qb.eq('subcategory', subcategory)
+
+      // Text search
+      if (q) qb = qb.ilike('title', `%${q}%`)
+
+      // Location
+      if (location) qb = qb.ilike('location', `%${location}%`)
+
+      // Type annonse
       if (listingType === 'sale') qb = qb.eq('listing_type', 'sale')
       else if (listingType === 'rent') qb = qb.eq('listing_type', 'rent')
 
-      if (sort === 'newest')     qb = qb.order('created_at', { ascending: false })
-      else if (sort === 'price_asc')  qb = qb.order('price', { ascending: true })
-      else if (sort === 'price_desc') qb = qb.order('price', { ascending: false })
-      else if (sort === 'hours_asc')  qb = qb.order('operating_hours', { ascending: true })
+      // Price filter — uses price_ex_vat or price_inc_vat based on vatMode
+      const priceCol = vatMode === 'inc' ? 'price_inc_vat' : 'price_ex_vat'
+      if (minPrice) qb = qb.gte(priceCol, parseInt(minPrice))
+      if (maxPrice) qb = qb.lte(priceCol, parseInt(maxPrice))
+
+      // Sort
+      if (sort === 'newest')     qb = qb.order('created_at',  { ascending: false })
+      else if (sort === 'price_asc')  qb = qb.order('price_ex_vat', { ascending: true,  nullsFirst: false })
+      else if (sort === 'price_desc') qb = qb.order('price_ex_vat', { ascending: false, nullsFirst: false })
 
       const { data } = await qb.limit(48)
       setListings((data as Listing[]) || [])
@@ -95,91 +102,92 @@ export default function SokContent() {
     } finally {
       setLoading(false)
     }
-  }, [q, categoryParam, location, brand, minPrice, maxPrice, minYear, maxYear, minHours, maxHours, weightClass, listingType, sort])
+  }, [q, categoryParam, subcategory, location, listingType, vatMode, minPrice, maxPrice, sort])
 
   useEffect(() => { fetchListings() }, [fetchListings])
 
-  // Keep search input in sync with URL param
-  useEffect(() => { setQuery(searchParams.get('q') || '') }, [searchParams])
+  // Keep search input in sync with URL
+  useEffect(() => { setSearchInput(searchParams.get('q') || '') }, [searchParams])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    const p = new URLSearchParams(searchParams.toString())
-    if (query) p.set('q', query); else p.delete('q')
-    router.push(`/sok?${p.toString()}`)
+    setParam({ q: searchInput })
   }
 
-  const removeFilter = (key: string) => {
-    const p = new URLSearchParams(searchParams.toString())
-    p.delete(key)
-    router.push(`/sok?${p.toString()}`)
+  // Remove one filter chip
+  const removeChip = (key: string, value?: string) => {
+    if (key === 'category' && value) {
+      // Remove one tree key from comma-separated list
+      const next = treeKeys.filter(k => k !== value)
+      const p = new URLSearchParams(searchParams.toString())
+      if (next.length > 0) p.set('category', next.join(','))
+      else p.delete('category')
+      p.delete('subcategory')
+      router.replace(`/sok?${p.toString()}`, { scroll: false })
+    } else {
+      setParam({ [key]: '' })
+    }
   }
 
-  // Build active filter chips for display
-  const activeChips = [
-    ...categories.map(c => ({
-      key: `cat-${c}`,
-      label: CATEGORIES[c]?.label ?? c,
-      onRemove: () => {
-        const remaining = categories.filter(x => x !== c)
-        const p = new URLSearchParams(searchParams.toString())
-        if (remaining.length > 0) p.set('category', remaining.join(','))
-        else p.delete('category')
-        router.push(`/sok?${p.toString()}`)
-      },
+  // Build active filter chips
+  const chips = [
+    ...treeKeys.map(k => ({
+      key: 'category', value: k,
+      label: CATEGORY_TREE[k]?.label ?? k,
     })),
-    location && { key: 'location', label: location, onRemove: () => removeFilter('location') },
-    brand    && { key: 'brand',    label: brand,    onRemove: () => removeFilter('brand') },
-    minPrice && { key: 'minPrice', label: `Fra ${Number(minPrice).toLocaleString('nb-NO')} kr`, onRemove: () => removeFilter('minPrice') },
-    maxPrice && { key: 'maxPrice', label: `Til ${Number(maxPrice).toLocaleString('nb-NO')} kr`, onRemove: () => removeFilter('maxPrice') },
-    listingType === 'sale' && { key: 'listingType', label: 'Til salgs', onRemove: () => removeFilter('listingType') },
-    listingType === 'rent' && { key: 'listingType', label: 'Til leie',  onRemove: () => removeFilter('listingType') },
-  ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[]
+    subcategory && { key: 'subcategory', value: subcategory,
+      label: (() => {
+        for (const node of Object.values(CATEGORY_TREE)) {
+          if (node.subcategories[subcategory]) return node.subcategories[subcategory]
+        }
+        return subcategory
+      })(),
+    },
+    location && { key: 'location', value: location, label: location },
+    listingType === 'sale' && { key: 'listingType', value: 'sale', label: 'Til salgs' },
+    listingType === 'rent' && { key: 'listingType', value: 'rent', label: 'Til leie' },
+    minPrice && { key: 'minPrice', value: minPrice, label: `Fra ${Number(minPrice).toLocaleString('nb-NO')} kr` },
+    maxPrice && { key: 'maxPrice', value: maxPrice, label: `Til ${Number(maxPrice).toLocaleString('nb-NO')} kr` },
+  ].filter(Boolean) as { key: string; value: string; label: string }[]
 
-  // Page heading: list selected category labels or "Alle maskiner"
-  const headingLabel = categories.length > 0
-    ? categories.map(c => CATEGORIES[c]?.label ?? c).join(', ')
+  // Page heading
+  const headingLabel = treeKeys.length > 0
+    ? treeKeys.map(k => CATEGORY_TREE[k]?.label ?? k).join(', ')
     : 'Alle maskiner'
 
   return (
-    <div className="container-main" style={{ padding: '32px 24px 80px' }}>
+    <div className="container-main" style={{ padding: '28px 24px 80px' }}>
 
-      {/* Page header */}
-      <div style={{ marginBottom: 20 }}>
-        <h1 style={{
-          fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 28,
-          color: 'var(--t1)', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: 4,
-        }}>
+      {/* ── Page header ─────────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: 16 }}>
+        <h1 style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 26, color: 'var(--t1)', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: 2 }}>
           {headingLabel}
         </h1>
         <p style={{ color: 'var(--t3)', fontSize: 13 }}>
-          {loading
-            ? 'Søker...'
-            : `Viser ${formatNumber(listings.length)} maskin${listings.length !== 1 ? 'er' : ''}`}
+          {loading ? 'Søker...' : `Viser ${formatNumber(listings.length)} maskin${listings.length !== 1 ? 'er' : ''}`}
         </p>
       </div>
 
-      {/* Search bar row */}
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8, marginBottom: activeChips.length > 0 ? 12 : 20 }}>
+      {/* ── Search row ─────────────────────────────────────────────────────── */}
+      <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8, marginBottom: chips.length > 0 ? 10 : 16 }}>
         <div style={{ position: 'relative', flex: 1 }}>
           <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--t3)', pointerEvents: 'none' }} />
           <input
-            type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
+            type="text" value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
             placeholder="Søk etter maskin, merke, modell..."
             className="input-base"
             style={{ paddingLeft: 36 }}
           />
         </div>
-        <button type="submit" className="btn-primary" style={{ padding: '0 20px', height: 46 }}>Søk</button>
+        <button type="submit" className="btn-primary" style={{ padding: '0 18px', height: 46, flexShrink: 0 }}>Søk</button>
 
-        {/* Mobile filter button with badge */}
+        {/* Mobile filter toggle with count badge */}
         <button
           type="button"
-          onClick={() => setShowMobileFilters(true)}
+          onClick={() => setShowMobileFilters(f => !f)}
           className="btn-secondary show-filter-btn"
-          style={{ padding: '0 14px', height: 46, position: 'relative', flexShrink: 0 }}
+          style={{ padding: '0 14px', height: 46, position: 'relative', flexShrink: 0, gap: 6 }}
         >
           <SlidersHorizontal size={15} />
           Filtrer
@@ -198,23 +206,19 @@ export default function SokContent() {
         </button>
       </form>
 
-      {/* Active filter chips */}
-      {activeChips.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20, alignItems: 'center' }}>
-          <span style={{ fontSize: 11, color: 'var(--t3)', fontFamily: 'Barlow Condensed', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Aktive filtre:</span>
-          {activeChips.map(chip => (
-            <div key={chip.key} className="tag tag-gold" style={{ padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 5 }}>
+      {/* ── Active chips ───────────────────────────────────────────────────── */}
+      {chips.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
+          {chips.map((chip, i) => (
+            <div key={i} className="tag tag-gold" style={{ padding: '4px 10px', display: 'flex', alignItems: 'center', gap: 5 }}>
               {chip.label}
-              <button
-                onClick={chip.onRemove}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold2)', padding: 0, display: 'flex' }}
-              >
+              <button onClick={() => removeChip(chip.key, chip.value)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--gold2)', padding: 0, display: 'flex' }}>
                 <X size={10} />
               </button>
             </div>
           ))}
           <button
-            onClick={() => router.push('/sok')}
+            onClick={() => router.replace('/sok', { scroll: false })}
             style={{ fontSize: 11, color: 'var(--t3)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
           >
             Nullstill alle
@@ -222,6 +226,33 @@ export default function SokContent() {
         </div>
       )}
 
+      {/* ── Mobile collapsible filter panel ─────────────────────────────────── */}
+      <div className="show-filter-btn" style={{ marginBottom: showMobileFilters ? 0 : 0 }}>
+        {showMobileFilters && (
+          <div style={{
+            background: 'var(--bg2)', border: '1px solid var(--border)',
+            borderRadius: 4, marginBottom: 16, overflow: 'hidden',
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 16px', borderBottom: '1px solid var(--border)',
+            }}>
+              <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 13, color: 'var(--t1)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                Filtrer maskiner
+              </span>
+              <button onClick={() => setShowMobileFilters(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t2)' }}>
+                <X size={16} />
+              </button>
+            </div>
+            <ListingFilters
+              onClose={() => setShowMobileFilters(false)}
+              resultCount={listings.length}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ── Main layout ────────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
 
         {/* Desktop sidebar */}
@@ -229,127 +260,75 @@ export default function SokContent() {
           <ListingFilters />
         </div>
 
-        {/* Main content */}
+        {/* Results column */}
         <div style={{ flex: 1, minWidth: 0 }}>
 
           {/* Sort + view toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <SortDesc size={14} style={{ color: 'var(--t3)' }} />
-              <select
-                value={sort}
-                onChange={e => setSort(e.target.value)}
-                style={{
-                  background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--t1)',
-                  fontFamily: 'Barlow', fontSize: 13, padding: '6px 10px',
-                  borderRadius: 3, cursor: 'pointer', outline: 'none',
-                }}
-              >
-                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <SortDesc size={13} style={{ color: 'var(--t3)' }} />
+              <div style={{ position: 'relative' }}>
+                <select
+                  value={sort}
+                  onChange={e => setParam({ sort: e.target.value })}
+                  style={{
+                    background: 'var(--bg3)', border: '1px solid var(--border)', color: 'var(--t1)',
+                    fontFamily: 'Barlow', fontSize: 13, padding: '6px 28px 6px 10px',
+                    borderRadius: 3, cursor: 'pointer', outline: 'none', appearance: 'none',
+                  }}
+                >
+                  {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <ChevronDown size={12} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--t3)', pointerEvents: 'none' }} />
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 4 }}>
               {(['grid', 'list'] as const).map(mode => (
-                <button
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
-                  style={{
-                    background: viewMode === mode ? 'var(--bg4)' : 'transparent',
-                    border: `1px solid ${viewMode === mode ? 'var(--border2)' : 'transparent'}`,
-                    borderRadius: 3, padding: '6px 8px',
-                    color: viewMode === mode ? 'var(--t1)' : 'var(--t3)',
-                    cursor: 'pointer', transition: 'all 0.15s',
-                  }}
-                >
+                <button key={mode} onClick={() => setViewMode(mode)} style={{
+                  background: viewMode === mode ? 'var(--bg4)' : 'transparent',
+                  border: `1px solid ${viewMode === mode ? 'var(--border2)' : 'transparent'}`,
+                  borderRadius: 3, padding: '6px 8px',
+                  color: viewMode === mode ? 'var(--t1)' : 'var(--t3)',
+                  cursor: 'pointer', transition: 'all 0.15s',
+                }}>
                   {mode === 'grid' ? <Grid3X3 size={14} /> : <LayoutList size={14} />}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Results */}
+          {/* Results grid */}
           {loading ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="results-grid">
+            <div className="results-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="card shimmer" style={{ height: 280 }} />
               ))}
             </div>
           ) : listings.length === 0 ? (
-            <div style={{
-              textAlign: 'center', padding: '80px 24px',
-              background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4,
-            }}>
-              <Filter size={32} style={{ color: 'var(--t3)', marginBottom: 16 }} />
+            <div style={{ textAlign: 'center', padding: '80px 24px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4 }}>
+              <SlidersHorizontal size={32} style={{ color: 'var(--t3)', marginBottom: 16 }} />
               <p style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 20, color: 'var(--t1)', marginBottom: 8 }}>
-                Ingen annonser funnet
+                Ingen maskiner funnet
               </p>
               <p style={{ color: 'var(--t3)', fontSize: 14, marginBottom: 20 }}>
-                Prøv å justere filtrene eller søketeksten
+                Prøv å justere filtrene
               </p>
-              <button onClick={() => router.push('/sok')} className="btn-secondary" style={{ fontSize: 13 }}>
+              <button onClick={() => router.replace('/sok', { scroll: false })} className="btn-secondary" style={{ fontSize: 13 }}>
                 Nullstill filtre
               </button>
             </div>
           ) : (
             <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: viewMode === 'grid' ? 'repeat(3, 1fr)' : '1fr',
-                gap: viewMode === 'grid' ? 16 : 12,
-              }}
               className="results-grid"
+              style={{ display: 'grid', gridTemplateColumns: viewMode === 'grid' ? 'repeat(3,1fr)' : '1fr', gap: viewMode === 'grid' ? 14 : 10 }}
             >
               {listings.map(listing => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  isFavorite={favorites.has(listing.id)}
-                  onToggleFavorite={id => {
-                    setFavorites(prev => {
-                      const next = new Set(prev)
-                      next.has(id) ? next.delete(id) : next.add(id)
-                      return next
-                    })
-                  }}
-                />
+                <ListingCard key={listing.id} listing={listing} />
               ))}
             </div>
           )}
         </div>
       </div>
-
-      {/* Mobile bottom-sheet drawer */}
-      {showMobileFilters && (
-        <>
-          <div
-            style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(3px)' }}
-            onClick={() => setShowMobileFilters(false)}
-          />
-          <div style={{
-            position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 201,
-            background: 'var(--bg2)',
-            borderRadius: '16px 16px 0 0',
-            maxHeight: '88vh',
-            overflowY: 'auto',
-            boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
-          }}>
-            {/* Drag handle */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px 0 0', position: 'sticky', top: 0, background: 'var(--bg2)', zIndex: 10, borderBottom: '1px solid var(--border)' }}>
-              <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--bg5)', marginBottom: 10 }} />
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0 20px 10px' }}>
-                <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 16, color: 'var(--t1)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Filtrer maskiner</span>
-                <button onClick={() => setShowMobileFilters(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t2)', padding: 4 }}>
-                  <X size={20} />
-                </button>
-              </div>
-            </div>
-            <ListingFilters
-              onClose={() => setShowMobileFilters(false)}
-              resultCount={listings.length}
-            />
-          </div>
-        </>
-      )}
 
       <style>{`
         .filters-sidebar { display: block; }

@@ -141,10 +141,20 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
               {listing.brand && (
                 <p className="label-sm" style={{ marginBottom: 3 }}>{listing.brand}</p>
               )}
-              <p className="price-display" style={{ fontSize: 18 }}>
-                {formatPrice(listing.price, listing.price_type)}
+              {/* Primary price — ex VAT if available, else legacy price */}
+              <p className="price-display" style={{ fontSize: 17 }}>
+                {formatPrice(listing.price_ex_vat ?? listing.price, listing.price_type)}
+                {listing.price_ex_vat != null && (
+                  <span style={{ fontFamily: 'Barlow', fontSize: 10, fontWeight: 400, color: 'var(--t3)', marginLeft: 4 }}>eks. mva</span>
+                )}
               </p>
-              {listing.price_type === 'negotiable' && (
+              {/* Inc-VAT line — only when price_inc_vat is populated */}
+              {listing.price_inc_vat != null && (
+                <p style={{ fontSize: 11, color: 'var(--t3)', marginTop: 1 }}>
+                  {formatPrice(listing.price_inc_vat)} inkl. mva
+                </p>
+              )}
+              {listing.price_type === 'negotiable' && !listing.price_inc_vat && (
                 <p style={{ fontSize: 11, color: 'var(--t3)' }}>Forhandlingsbar</p>
               )}
             </div>

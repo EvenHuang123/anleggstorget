@@ -60,6 +60,10 @@ export interface Listing {
   price: number
   price_type: PriceType
   listing_type?: ListingType
+  subcategory?: string | null
+  price_ex_vat?: number | null
+  price_inc_vat?: number | null
+  vat_rate?: number | null
   location: string | null
   status: ListingStatus
   images: string[]

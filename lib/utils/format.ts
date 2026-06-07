@@ -48,11 +48,105 @@ export const CATEGORIES: Record<string, { label: string; icon: string }> = {
   hjullaster:     { label: 'Hjullastere',      icon: '🚛' },
   teleskoplaster: { label: 'Teleskoplastere',  icon: '🚜' },
   kompaktlaster:  { label: 'Kompaktlastere',   icon: '🚛' },
+  kompaktmaskin:  { label: 'Kompaktmaskiner',  icon: '⚙️' },
   traktor:        { label: 'Traktorer',        icon: '🚜' },
   kranbil:        { label: 'Kranbiler',        icon: '🏗️' },
+  kran:           { label: 'Kraner og løft',   icon: '🏗️' },
   skogsutstyr:    { label: 'Skogsutstyr',      icon: '🌲' },
   betong:         { label: 'Betongmaskiner',   icon: '🏗️' },
   annet:          { label: 'Annet',            icon: '⚙️' },
+}
+
+export interface CategoryNode {
+  label: string
+  /** DB enum values that belong to this tree node */
+  dbValues: string[]
+  subcategories: Record<string, string>
+}
+
+/** Two-level category tree used in filters and the wizard */
+export const CATEGORY_TREE: Record<string, CategoryNode> = {
+  gravemaskin: {
+    label: 'Gravemaskiner',
+    dbValues: ['gravemaskin'],
+    subcategories: {
+      minigraver:  'Minigraver (0–6 tonn)',
+      midigraver:  'Middelsstor graver (6–20 tonn)',
+      storgraver:  'Stor graver (20+ tonn)',
+      langrekke:   'Langrekke-graver',
+      sumpgraver:  'Sumpgraver',
+    },
+  },
+  hjullaster: {
+    label: 'Hjullastere',
+    dbValues: ['hjullaster', 'teleskoplaster'],
+    subcategories: {
+      kompakt:     'Kompakt hjullaster',
+      mellomstor:  'Middelsstor hjullaster',
+      stor:        'Stor hjullaster',
+      teleskop:    'Teleskophjullaster',
+      gaffeltruck: 'Gaffeltruck (utendørs)',
+    },
+  },
+  dumper: {
+    label: 'Dumpere',
+    dbValues: ['dumper'],
+    subcategories: {
+      minidumper:  'Minidumper (under 3 tonn)',
+      bandedumper: 'Bandedumper',
+      hjuldumper:  'Hjuldumper',
+      knekkstyrt:  'Knekkstyrt dumper',
+    },
+  },
+  kompaktmaskin: {
+    label: 'Kompaktmaskiner',
+    dbValues: ['kompaktlaster', 'kompaktmaskin', 'betong'],
+    subcategories: {
+      kompaktlaster:   'Kompaktlaster (bobcat-type)',
+      teleskoplaster2: 'Teleskoplaster',
+      trommel:         'Trommel/vals',
+      groftegravet:    'Grøftegraver',
+    },
+  },
+  kran: {
+    label: 'Kraner og løft',
+    dbValues: ['kranbil', 'kran'],
+    subcategories: {
+      mobilkran:    'Mobilkran',
+      tarnkran:     'Tårnkran',
+      personlofter: 'Personløfter (saks/mast)',
+      lastebilkran: 'Lastebilkran (fastkran)',
+    },
+  },
+  annet: {
+    label: 'Annet utstyr',
+    dbValues: ['annet', 'traktor', 'skogsutstyr'],
+    subcategories: {
+      asfaltlegger:  'Asfaltlegger',
+      fresemaskiner: 'Fresemaskiner',
+      palerrigg:     'Pælerigg',
+      generator:     'Generatorer',
+      annet_utstyr:  'Annet utstyr',
+    },
+  },
+}
+
+/** Resolve tree keys → flat array of DB category values for Supabase .in() */
+export function treeKeysToDbValues(treeKeys: string[]): string[] {
+  const out = new Set<string>()
+  for (const key of treeKeys) {
+    const node = CATEGORY_TREE[key]
+    if (node) node.dbValues.forEach(v => out.add(v))
+  }
+  return [...out]
+}
+
+/** Find which CATEGORY_TREE key a DB category value belongs to */
+export function dbValueToTreeKey(dbCat: string): string {
+  for (const [key, node] of Object.entries(CATEGORY_TREE)) {
+    if (node.dbValues.includes(dbCat)) return key
+  }
+  return 'annet'
 }
 
 export const NORWEGIAN_COUNTIES = [
