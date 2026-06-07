@@ -171,16 +171,16 @@ export default function AnnonseContent({ listing, related }: Props) {
                   </div>
                 )}
 
-                {/* Zoom hint */}
+                {/* Image counter */}
                 {images.length > 0 && (
                   <div style={{
-                    position: 'absolute', bottom: 10, right: 10,
-                    background: 'rgba(13,12,10,0.7)', borderRadius: 3, padding: '5px 8px',
+                    position: 'absolute', bottom: 16, right: 16,
+                    background: 'rgba(0,0,0,0.6)', borderRadius: 6, padding: '4px 10px',
                     display: 'flex', alignItems: 'center', gap: 5,
-                    backdropFilter: 'blur(4px)',
+                    pointerEvents: 'none', zIndex: 10,
                   }}>
-                    <ZoomIn size={12} style={{ color: 'var(--t2)' }} />
-                    <span style={{ color: 'var(--t2)', fontSize: 11 }}>
+                    <ZoomIn size={12} style={{ color: '#ffffff' }} />
+                    <span style={{ color: '#ffffff', fontSize: 14, fontWeight: 500 }}>
                       {activeImg + 1} / {images.length}
                     </span>
                   </div>
