@@ -102,6 +102,8 @@ const faqJsonLd = {
 export default function HomePage() {
   return (
     <>
+      {/* Preload hero background — tells browser to fetch before CSS is parsed */}
+      <link rel="preload" as="image" href="/url.jpg" fetchPriority="high" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <Navbar />
       <main>
