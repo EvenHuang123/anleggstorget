@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'images.unsplash.com',
       },
+      {
+        // NASTA AS scraper — machine images from Mascus marketplace
+        protocol: 'https',
+        hostname: 'st.mascus.com',
+      },
     ],
   },
 };

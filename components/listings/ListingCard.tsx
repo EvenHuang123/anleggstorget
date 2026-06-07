@@ -31,7 +31,7 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
             }}
             style={{
               position: 'absolute', inset: 0, width: '100%', height: '100%',
-              objectFit: 'cover', filter: 'sepia(0.15) brightness(0.88)',
+              objectFit: 'contain', background: '#f5f4f2',
               transition: 'transform 0.3s ease',
             }}
             className="listing-img"

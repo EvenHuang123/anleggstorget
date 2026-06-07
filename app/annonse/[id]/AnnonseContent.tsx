@@ -107,8 +107,9 @@ export default function AnnonseContent({ listing, related }: Props) {
     }
   }
 
-  const prevImg = () => setActiveImg(i => (i - 1 + images.length) % images.length)
-  const nextImg = () => setActiveImg(i => (i + 1) % images.length)
+  // Non-cyclic nav — disabled at start/end
+  const prevImg = () => setActiveImg(i => Math.max(0, i - 1))
+  const nextImg = () => setActiveImg(i => Math.min(images.length - 1, i + 1))
 
   return (
     <>
@@ -137,8 +138,8 @@ export default function AnnonseContent({ listing, related }: Props) {
               <div
                 style={{
                   borderRadius: 4, overflow: 'hidden',
-                  background: 'var(--bg3)', border: '1px solid var(--border)',
-                  aspectRatio: '16/9', position: 'relative', marginBottom: 8,
+                  background: '#f5f4f2', border: '1px solid var(--border)',
+                  aspectRatio: '4/3', position: 'relative', marginBottom: 8,
                   cursor: images.length ? 'zoom-in' : 'default',
                 }}
                 onClick={() => images.length && setLightbox(true)}
@@ -149,7 +150,7 @@ export default function AnnonseContent({ listing, related }: Props) {
                     alt={listing.title}
                     fill
                     sizes="(max-width: 960px) 100vw, 60vw"
-                    style={{ objectFit: 'cover' }}
+                    style={{ objectFit: 'contain' }}
                     priority
                   />
                 ) : (
@@ -190,27 +191,39 @@ export default function AnnonseContent({ listing, related }: Props) {
                   <>
                     <button
                       onClick={e => { e.stopPropagation(); prevImg() }}
+                      disabled={activeImg === 0}
+                      aria-label="Forrige bilde"
                       style={{
                         position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
-                        background: 'rgba(13,12,10,0.7)', border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: 3, width: 36, height: 36,
+                        background: 'rgba(255,255,255,0.92)', border: 'none',
+                        borderRadius: '50%', width: 48, height: 48,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer', color: 'var(--t1)', backdropFilter: 'blur(4px)',
+                        cursor: activeImg === 0 ? 'default' : 'pointer',
+                        color: '#1a1714',
+                        opacity: activeImg === 0 ? 0.35 : 1,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                        transition: 'opacity 0.15s, background 0.15s',
                       }}
                     >
-                      <ChevronLeft size={16} />
+                      <ChevronLeft size={20} />
                     </button>
                     <button
                       onClick={e => { e.stopPropagation(); nextImg() }}
+                      disabled={activeImg === images.length - 1}
+                      aria-label="Neste bilde"
                       style={{
                         position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                        background: 'rgba(13,12,10,0.7)', border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: 3, width: 36, height: 36,
+                        background: 'rgba(255,255,255,0.92)', border: 'none',
+                        borderRadius: '50%', width: 48, height: 48,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer', color: 'var(--t1)', backdropFilter: 'blur(4px)',
+                        cursor: activeImg === images.length - 1 ? 'default' : 'pointer',
+                        color: '#1a1714',
+                        opacity: activeImg === images.length - 1 ? 0.35 : 1,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                        transition: 'opacity 0.15s, background 0.15s',
                       }}
                     >
-                      <ChevronRight size={16} />
+                      <ChevronRight size={20} />
                     </button>
                   </>
                 )}
@@ -503,75 +516,98 @@ export default function AnnonseContent({ listing, related }: Props) {
       {/* Lightbox */}
       {lightbox && images.length > 0 && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Bildegalleri"
           style={{
             position: 'fixed', inset: 0, zIndex: 999,
-            background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(8px)',
+            background: 'rgba(0,0,0,0.92)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
           onClick={() => setLightbox(false)}
         >
+          {/* X – close button */}
           <button
             onClick={() => setLightbox(false)}
+            aria-label="Lukk bildegalleri"
             style={{
-              position: 'absolute', top: 20, right: 20,
-              background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-              borderRadius: 3, width: 40, height: 40,
+              position: 'absolute', top: 16, right: 16,
+              background: 'rgba(255,255,255,0.92)', border: 'none',
+              borderRadius: '50%', width: 48, height: 48,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'var(--t1)',
+              cursor: 'pointer', color: '#1a1714',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+              zIndex: 10,
             }}
           >
-            <X size={18} />
+            <X size={20} />
           </button>
 
+          {/* Arrow buttons */}
           {images.length > 1 && (
             <>
               <button
                 onClick={e => { e.stopPropagation(); prevImg() }}
+                disabled={activeImg === 0}
+                aria-label="Forrige bilde"
                 style={{
-                  position: 'absolute', left: 20, top: '50%', transform: 'translateY(-50%)',
-                  background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-                  borderRadius: 3, width: 48, height: 48,
+                  position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+                  background: 'rgba(255,255,255,0.92)', border: 'none',
+                  borderRadius: '50%', width: 52, height: 52,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: 'var(--t1)',
+                  cursor: activeImg === 0 ? 'default' : 'pointer',
+                  color: '#1a1714',
+                  opacity: activeImg === 0 ? 0.3 : 1,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                  transition: 'opacity 0.15s',
+                  zIndex: 10,
                 }}
               >
-                <ChevronLeft size={22} />
+                <ChevronLeft size={24} />
               </button>
               <button
                 onClick={e => { e.stopPropagation(); nextImg() }}
+                disabled={activeImg === images.length - 1}
+                aria-label="Neste bilde"
                 style={{
-                  position: 'absolute', right: 20, top: '50%', transform: 'translateY(-50%)',
-                  background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-                  borderRadius: 3, width: 48, height: 48,
+                  position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+                  background: 'rgba(255,255,255,0.92)', border: 'none',
+                  borderRadius: '50%', width: 52, height: 52,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: 'var(--t1)',
+                  cursor: activeImg === images.length - 1 ? 'default' : 'pointer',
+                  color: '#1a1714',
+                  opacity: activeImg === images.length - 1 ? 0.3 : 1,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                  transition: 'opacity 0.15s',
+                  zIndex: 10,
                 }}
               >
-                <ChevronRight size={22} />
+                <ChevronRight size={24} />
               </button>
             </>
           )}
 
-          <div
+          {/* Image — plain <img> to avoid Next.js domain restrictions and aspect-ratio lock */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={images[activeImg]}
+            alt={`${listing.title} – bilde ${activeImg + 1} av ${images.length}`}
             onClick={e => e.stopPropagation()}
             style={{
-              position: 'relative', maxWidth: '90vw', maxHeight: '85vh',
-              width: '100%', aspectRatio: '16/9',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              width: 'auto',
+              height: 'auto',
+              display: 'block',
+              objectFit: 'contain',
+              borderRadius: 4,
             }}
-          >
-            <Image
-              src={images[activeImg]}
-              alt={listing.title}
-              fill
-              sizes="90vw"
-              style={{ objectFit: 'contain' }}
-              priority
-            />
-          </div>
+          />
 
+          {/* Counter */}
           <p style={{
             position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)',
-            color: 'rgba(255,255,255,0.5)', fontSize: 13,
+            color: 'rgba(255,255,255,0.6)', fontSize: 13, whiteSpace: 'nowrap',
           }}>
             {activeImg + 1} / {images.length}
           </p>
