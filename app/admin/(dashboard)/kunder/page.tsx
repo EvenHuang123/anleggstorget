@@ -8,10 +8,20 @@ export default async function AdminKunderPage() {
   await requireAdmin()
   const supabase = createAdminClient()
 
-  const { data: profiles } = await (supabase as any)
+  // Try to include notes + updated_at; fall back gracefully if migration hasn't run yet.
+  let { data: profiles, error: profileErr } = await (supabase as any)
     .from('profiles')
-    .select('id, company_name, org_number, contact_person, phone, verified, notes, created_at, updated_at')
-    .order('created_at', { ascending: false }) as { data: Profile[] | null }
+    .select('id, company_name, org_number, contact_person, phone, verified, notes, updated_at, created_at')
+    .order('created_at', { ascending: false }) as { data: Profile[] | null; error: any }
+
+  if (profileErr) {
+    // Column(s) missing — select without them
+    const fallback = await (supabase as any)
+      .from('profiles')
+      .select('id, company_name, org_number, contact_person, phone, verified, created_at')
+      .order('created_at', { ascending: false }) as { data: Profile[] | null }
+    profiles = fallback.data
+  }
 
   const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
 
