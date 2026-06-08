@@ -304,7 +304,7 @@ export default function SokContent() {
                 <X size={16} />
               </button>
             </div>
-            <ListingFilters onClose={() => setShowMobileFilters(false)} resultCount={totalCount} />
+            <ListingFilters onClose={() => setShowMobileFilters(false)} resultCount={totalCount} searchParams={searchParams} onFilterChange={setParam} />
           </div>
         )}
       </div>
@@ -312,7 +312,7 @@ export default function SokContent() {
       {/* Main layout */}
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         <div className="filters-sidebar">
-          <ListingFilters />
+          <ListingFilters searchParams={searchParams} onFilterChange={setParam} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>

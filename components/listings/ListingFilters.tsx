@@ -1,13 +1,16 @@
 'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import type { ReadonlyURLSearchParams } from 'next/navigation'
+import { useState, useRef, useEffect } from 'react'
 import { X, ChevronDown, ChevronRight } from 'lucide-react'
 import { CATEGORY_TREE, NORWEGIAN_COUNTIES } from '@/lib/utils/format'
 
 interface Props {
   onClose?: () => void
   resultCount?: number
+  searchParams: ReadonlyURLSearchParams
+  onFilterChange: (updates: Record<string, string>) => void
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -50,23 +53,22 @@ function SectionHeader({ label, active, open, onToggle }: {
 
 // ── component ─────────────────────────────────────────────────────────────────
 
-export default function ListingFilters({ onClose, resultCount }: Props) {
+export default function ListingFilters({ onClose, resultCount, searchParams, onFilterChange }: Props) {
   const router = useRouter()
-  const params = useSearchParams()
 
-  // ── Read filter state directly from URL — no shadow state ──────────────────
-  const selectedCats = (params.get('category') || '').split(',').filter(Boolean)
-  const subcategory  = params.get('subcategory') || ''
-  const location     = params.get('location')    || ''
-  const listingType  = params.get('listingType') || ''
+  // ── Read filter state from the single URL source of truth (passed from parent)
+  const selectedCats = (searchParams.get('category') || '').split(',').filter(Boolean)
+  const subcategory  = searchParams.get('subcategory') || ''
+  const location     = searchParams.get('location')    || ''
+  const listingType  = searchParams.get('listingType') || ''
 
   // Price inputs need local state so typing feels smooth; debounced push to URL
-  const [localMin, setLocalMin] = useState(params.get('minPrice') || '')
-  const [localMax, setLocalMax] = useState(params.get('maxPrice') || '')
+  const [localMin, setLocalMin] = useState(searchParams.get('minPrice') || '')
+  const [localMax, setLocalMax] = useState(searchParams.get('maxPrice') || '')
   useEffect(() => {
-    setLocalMin(params.get('minPrice') || '')
-    setLocalMax(params.get('maxPrice') || '')
-  }, [params])
+    setLocalMin(searchParams.get('minPrice') || '')
+    setLocalMax(searchParams.get('maxPrice') || '')
+  }, [searchParams])
 
   // Collapsible sections
   const [openSections, setOpenSections] = useState({
@@ -75,49 +77,40 @@ export default function ListingFilters({ onClose, resultCount }: Props) {
   const toggleSection = (k: keyof typeof openSections) =>
     setOpenSections(s => ({ ...s, [k]: !s[k] }))
 
-  // ── Instant URL update ────────────────────────────────────────────────────
-  const setParam = useCallback((updates: Record<string, string>) => {
-    const p = new URLSearchParams(params.toString())
-    for (const [k, v] of Object.entries(updates)) {
-      if (v) p.set(k, v); else p.delete(k)
-    }
-    router.replace(`/sok?${p.toString()}`, { scroll: false })
-  }, [params, router])
-
   // Toggle a main category (multi-select); also clears subcategory
   const toggleCat = (treeKey: string) => {
     const next = selectedCats.includes(treeKey)
       ? selectedCats.filter(c => c !== treeKey)
       : [...selectedCats, treeKey]
-    const p = new URLSearchParams(params.toString())
-    if (next.length > 0) p.set('category', next.join(','))
-    else p.delete('category')
-    p.delete('subcategory')
-    router.replace(`/sok?${p.toString()}`, { scroll: false })
+    const updates: Record<string, string> = {
+      category: next.join(','),
+      subcategory: '',
+    }
+    onFilterChange(updates)
   }
 
   // Toggle subcategory (click same = deselect)
   const toggleSub = (sub: string) =>
-    setParam({ subcategory: subcategory === sub ? '' : sub })
+    onFilterChange({ subcategory: subcategory === sub ? '' : sub })
 
-  // Debounced price update
+  // Debounced price update — ref ensures latest onFilterChange is always called
+  const onFilterChangeRef = useRef(onFilterChange)
+  useEffect(() => { onFilterChangeRef.current = onFilterChange }, [onFilterChange])
   const priceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const handlePrice = (key: 'minPrice' | 'maxPrice', value: string) => {
     if (key === 'minPrice') setLocalMin(value); else setLocalMax(value)
     clearTimeout(priceTimer.current)
-    priceTimer.current = setTimeout(() => setParam({ [key]: value }), 400)
+    priceTimer.current = setTimeout(() => onFilterChangeRef.current({ [key]: value }), 400)
   }
 
   const resetAll = () => {
-    const p = new URLSearchParams()
-    const q = params.get('q')
-    if (q) p.set('q', q)
-    router.replace(`/sok?${p.toString()}`, { scroll: false })
+    const q = searchParams.get('q')
+    router.replace(q ? `/sok?q=${encodeURIComponent(q)}` : '/sok', { scroll: false })
     onClose?.()
   }
 
   const hasFilters = selectedCats.length > 0 || !!(
-    subcategory || location || listingType || params.get('minPrice') || params.get('maxPrice')
+    subcategory || location || listingType || searchParams.get('minPrice') || searchParams.get('maxPrice')
   )
 
   // Subcategories to show: only when exactly one main category is selected
@@ -194,7 +187,7 @@ export default function ListingFilters({ onClose, resultCount }: Props) {
                     {/* Deselect subcategory */}
                     {subcategory && (
                       <button
-                        onClick={() => setParam({ subcategory: '' })}
+                        onClick={() => onFilterChange({ subcategory: '' })}
                         style={{ fontSize: 11, color: 'var(--t3)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', textDecoration: 'underline' }}
                       >
                         Alle {node.label.toLowerCase()}
@@ -220,7 +213,7 @@ export default function ListingFilters({ onClose, resultCount }: Props) {
           ].map(({ v, l }) => (
             <button
               key={v}
-              onClick={() => setParam({ listingType: v })}
+              onClick={() => onFilterChange({ listingType: v })}
               style={{
                 flex: 1, padding: '7px 4px', borderRadius: 3,
                 border: `1px solid ${listingType === v ? 'rgba(200,149,58,0.5)' : 'var(--border)'}`,
@@ -242,7 +235,7 @@ export default function ListingFilters({ onClose, resultCount }: Props) {
       {openSections.omrade && (
         <select
           value={location}
-          onChange={e => setParam({ location: e.target.value })}
+          onChange={e => onFilterChange({ location: e.target.value })}
           className="input-base"
           style={{ fontSize: 13, padding: '7px 9px', cursor: 'pointer', marginTop: 2, marginBottom: 6 }}
         >
@@ -253,19 +246,19 @@ export default function ListingFilters({ onClose, resultCount }: Props) {
 
       {/* ── Pris ───────────────────────────────────────────────────────────── */}
       <Divider />
-      <SectionHeader label="Pris (NOK)" active={!!(params.get('minPrice') || params.get('maxPrice'))} open={openSections.pris} onToggle={() => toggleSection('pris')} />
+      <SectionHeader label="Pris (NOK)" active={!!(searchParams.get('minPrice') || searchParams.get('maxPrice'))} open={openSections.pris} onToggle={() => toggleSection('pris')} />
       {openSections.pris && (
         <div style={{ paddingBottom: 6 }}>
           {/* Presets */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 8 }}>
             {PRICE_PRESETS.map(p => {
-              const curMin = params.get('minPrice') || ''
-              const curMax = params.get('maxPrice') || ''
+              const curMin = searchParams.get('minPrice') || ''
+              const curMax = searchParams.get('maxPrice') || ''
               const active = curMin === p.min && curMax === p.max
               return (
                 <button
                   key={p.label}
-                  onClick={() => setParam({ minPrice: active ? '' : p.min, maxPrice: active ? '' : p.max })}
+                  onClick={() => onFilterChange({ minPrice: active ? '' : p.min, maxPrice: active ? '' : p.max })}
                   style={{
                     background: active ? 'var(--gold3)' : 'var(--bg3)',
                     border: `1px solid ${active ? 'rgba(200,149,58,0.5)' : 'var(--border)'}`,
