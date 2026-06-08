@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Search, SortDesc, Grid3X3, LayoutList, X, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import ListingCard from '@/components/listings/ListingCard'
 import ListingFilters from '@/components/listings/ListingFilters'
@@ -72,6 +72,7 @@ function Pagination({ page, total, onPage }: { page: number; total: number; onPa
 export default function SokContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const pathname = usePathname()
   const supabase = createClient()
 
   const [listings, setListings]           = useState<Listing[]>([])
@@ -156,11 +157,20 @@ export default function SokContent() {
   }, [q, categoryParam, subcategory, location, listingType, minPrice, maxPrice, sort, page])
 
   useEffect(() => { fetchListings() }, [fetchListings])
-  useEffect(() => { setSearchInput(searchParams.get('q') || '') }, [searchParams])
+  useEffect(() => { setSearchInput(searchParams.get('q') || '') }, [pathname, searchParams])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    setParam({ q: searchInput })
+    const trimmed = searchInput.trim()
+    setParam({ q: trimmed })
+  }
+
+  const clearSearch = () => {
+    setSearchInput('')
+    const p = new URLSearchParams(searchParams.toString())
+    p.delete('q')
+    p.delete('page')
+    router.replace(`/sok?${p.toString()}`, { scroll: false })
   }
 
   const removeChip = (key: string, value?: string) => {
@@ -226,8 +236,17 @@ export default function SokContent() {
             onChange={e => setSearchInput(e.target.value)}
             placeholder="Søk etter maskin, merke, modell..."
             className="input-base"
-            style={{ paddingLeft: 36 }}
+            style={{ paddingLeft: 36, paddingRight: searchInput ? 36 : 12 }}
           />
+          {searchInput && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', display: 'flex', padding: 2 }}
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
         <button type="submit" className="btn-primary" style={{ padding: '0 18px', height: 46, flexShrink: 0 }}>Søk</button>
         <button
