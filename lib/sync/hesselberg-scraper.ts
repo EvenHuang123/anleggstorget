@@ -1,8 +1,9 @@
 /**
- * Hesselberg Maskin AS listing sync — scrapes brukt.hesselberg.no per category.
+ * Hesselberg Maskin AS listing sync — scrapes brukt.hesselberg.no per category,
+ * then visits each detail page for full image gallery.
  *
- * Approach: scrape listing pages only (no detail-page visits).
- * Cheerio parses the confirmed HTML structure: table.list.list_vertical tr.item
+ * Cheerio parses: table.list.list_vertical tr.item (category page)
+ *                 div#links a.thumb img[data-src] (detail page gallery)
  *
  * Prerequisites (run once in Supabase SQL Editor if not already done):
  *   ALTER TABLE public.listings ADD COLUMN IF NOT EXISTS source TEXT DEFAULT 'manual';
@@ -65,7 +66,8 @@ interface ScrapedListing {
   price:              number
   priceType:          'fast_price' | 'negotiable'
   category:           CategorySource['category']
-  imageUrl:           string | null
+  subcategory:        string
+  images:             string[]
   detailUrl:          string
   externalId:         string
   slug:               string
@@ -100,6 +102,30 @@ async function fetchHtml(url: string): Promise<string> {
   throw new Error('unreachable')
 }
 
+// ── Detail page image scraping ────────────────────────────────────────────────
+
+async function fetchDetailImages(url: string): Promise<string[]> {
+  try {
+    const html = await fetchHtml(url)
+    const $ = cheerio.load(html)
+    const images: string[] = []
+
+    $('#links a.thumb img, div.gallery-thumbs a.thumb img').each((_i, el) => {
+      const src = $(el).attr('data-src') || $(el).attr('src') || ''
+      if (src.includes('mascus.com') && !images.includes(src)) images.push(src)
+    })
+
+    if (images.length === 0) {
+      const main = $('img.image_main').attr('src') || ''
+      if (main) images.push(main)
+    }
+
+    return images
+  } catch {
+    return []
+  }
+}
+
 // ── Per-category scraping ─────────────────────────────────────────────────────
 
 function parseCategoryPage(html: string, cat: CategorySource): ScrapedListing[] {
@@ -116,8 +142,6 @@ function parseCategoryPage(html: string, cat: CategorySource): ScrapedListing[] 
 
     const externalId = detailPath.split('/').pop()?.replace('.html', '') ?? ''
     if (!externalId) return
-
-    const imageUrl = $el.find('img.thumb').attr('data-src') ?? null
 
     const priceText = $el.find('span.field_price').text()
     const priceDigits = priceText.replace(/\D/g, '')
@@ -140,9 +164,10 @@ function parseCategoryPage(html: string, cat: CategorySource): ScrapedListing[] 
     results.push({
       title, brand, model, year, operatingHours,
       price, priceType: price > 0 ? 'fast_price' : 'negotiable',
-      category: cat.category,
-      imageUrl,
-      detailUrl: `${BASE_URL}${detailPath}`,
+      category:    cat.category,
+      subcategory: cat.subcategory,
+      images:      [],   // filled in after detail-page fetch
+      detailUrl:   `${BASE_URL}${detailPath}`,
       externalId,
       slug,
     })
@@ -156,13 +181,13 @@ async function scrapeAllCategories(): Promise<{ listings: ScrapedListing[]; log:
   const seenIds = new Set<string>()
   const log: string[] = []
 
+  // Pass 1: scrape all category pages
   for (const cat of CATEGORIES) {
     const url = `${BASE_URL}${cat.path}/`
     try {
       const html = await fetchHtml(url)
       const items = parseCategoryPage(html, cat)
 
-      // Deduplicate across categories (a listing may appear under multiple tabs)
       let added = 0
       for (const item of items) {
         if (!seenIds.has(item.externalId)) {
@@ -178,6 +203,15 @@ async function scrapeAllCategories(): Promise<{ listings: ScrapedListing[]; log:
     }
     await sleep(300)
   }
+
+  // Pass 2: fetch detail page for each unique listing to get full image gallery
+  let imageErrors = 0
+  for (const item of listings) {
+    item.images = await fetchDetailImages(item.detailUrl)
+    if (item.images.length === 0) imageErrors++
+    await sleep(200)
+  }
+  if (imageErrors > 0) log.push(`Bilder: ${imageErrors} maskiner uten bilder`)
 
   return { listings, log }
 }
@@ -208,10 +242,10 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (supabase as any)
     .from('listings')
-    .select('id, source_external_id, status, price, operating_hours')
-    .eq('source', SOURCE) as { data: { id: string; source_external_id: string; status: string; price: number; operating_hours: number | null }[] | null }
+    .select('id, source_external_id, status, price, operating_hours, images')
+    .eq('source', SOURCE) as { data: { id: string; source_external_id: string; status: string; price: number; operating_hours: number | null; images: string[] }[] | null }
 
-  const dbMap = new Map<string, { id: string; status: string; price: number; operating_hours: number | null }>()
+  const dbMap = new Map<string, { id: string; status: string; price: number; operating_hours: number | null; images: string[] }>()
   for (const row of existing ?? []) {
     if (row.source_external_id) dbMap.set(row.source_external_id, row)
   }
@@ -222,7 +256,6 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
   // specs that don't include the partial index's WHERE clause.
   for (const item of listings) {
     const current = dbMap.get(item.externalId)
-    const images  = item.imageUrl ? [item.imageUrl] : []
 
     if (!current) {
       // INSERT new listing
@@ -235,6 +268,7 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
         source_external_id: item.externalId,
         title:              item.title,
         category:           item.category,
+        subcategory:        item.subcategory,
         brand:              item.brand,
         model:              item.model,
         year:               item.year,
@@ -242,7 +276,7 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
         price:              item.price,
         price_type:         item.priceType,
         location:           DEFAULT_LOCATION,
-        images,
+        images:             item.images,
         status:             'active',
         views:              0,
         slug:               item.slug,
@@ -250,15 +284,23 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
       if (error) result.errors++
       else       result.created++
     } else {
-      // UPDATE if key fields changed or listing was previously hidden
+      // UPDATE if price, hours, or image count changed
+      const dbImageCount = (current.images ?? []).length
       const changed =
         current.price           !== item.price ||
-        current.operating_hours !== item.operatingHours
+        current.operating_hours !== item.operatingHours ||
+        (item.images.length > 0 && item.images.length !== dbImageCount)
 
       if (changed) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('listings')
-          .update({ price: item.price, price_type: item.priceType, operating_hours: item.operatingHours, images })
+          .update({
+            price:           item.price,
+            price_type:      item.priceType,
+            operating_hours: item.operatingHours,
+            images:          item.images.length > 0 ? item.images : current.images,
+            subcategory:     item.subcategory,
+          })
           .eq('id', current.id)
         if (error) result.errors++
         else       result.updated++
