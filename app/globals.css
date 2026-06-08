@@ -315,8 +315,8 @@ body {
 .listing-img-wrap {
   position: relative;
   overflow: hidden;
-  background: #f5f4f2;
-  aspect-ratio: 16/10;
+  background: #1a1917;
+  aspect-ratio: 4/3;
 }
 
 /* Gold separator */
