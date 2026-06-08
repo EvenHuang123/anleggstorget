@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { syncHesselbergListings, writeHesselbergSyncLog } from '@/lib/sync/hesselberg-scraper'
 
 export const maxDuration = 300
+// Run from Frankfurt (Europe) to avoid geo-blocking by the Mascus/Hesselberg CDN
+export const preferredRegion = 'fra1'
 
 export async function GET(request: NextRequest) {
   const auth   = request.headers.get('authorization') ?? ''

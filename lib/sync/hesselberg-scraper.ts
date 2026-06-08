@@ -154,18 +154,25 @@ function extractImages(html: string): string[] {
 
 function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)) }
 
+const FETCH_HEADERS = {
+  'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'nb-NO,nb;q=0.9,no;q=0.8,en;q=0.7',
+  'Accept-Encoding': 'gzip, deflate, br',
+}
+
 async function fetchHtml(url: string, retries = 3): Promise<string> {
   for (let i = 0; i < retries; i++) {
     try {
       const res = await fetch(url, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; research-bot/1.0)', Accept: 'text/html' },
-        signal: AbortSignal.timeout(20_000),
+        headers: FETCH_HEADERS,
+        signal: AbortSignal.timeout(25_000),
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`)
       return await res.text()
     } catch (err) {
       if (i === retries - 1) throw err
-      await sleep(1500 * (i + 1))
+      await sleep(2000 * (i + 1))
     }
   }
   throw new Error('unreachable')
@@ -191,7 +198,8 @@ async function discoverListingPaths(): Promise<string[]> {
     let html: string
     try {
       html = await fetchHtml(url)
-    } catch {
+    } catch (err) {
+      if (page === 1) throw err  // propagate — shows up in sync_logs error_message
       break
     }
     const re = /href="(\/hesselberg\/anlegg\/[^"]+\.html)"/g

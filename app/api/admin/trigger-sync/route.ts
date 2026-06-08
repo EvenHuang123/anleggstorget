@@ -4,6 +4,7 @@ import { syncNASTAListings, writeSyncLog } from '@/lib/sync/nasta-scraper'
 import { syncHesselbergListings, writeHesselbergSyncLog } from '@/lib/sync/hesselberg-scraper'
 
 export const maxDuration = 300
+export const preferredRegion = 'fra1'
 
 export async function POST(request: NextRequest) {
   const token = request.cookies.get(COOKIE_NAME)?.value
