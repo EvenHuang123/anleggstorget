@@ -52,7 +52,6 @@ const CATEGORIES: CategorySource[] = [
   { path: '/hesselberg/anlegg/doser-veihovel',         category: 'Annet',                   subcategory: 'Doser og Veihøvel',        label: 'Doser og Veihøvel'        },
   { path: '/hesselberg/anlegg/komprimeringsmaskiner',  category: 'Komprimering og asfalt',  subcategory: 'Komprimeringsmaskiner',    label: 'Komprimeringsmaskiner'    },
   { path: '/hesselberg/anlegg/asfaltmaskiner',         category: 'Komprimering og asfalt',  subcategory: 'Asfaltlegger',             label: 'Asfaltmaskiner'           },
-  { path: '/hesselberg/utstyr',                        category: 'Annet',                   subcategory: 'Utstyr og tilbehør',       label: 'Utstyr'                   },
 ]
 
 // ── Types ─────────────────────────────────────────────────────────────────────
