@@ -220,16 +220,19 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
     if (row.source_external_id) dbMap.set(row.source_external_id, row)
   }
 
-  // 3. Upsert each scraped listing
+  // 3. Insert new / update changed listings
+  // Using explicit INSERT + UPDATE (not upsert) because the unique index is partial
+  // (WHERE source_external_id IS NOT NULL) and PostgreSQL rejects ON CONFLICT
+  // specs that don't include the partial index's WHERE clause.
   for (const item of listings) {
     const current = dbMap.get(item.externalId)
+    const images  = item.imageUrl ? [item.imageUrl] : []
 
-    const listingId = current?.id ?? crypto.randomUUID()
-    const images    = item.imageUrl ? [item.imageUrl] : []
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any).from('listings').upsert(
-      {
+    if (!current) {
+      // INSERT new listing
+      const listingId = crypto.randomUUID()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from('listings').insert({
         id:                 listingId,
         seller_id:          sellerId,
         source:             SOURCE,
@@ -245,24 +248,31 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
         location:           DEFAULT_LOCATION,
         images,
         status:             'active',
-        views:              current ? undefined : 0,
-        slug:               current ? undefined : item.slug,
-      },
-      { onConflict: 'source,source_external_id', ignoreDuplicates: false },
-    )
+        views:              0,
+        slug:               item.slug,
+      })
+      if (error) result.errors++
+      else       result.created++
+    } else {
+      // UPDATE if key fields changed or listing was previously hidden
+      const changed =
+        current.price           !== item.price ||
+        current.operating_hours !== item.operatingHours
 
-    if (error) {
-      result.errors++
-    } else if (current) {
-      const changed = current.price !== item.price || current.operating_hours !== item.operatingHours
-      if (changed) result.updated++
-      // Re-activate if previously removed
+      if (changed) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await (supabase as any).from('listings')
+          .update({ price: item.price, price_type: item.priceType, operating_hours: item.operatingHours, images })
+          .eq('id', current.id)
+        if (error) result.errors++
+        else       result.updated++
+      }
+
+      // Re-activate if previously soft-deleted
       if (current.status === 'draft') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('listings').update({ status: 'active' }).eq('id', listingId)
+        await (supabase as any).from('listings').update({ status: 'active' }).eq('id', current.id)
       }
-    } else {
-      result.created++
     }
   }
 
