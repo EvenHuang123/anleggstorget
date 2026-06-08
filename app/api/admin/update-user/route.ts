@@ -44,15 +44,17 @@ export async function POST(request: NextRequest) {
   }
 
   // ── 2. Update Supabase Auth user — only if user exists and fields changed ─
-  const { data: { user: currentUser } } = await supabase.auth.admin.getUserById(userId)
+  // Safe destructuring: getUserById returns { data: null } when user doesn't exist
+  const getUserResult = await supabase.auth.admin.getUserById(userId)
+  const currentUser = getUserResult.data?.user ?? null
 
   if (currentUser) {
     const authPatch: Record<string, unknown> = {}
 
     if (body.email !== undefined && body.email !== currentUser.email) {
+      // Service role bypasses email confirmation automatically — email_confirm is
+      // not a valid field on updateUserById (only on createUser) and causes errors.
       authPatch.email = body.email
-      // email_confirm skips the confirmation email so the change takes effect immediately
-      authPatch.email_confirm = true
     }
 
     if (body.password !== undefined) {
