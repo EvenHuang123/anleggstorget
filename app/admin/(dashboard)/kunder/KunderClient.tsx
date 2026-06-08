@@ -56,6 +56,19 @@ const S = {
   err:   { color: '#f85149', fontSize: 12, marginTop: 4 },
 }
 
+// ── Form field wrapper — must be at module level, NOT inside any component ────
+// Defining this inside a component causes React to treat it as a new type on
+// every render, unmounting and remounting children (inputs lose focus).
+function F({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label style={S.label}>{label}</label>
+      {children}
+      {error && <p style={S.err}>{error}</p>}
+    </div>
+  )
+}
+
 // ── Modal backdrop ────────────────────────────────────────────────────────────
 
 function Backdrop({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
@@ -160,14 +173,6 @@ function EditModal({ row, onClose, onSaved }: {
       setLoading(false)
     }
   }
-
-  const F = ({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) => (
-    <div>
-      <label style={S.label}>{label}</label>
-      {children}
-      {error && <p style={S.err}>{error}</p>}
-    </div>
-  )
 
   return (
     <Backdrop onClose={onClose}>
