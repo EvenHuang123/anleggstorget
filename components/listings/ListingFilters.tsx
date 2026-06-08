@@ -104,7 +104,7 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
   }
 
   const resetAll = () => {
-    const q = searchParams.get('q')
+    const q = new URLSearchParams(window.location.search).get('q')
     router.replace(q ? `/sok?q=${encodeURIComponent(q)}` : '/sok', { scroll: false })
     onClose?.()
   }

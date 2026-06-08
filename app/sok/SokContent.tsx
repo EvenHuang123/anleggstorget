@@ -99,22 +99,24 @@ export default function SokContent() {
     treeKeys.length > 0, !!subcategory, !!location, !!listingType, !!(minPrice || maxPrice),
   ].filter(Boolean).length
 
-  // Filter changes → reset page to 1
+  // Filter changes — always read window.location.search so we never use a
+  // stale React-state snapshot (useCallback with searchParams dep can silently
+  // navigate to the same URL and be deduped by the Next.js router).
   const setParam = useCallback((updates: Record<string, string>) => {
-    const p = new URLSearchParams(searchParams.toString())
+    const p = new URLSearchParams(window.location.search)
     for (const [k, v] of Object.entries(updates)) {
       if (v) p.set(k, v); else p.delete(k)
     }
-    p.delete('page') // always reset page when filters change
+    p.delete('page')
     router.replace(`/sok?${p.toString()}`, { scroll: false })
-  }, [searchParams, router])
+  }, [router])
 
   // Page navigation — preserves all other params
   const goToPage = useCallback((newPage: number) => {
-    const p = new URLSearchParams(searchParams.toString())
+    const p = new URLSearchParams(window.location.search)
     if (newPage <= 1) p.delete('page'); else p.set('page', String(newPage))
     router.replace(`/sok?${p.toString()}`, { scroll: true })
-  }, [searchParams, router])
+  }, [router])
 
   // ── Fetch listings with count ────────────────────────────────────────────
   const fetchListings = useCallback(async () => {
