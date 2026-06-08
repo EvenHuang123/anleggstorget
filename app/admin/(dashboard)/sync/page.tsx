@@ -1,5 +1,6 @@
 import { requireAdmin } from '@/lib/admin/auth'
 import { createAdminClient } from '@/lib/admin/supabase'
+import SyncControls from './SyncControls'
 
 export const dynamic = 'force-dynamic'
 
@@ -71,8 +72,10 @@ export default async function AdminSyncPage() {
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#e6edf3', fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
           Sync-logger
         </h1>
-        <p style={{ margin: '4px 0 0', color: '#8b949e', fontSize: 13 }}>Siste 50 NASTA-synkroniseringer</p>
+        <p style={{ margin: '4px 0 0', color: '#8b949e', fontSize: 13 }}>Siste 50 synkroniseringer (alle kilder)</p>
       </div>
+
+      <SyncControls />
 
       {/* Summary */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>

@@ -3,10 +3,17 @@
     {
       "path": "/api/cron/sync-nasta",
       "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/sync-hesselberg",
+      "schedule": "0 3 * * *"
     }
   ],
   "functions": {
     "app/api/cron/sync-nasta/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/cron/sync-hesselberg/route.ts": {
       "maxDuration": 300
     }
   }
