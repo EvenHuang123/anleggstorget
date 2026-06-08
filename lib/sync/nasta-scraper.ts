@@ -378,8 +378,9 @@ export async function syncNASTAListings(): Promise<SyncResult> {
         else       result.updated++
       }
 
-      // Re-activate if previously marked removed
-      if (existing.status === 'draft' && existing.images.length > 0) {
+      // Re-activate if previously removed by sync (machine re-appeared on NASTA).
+      // dbMap only contains source='nasta' rows, so this never re-activates user drafts.
+      if (existing.status === 'draft') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any)
           .from('listings')
@@ -391,7 +392,10 @@ export async function syncNASTAListings(): Promise<SyncResult> {
     await sleep(300)
   }
 
-  // 4. Mark listings no longer on NASTA as removed (set draft)
+  // 4. Mark listings no longer on NASTA as draft (hidden from public via RLS).
+  //    To use a dedicated 'removed_by_sync' status, run:
+  //    ALTER TYPE listing_status ADD VALUE 'removed_by_sync';
+  //    and update the two status strings below + the .neq filter in annonse/[id]/page.tsx.
   for (const [extId, row] of dbMap.entries()) {
     if (!seenExternalIds.has(extId) && row.status === 'active') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

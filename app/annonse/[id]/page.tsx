@@ -14,12 +14,13 @@ interface Props {
 async function fetchListing(slugOrId: string) {
   try {
     const supabase = await createClient()
-    // Try slug first, fall back to ID
+    // Try slug first, fall back to ID — never expose draft or sync-removed listings
     for (const field of ['slug', 'id']) {
       const { data } = await (supabase as any)
         .from('listings')
         .select('*, profiles(*), favorites_count:favorites(count)')
         .eq(field, slugOrId)
+        .in('status', ['active', 'sold', 'reserved'])
         .single() as { data: Listing | null }
       if (data) return data
     }
