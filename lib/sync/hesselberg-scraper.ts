@@ -59,32 +59,40 @@ interface DbListing {
 
 const CATEGORY_MAP: Record<string, string> = {
   // Excavators
-  beltegraver:        'gravemaskin',
-  hjulgraver:         'gravemaskin',
-  hjulgravere:        'gravemaskin',
-  gravemaskiner:      'gravemaskin',
-  minigravere:        'gravemaskin',
-  'minigravere-7t':   'gravemaskin',
-  midigravere:        'gravemaskin',
-  minigraver:         'gravemaskin',
-  midigraver:         'gravemaskin',
+  beltegraver:          'gravemaskin',
+  hjulgraver:           'gravemaskin',
+  hjulgravere:          'gravemaskin',
+  gravemaskiner:        'gravemaskin',
+  minigravere:          'gravemaskin',
+  'minigravere-7t':     'gravemaskin',
+  midigravere:          'gravemaskin',
+  minigraver:           'gravemaskin',
+  midigraver:           'gravemaskin',
   // Wheel loaders
-  hjullastere:        'hjullaster',
-  hjullaster:         'hjullaster',
+  hjullastere:          'hjullaster',
+  hjullaster:           'hjullaster',
   // Dumpers
-  dumpere:            'dumper',
-  dumper:             'dumper',
-  beltedumpere:       'dumper',
-  beltedumper:        'dumper',
+  dumpere:              'dumper',
+  dumper:               'dumper',
+  beltedumpere:         'dumper',
+  beltedumper:          'dumper',
   // Tractors
-  traktorer:          'traktor',
-  traktor:            'traktor',
+  traktorer:            'traktor',
+  traktor:              'traktor',
   // Crane trucks
-  kranbiler:          'kranbil',
-  kranbil:            'kranbil',
+  kranbiler:            'kranbil',
+  kranbil:              'kranbil',
   // Forestry
-  skogsmaskiner:      'skogsutstyr',
-  skogsutstyr:        'skogsutstyr',
+  skogsmaskiner:        'skogsutstyr',
+  skogsutstyr:          'skogsutstyr',
+  // Trucks (Hesselberg-specific) — map to 'annet' since no truck category in enum
+  gaffeltruck:          'annet',
+  lagertruck:           'annet',
+  trekktruck:           'annet',
+  'elektriske-trucker': 'annet',
+  'elektrisk-truck':    'annet',
+  trucks:               'annet',
+  truck:                'annet',
 }
 
 function mapCategory(urlSegment: string, gruppeText: string): string {
@@ -189,32 +197,80 @@ async function fetchBuffer(url: string): Promise<Buffer> {
 
 // ── Discovery ─────────────────────────────────────────────────────────────────
 
-async function discoverListingPaths(): Promise<string[]> {
+// Each source covers one top-level category page (no pagination needed — all
+// categories currently have <18 items, which fit on one page).
+const DISCOVERY_SOURCES: { startUrl: string; nextPageTemplate: string; re: RegExp }[] = [
+  {
+    // /hesselberg/anlegg/ aggregates all construction sub-categories (17 items)
+    startUrl:        '/hesselberg/anlegg/',
+    nextPageTemplate: '/hesselberg/anlegg,{page},createdate_desc,search.html',
+    re: /href="(\/hesselberg\/anlegg\/[^"]+\.html)"/g,
+  },
+  {
+    // Gaffeltrucks (forklifts) — 12 items, not shown on /anlegg/
+    startUrl:        '/hesselberg/truck/gaffeltruck/',
+    nextPageTemplate: '/hesselberg/truck/gaffeltruck,{page},createdate_desc,search.html',
+    re: /href="(\/hesselberg\/truck\/[^"]+\.html)"/g,
+  },
+  {
+    // Lagertrucks (warehouse trucks) — 18 items
+    startUrl:        '/hesselberg/truck/lagertruck/',
+    nextPageTemplate: '/hesselberg/truck/lagertruck,{page},createdate_desc,search.html',
+    re: /href="(\/hesselberg\/truck\/[^"]+\.html)"/g,
+  },
+  {
+    // Trekktrucks — 2 items
+    startUrl:        '/hesselberg/truck/trekktruck/',
+    nextPageTemplate: '/hesselberg/truck/trekktruck,{page},createdate_desc,search.html',
+    re: /href="(\/hesselberg\/truck\/[^"]+\.html)"/g,
+  },
+]
+
+async function discoverListingPaths(): Promise<{ paths: string[]; diagnostics: string }> {
   const paths = new Set<string>()
-  for (let page = 1; page <= 20; page++) {
-    const url = page === 1
-      ? `${BASE_URL}/hesselberg/anlegg/`
-      : `${BASE_URL}/hesselberg/anlegg,${page},createdate_desc,search.html`
-    let html: string
-    try {
-      html = await fetchHtml(url)
-    } catch (err) {
-      if (page === 1) throw err  // propagate — shows up in sync_logs error_message
-      break
+  const diag: string[] = []
+
+  for (const source of DISCOVERY_SOURCES) {
+    for (let page = 1; page <= 20; page++) {
+      const urlPath = page === 1
+        ? source.startUrl
+        : source.nextPageTemplate.replace('{page}', String(page))
+      const url = `${BASE_URL}${urlPath}`
+      let html: string
+      try {
+        html = await fetchHtml(url)
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        diag.push(`FETCH_FAIL ${urlPath}: ${msg}`)
+        if (page === 1) break  // skip this source but continue with others
+        break
+      }
+
+      const before = paths.size
+      const re = new RegExp(source.re.source, 'g')
+      let m: RegExpExecArray | null
+      while ((m = re.exec(html)) !== null) paths.add(m[1])
+      const added = paths.size - before
+
+      diag.push(`${urlPath}: len=${html.length} +${added} (total=${paths.size})`)
+
+      const nextPattern = source.nextPageTemplate.replace('{page}', String(page + 1))
+      if (!html.includes(nextPattern)) break
+      await sleep(400)
     }
-    const re = /href="(\/hesselberg\/anlegg\/[^"]+\.html)"/g
-    let m: RegExpExecArray | null
-    while ((m = re.exec(html)) !== null) paths.add(m[1])
-    if (!new RegExp(`/hesselberg/anlegg,${page + 1},`).test(html)) break
-    await sleep(400)
+    await sleep(300)
   }
-  return [...paths]
+
+  return { paths: [...paths], diagnostics: diag.join(' | ') }
 }
 
 // ── Parsing ───────────────────────────────────────────────────────────────────
 
 function parseListing(html: string, listingPath: string): ParsedListing {
-  // /hesselberg/anlegg/[subcategory]/[name]/[UUID].html → index 3 = subcategory
+  // URL structure: /hesselberg/{section}/{subcategory}/{name}/{UUID}.html
+  // index 3 = subcategory for both anlegg and truck paths
+  // e.g. /hesselberg/anlegg/beltegraver/cat-323/UUID.html → 'beltegraver'
+  //      /hesselberg/truck/gaffeltruck/linde-e25/UUID.html → 'gaffeltruck'
   const urlSegment = listingPath.split('/')[3] ?? ''
   const title      = extractH1(html) ?? 'Ukjent maskin'
   const data       = extractDataPairs(html)
@@ -306,8 +362,13 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
   }
 
   // 2. Discover all listing paths
-  const paths = await discoverListingPaths()
+  const { paths, diagnostics } = await discoverListingPaths()
   result.totalScraped = paths.length
+
+  // If nothing was found, throw with diagnostics so it appears in sync_logs.error_message
+  if (paths.length === 0) {
+    throw new Error(`0 paths found. Per-source results: ${diagnostics}`)
+  }
 
   const seenExternalIds = new Set<string>()
 
