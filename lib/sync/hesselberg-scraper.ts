@@ -33,6 +33,15 @@ interface CategorySource {
   label:       string  // for logging only
 }
 
+// Subcategories permanently excluded from the site — never inserted or re-activated.
+// Covers trucks originally scraped before these paths were removed, which still
+// appear on /hesselberg/utstyr and would otherwise be re-activated each sync.
+const EXCLUDED_SUBCATEGORIES = new Set([
+  'Gaffeltruck',
+  'Lagertruck',
+  'Trekktruck',
+])
+
 const CATEGORIES: CategorySource[] = [
   { path: '/hesselberg/anlegg/hjulgraver',             category: 'Gravemaskiner',           subcategory: 'Hjulgraver',               label: 'Hjulgraver'               },
   { path: '/hesselberg/anlegg/beltegraver',            category: 'Gravemaskiner',           subcategory: 'Beltegraver',              label: 'Beltegraver'              },
@@ -303,6 +312,8 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
   // (WHERE source_external_id IS NOT NULL) and PostgreSQL rejects ON CONFLICT
   // specs that don't include the partial index's WHERE clause.
   for (const item of listings) {
+    if (EXCLUDED_SUBCATEGORIES.has(item.subcategory)) continue
+
     const current = dbMap.get(item.externalId)
 
     if (!current) {
@@ -370,6 +381,16 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
       result.removed++
     }
   }
+
+  // 5. Final cleanup — always soft-delete excluded subcategories regardless of
+  //    how they ended up active (e.g. appearing on /hesselberg/utstyr)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from('listings')
+    .update({ status: 'draft' })
+    .eq('source', SOURCE)
+    .eq('status', 'active')
+    .in('subcategory', [...EXCLUDED_SUBCATEGORIES])
 
   result.durationMs = Date.now() - start
   return result
