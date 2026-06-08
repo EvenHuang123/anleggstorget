@@ -196,8 +196,7 @@ function parseCategoryPage(html: string, cat: CategorySource): ScrapedListing[] 
     const year = parseInt(yearText.replace(/\D/g, ''), 10) || null
 
     const hoursText = $el.find('span.field_meterreadout').text()
-    const hoursDigits = hoursText.replace('Timer:', '').replace(/t$/, '').replace(/\s/g, '')
-    const operatingHours = parseInt(hoursDigits, 10) || null
+    const operatingHours = parseInt(hoursText.replace(/[^\d]/g, ''), 10) || null
 
     const titleParts = title.split(' ')
     const brand = titleParts[0] ?? null
@@ -334,30 +333,25 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
       if (error) result.errors++
       else       result.created++
     } else {
-      // UPDATE if any key field changed
+      // Always update metadata — year/hours/weight may have been null on previous syncs
       const dbImageCount = (current.images ?? []).length
-      const changed =
-        current.price           !== item.price ||
-        current.operating_hours !== item.operatingHours ||
-        current.year            !== item.year ||
-        (item.images.length > 0 && item.images.length !== dbImageCount)
+      const priceChanged = current.price !== item.price
 
-      if (changed) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error } = await (supabase as any).from('listings')
-          .update({
-            price:           item.price,
-            price_type:      item.priceType,
-            operating_hours: item.operatingHours,
-            year:            item.year,
-            weight_class:    item.weightClass ?? undefined,
-            images:          item.images.length > 0 ? item.images : current.images,
-            subcategory:     item.subcategory,
-          })
-          .eq('id', current.id)
-        if (error) result.errors++
-        else       result.updated++
-      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any).from('listings')
+        .update({
+          price:           item.price,
+          price_type:      item.priceType,
+          operating_hours: item.operatingHours,
+          year:            item.year,
+          ...(item.weightClass ? { weight_class: item.weightClass } : {}),
+          images:          item.images.length > 0 ? item.images : current.images,
+          subcategory:     item.subcategory,
+        })
+        .eq('id', current.id)
+
+      if (error) result.errors++
+      else if (priceChanged || (item.images.length > 0 && item.images.length !== dbImageCount)) result.updated++
 
       // Re-activate if previously soft-deleted
       if (current.status === 'draft') {
