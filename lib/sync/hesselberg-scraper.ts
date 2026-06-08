@@ -67,6 +67,7 @@ interface ScrapedListing {
   priceType:          'fast_price' | 'negotiable'
   category:           CategorySource['category']
   subcategory:        string
+  weightClass:        string | null
   images:             string[]
   detailUrl:          string
   externalId:         string
@@ -102,27 +103,71 @@ async function fetchHtml(url: string): Promise<string> {
   throw new Error('unreachable')
 }
 
-// ── Detail page image scraping ────────────────────────────────────────────────
+// ── Detail page scraping ──────────────────────────────────────────────────────
 
-async function fetchDetailImages(url: string): Promise<string[]> {
+interface DetailData {
+  images:      string[]
+  weightClass: string | null
+}
+
+function inferWeightClass(kg: number): string {
+  if (kg < 5000)  return 'Under 5 tonn'
+  if (kg < 10000) return '5–10 tonn'
+  if (kg < 20000) return '10–20 tonn'
+  if (kg < 40000) return '20–40 tonn'
+  return 'Over 40 tonn'
+}
+
+// Set to true on the first listing to log all available field_ classes
+let _fieldLogDone = false
+
+async function fetchDetailData(url: string): Promise<DetailData> {
   try {
     const html = await fetchHtml(url)
     const $ = cheerio.load(html)
-    const images: string[] = []
 
+    // ── Images ────────────────────────────────────────────────────────────────
+    const images: string[] = []
     $('#links a.thumb img, div.gallery-thumbs a.thumb img').each((_i, el) => {
       const src = $(el).attr('data-src') || $(el).attr('src') || ''
       if (src.includes('mascus.com') && !images.includes(src)) images.push(src)
     })
-
     if (images.length === 0) {
       const main = $('img.image_main').attr('src') || ''
       if (main) images.push(main)
     }
 
-    return images
+    // ── Field discovery (first listing only) ──────────────────────────────────
+    if (!_fieldLogDone) {
+      _fieldLogDone = true
+      const fields = $('[class*="field_"]').map((_i, el) =>
+        `  ${$(el).attr('class')}: ${$(el).text().trim().substring(0, 60)}`
+      ).get()
+      console.log('[hesselberg] Tilgjengelige felt på detaljside:\n' + fields.join('\n'))
+    }
+
+    // ── Weight ────────────────────────────────────────────────────────────────
+    let weightClass: string | null = null
+    const weightSelectors = [
+      'span.field_operatingweight',
+      'span.field_weight',
+      'span.field_machineweight',
+      'span.field_totalweight',
+      'span.field_workingweight',
+    ]
+    for (const sel of weightSelectors) {
+      const raw = $(sel).text().replace(/[^\d.,]/g, '').replace(',', '.').trim()
+      const num = parseFloat(raw)
+      if (num > 0) {
+        const kg = num < 200 ? num * 1000 : num   // < 200 → assume tonnes
+        weightClass = inferWeightClass(kg)
+        break
+      }
+    }
+
+    return { images, weightClass }
   } catch {
-    return []
+    return { images: [], weightClass: null }
   }
 }
 
@@ -166,7 +211,8 @@ function parseCategoryPage(html: string, cat: CategorySource): ScrapedListing[] 
       price, priceType: price > 0 ? 'fast_price' : 'negotiable',
       category:    cat.category,
       subcategory: cat.subcategory,
-      images:      [],   // filled in after detail-page fetch
+      weightClass: null,   // filled in after detail-page fetch
+      images:      [],     // filled in after detail-page fetch
       detailUrl:   `${BASE_URL}${detailPath}`,
       externalId,
       slug,
@@ -204,10 +250,13 @@ async function scrapeAllCategories(): Promise<{ listings: ScrapedListing[]; log:
     await sleep(300)
   }
 
-  // Pass 2: fetch detail page for each unique listing to get full image gallery
+  // Pass 2: fetch detail page for each unique listing (images + weight)
   let imageErrors = 0
+  _fieldLogDone = false   // reset so first listing of each sync run logs fields
   for (const item of listings) {
-    item.images = await fetchDetailImages(item.detailUrl)
+    const detail = await fetchDetailData(item.detailUrl)
+    item.images      = detail.images
+    item.weightClass = detail.weightClass
     if (item.images.length === 0) imageErrors++
     await sleep(200)
   }
@@ -242,10 +291,10 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (supabase as any)
     .from('listings')
-    .select('id, source_external_id, status, price, operating_hours, images')
-    .eq('source', SOURCE) as { data: { id: string; source_external_id: string; status: string; price: number; operating_hours: number | null; images: string[] }[] | null }
+    .select('id, source_external_id, status, price, operating_hours, year, images')
+    .eq('source', SOURCE) as { data: { id: string; source_external_id: string; status: string; price: number; operating_hours: number | null; year: number | null; images: string[] }[] | null }
 
-  const dbMap = new Map<string, { id: string; status: string; price: number; operating_hours: number | null; images: string[] }>()
+  const dbMap = new Map<string, { id: string; status: string; price: number; operating_hours: number | null; year: number | null; images: string[] }>()
   for (const row of existing ?? []) {
     if (row.source_external_id) dbMap.set(row.source_external_id, row)
   }
@@ -273,6 +322,7 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
         model:              item.model,
         year:               item.year,
         operating_hours:    item.operatingHours,
+        weight_class:       item.weightClass,
         price:              item.price,
         price_type:         item.priceType,
         location:           DEFAULT_LOCATION,
@@ -284,11 +334,12 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
       if (error) result.errors++
       else       result.created++
     } else {
-      // UPDATE if price, hours, or image count changed
+      // UPDATE if any key field changed
       const dbImageCount = (current.images ?? []).length
       const changed =
         current.price           !== item.price ||
         current.operating_hours !== item.operatingHours ||
+        current.year            !== item.year ||
         (item.images.length > 0 && item.images.length !== dbImageCount)
 
       if (changed) {
@@ -298,6 +349,8 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
             price:           item.price,
             price_type:      item.priceType,
             operating_hours: item.operatingHours,
+            year:            item.year,
+            weight_class:    item.weightClass ?? undefined,
             images:          item.images.length > 0 ? item.images : current.images,
             subcategory:     item.subcategory,
           })
