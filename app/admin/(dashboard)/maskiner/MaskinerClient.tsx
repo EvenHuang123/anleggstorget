@@ -28,8 +28,20 @@ function fmtPrice(n: number) {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  gravemaskin: 'Gravemaskin', hjullaster: 'Hjullaster', dumper: 'Dumper',
-  traktor: 'Traktor', kranbil: 'Kranbil', skogsutstyr: 'Skogsutstyr', annet: 'Annet',
+  // New TEXT values
+  'Gravemaskiner':          'Gravemaskiner',
+  'Hjullastere':            'Hjullastere',
+  'Dumpers':                'Dumpers',
+  'Kompaktmaskiner':        'Kompaktmaskiner',
+  'Kraner og løft':         'Kraner og løft',
+  'Komprimering og asfalt': 'Komprimering og asfalt',
+  'Annet':                  'Annet',
+  // Legacy enum fallbacks
+  gravemaskin: 'Gravemaskiner', hjullaster: 'Hjullastere', dumper: 'Dumpers',
+  traktor: 'Annet', kranbil: 'Kraner og løft', skogsutstyr: 'Annet',
+  betong: 'Komprimering og asfalt', kompaktlaster: 'Kompaktmaskiner', annet: 'Annet',
+  // Truck-legacy → Annet
+  'Truck og lager': 'Annet', gaffeltruck: 'Annet', lagertruck: 'Annet', trekktruck: 'Annet',
 }
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''

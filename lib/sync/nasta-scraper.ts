@@ -74,29 +74,35 @@ interface DbListing {
 // ── Category map ──────────────────────────────────────────────────────────────
 
 const CATEGORY_MAP: Record<string, string> = {
-  beltegraver:          'gravemaskin',
-  'midigravere-7-12t':  'gravemaskin',
-  midigravere:          'gravemaskin',
-  minigravere:          'gravemaskin',
-  hjulgravere:          'gravemaskin',
-  gravemaskiner:        'gravemaskin',
-  hjullastere:          'hjullaster',
-  hjullaster:           'hjullaster',
-  beltedumpere:         'dumper',
-  dumpere:              'dumper',
-  dumper:               'dumper',
-  traktorer:            'traktor',
-  traktor:              'traktor',
-  kranbiler:            'kranbil',
-  kranbil:              'kranbil',
-  skogsmaskiner:        'skogsutstyr',
-  skogsutstyr:          'skogsutstyr',
-  betongutstyr:         'betong',
-  betong:               'betong',
-  hjulgraver:           'gravemaskin',
-  minigraver:           'gravemaskin',
-  midigraver:           'gravemaskin',
-  beltedumper:          'dumper',
+  // Excavators → Gravemaskiner
+  beltegraver:         'Gravemaskiner',
+  'midigravere-7-12t': 'Gravemaskiner',
+  midigravere:         'Gravemaskiner',
+  minigravere:         'Gravemaskiner',
+  hjulgravere:         'Gravemaskiner',
+  gravemaskiner:       'Gravemaskiner',
+  hjulgraver:          'Gravemaskiner',
+  minigraver:          'Gravemaskiner',
+  midigraver:          'Gravemaskiner',
+  // Wheel loaders → Hjullastere
+  hjullastere:         'Hjullastere',
+  hjullaster:          'Hjullastere',
+  // Dumpers → Dumpers
+  beltedumpere:        'Dumpers',
+  dumpere:             'Dumpers',
+  dumper:              'Dumpers',
+  beltedumper:         'Dumpers',
+  // Crane trucks → Kraner og løft
+  kranbiler:           'Kraner og løft',
+  kranbil:             'Kraner og løft',
+  // Forestry/tractors → Annet
+  traktorer:           'Annet',
+  traktor:             'Annet',
+  skogsmaskiner:       'Annet',
+  skogsutstyr:         'Annet',
+  // Concrete/compaction → Komprimering og asfalt
+  betongutstyr:        'Komprimering og asfalt',
+  betong:              'Komprimering og asfalt',
 }
 
 function mapCategory(urlSegment: string, gruppeText: string): string {
@@ -108,7 +114,7 @@ function mapCategory(urlSegment: string, gruppeText: string): string {
   for (const [key, val] of Object.entries(CATEGORY_MAP)) {
     if (grp.includes(key)) return val
   }
-  return 'annet'
+  return 'Annet'
 }
 
 function inferWeightClass(totalvektKg: string): string | null {

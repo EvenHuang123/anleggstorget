@@ -24,29 +24,25 @@ const DEFAULT_LOCATION = 'Oslo'
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
 // ── Category sources ──────────────────────────────────────────────────────────
-// listing_category enum: 'gravemaskin' | 'traktor' | 'hjullaster' | 'dumper' |
-//                        'kranbil' | 'skogsutstyr' | 'annet'
 
 interface CategorySource {
-  path:     string
-  category: 'gravemaskin' | 'traktor' | 'hjullaster' | 'dumper' | 'kranbil' | 'skogsutstyr' | 'annet'
-  label:    string   // for logging only
+  path:        string
+  category:    string  // new TEXT-based category values (post DB migration)
+  subcategory: string
+  label:       string  // for logging only
 }
 
 const CATEGORIES: CategorySource[] = [
-  { path: '/hesselberg/truck/gaffeltruck',             category: 'annet',       label: 'Gaffeltruck'              },
-  { path: '/hesselberg/truck/lagertruck',              category: 'annet',       label: 'Lagertruck'               },
-  { path: '/hesselberg/truck/trekktruck',              category: 'annet',       label: 'Trekktruck'               },
-  { path: '/hesselberg/anlegg/hjulgraver',             category: 'gravemaskin', label: 'Hjulgraver'               },
-  { path: '/hesselberg/anlegg/beltegraver',            category: 'gravemaskin', label: 'Beltegraver'              },
-  { path: '/hesselberg/anlegg/teleskoptrucker',        category: 'annet',       label: 'Teleskoptrucker'          },
-  { path: '/hesselberg/anlegg/hjullaster',             category: 'hjullaster',  label: 'Hjullaster'               },
-  { path: '/hesselberg/anlegg/personloftere',          category: 'annet',       label: 'Personløftere'            },
-  { path: '/hesselberg/anlegg/dumper',                 category: 'dumper',      label: 'Dumper'                   },
-  { path: '/hesselberg/anlegg/doser-veihovel',         category: 'annet',       label: 'Doser og Veihøvel'        },
-  { path: '/hesselberg/anlegg/komprimeringsmaskiner',  category: 'annet',       label: 'Komprimeringsmaskiner'    },
-  { path: '/hesselberg/anlegg/asfaltmaskiner',         category: 'annet',       label: 'Asfaltmaskiner'           },
-  { path: '/hesselberg/utstyr',                        category: 'annet',       label: 'Utstyr'                   },
+  { path: '/hesselberg/anlegg/hjulgraver',             category: 'Gravemaskiner',           subcategory: 'Hjulgraver',               label: 'Hjulgraver'               },
+  { path: '/hesselberg/anlegg/beltegraver',            category: 'Gravemaskiner',           subcategory: 'Beltegraver',              label: 'Beltegraver'              },
+  { path: '/hesselberg/anlegg/teleskoptrucker',        category: 'Kompaktmaskiner',         subcategory: 'Teleskoptrucker',          label: 'Teleskoptrucker'          },
+  { path: '/hesselberg/anlegg/hjullaster',             category: 'Hjullastere',             subcategory: 'Hjullaster',               label: 'Hjullaster'               },
+  { path: '/hesselberg/anlegg/personloftere',          category: 'Kraner og løft',          subcategory: 'Personløfter (saks/mast)', label: 'Personløftere'            },
+  { path: '/hesselberg/anlegg/dumper',                 category: 'Dumpers',                 subcategory: 'Dumper',                   label: 'Dumper'                   },
+  { path: '/hesselberg/anlegg/doser-veihovel',         category: 'Annet',                   subcategory: 'Doser og Veihøvel',        label: 'Doser og Veihøvel'        },
+  { path: '/hesselberg/anlegg/komprimeringsmaskiner',  category: 'Komprimering og asfalt',  subcategory: 'Komprimeringsmaskiner',    label: 'Komprimeringsmaskiner'    },
+  { path: '/hesselberg/anlegg/asfaltmaskiner',         category: 'Komprimering og asfalt',  subcategory: 'Asfaltlegger',             label: 'Asfaltmaskiner'           },
+  { path: '/hesselberg/utstyr',                        category: 'Annet',                   subcategory: 'Utstyr og tilbehør',       label: 'Utstyr'                   },
 ]
 
 // ── Types ─────────────────────────────────────────────────────────────────────

@@ -43,18 +43,32 @@ export function formatHours(hours: number): string {
 }
 
 export const CATEGORIES: Record<string, { label: string; icon: string }> = {
-  gravemaskin:    { label: 'Gravemaskiner',    icon: '🏗️' },
-  dumper:         { label: 'Dumpere',          icon: '🚧' },
-  hjullaster:     { label: 'Hjullastere',      icon: '🚛' },
-  teleskoplaster: { label: 'Teleskoplastere',  icon: '🚜' },
-  kompaktlaster:  { label: 'Kompaktlastere',   icon: '🚛' },
-  kompaktmaskin:  { label: 'Kompaktmaskiner',  icon: '⚙️' },
-  traktor:        { label: 'Traktorer',        icon: '🚜' },
-  kranbil:        { label: 'Kranbiler',        icon: '🏗️' },
-  kran:           { label: 'Kraner og løft',   icon: '🏗️' },
-  skogsutstyr:    { label: 'Skogsutstyr',      icon: '🌲' },
-  betong:         { label: 'Betongmaskiner',   icon: '🏗️' },
-  annet:          { label: 'Annet',            icon: '⚙️' },
+  // New category strings (post-migration)
+  'Gravemaskiner':          { label: 'Gravemaskiner',          icon: '🏗️' },
+  'Hjullastere':            { label: 'Hjullastere',            icon: '🚛' },
+  'Dumpers':                { label: 'Dumpere',                icon: '🚧' },
+  'Kompaktmaskiner':        { label: 'Kompaktmaskiner',        icon: '⚙️' },
+  'Kraner og løft':         { label: 'Kraner og løft',         icon: '🏗️' },
+  'Komprimering og asfalt': { label: 'Komprimering og asfalt', icon: '🛣️' },
+  'Annet':                  { label: 'Annet',                  icon: '⚙️' },
+  // Legacy enum values — shown correctly until DB migration is run
+  gravemaskin:    { label: 'Gravemaskiner',          icon: '🏗️' },
+  dumper:         { label: 'Dumpere',                icon: '🚧' },
+  hjullaster:     { label: 'Hjullastere',            icon: '🚛' },
+  teleskoplaster: { label: 'Hjullastere',            icon: '🚛' },
+  kompaktlaster:  { label: 'Kompaktmaskiner',        icon: '⚙️' },
+  kompaktmaskin:  { label: 'Kompaktmaskiner',        icon: '⚙️' },
+  traktor:        { label: 'Annet',                  icon: '⚙️' },
+  kranbil:        { label: 'Kraner og løft',         icon: '🏗️' },
+  kran:           { label: 'Kraner og løft',         icon: '🏗️' },
+  skogsutstyr:    { label: 'Annet',                  icon: '⚙️' },
+  betong:         { label: 'Komprimering og asfalt', icon: '🛣️' },
+  annet:          { label: 'Annet',                  icon: '⚙️' },
+  // Truck → Annet fallback for stray legacy listings
+  'Truck og lager': { label: 'Annet', icon: '⚙️' },
+  gaffeltruck:      { label: 'Annet', icon: '⚙️' },
+  lagertruck:       { label: 'Annet', icon: '⚙️' },
+  trekktruck:       { label: 'Annet', icon: '⚙️' },
 }
 
 export interface CategoryNode {
@@ -64,69 +78,79 @@ export interface CategoryNode {
   subcategories: Record<string, string>
 }
 
-/** Two-level category tree used in filters and the wizard */
+/** Two-level category tree used in filters and the listing wizard.
+ *  Keys are URL slugs (?category=gravemaskiner).
+ *  dbValues contains the new TEXT values stored in the DB after migration,
+ *  PLUS legacy enum values so filtering works before migration is run. */
 export const CATEGORY_TREE: Record<string, CategoryNode> = {
-  gravemaskin: {
+  gravemaskiner: {
     label: 'Gravemaskiner',
-    dbValues: ['gravemaskin'],
+    dbValues: ['Gravemaskiner', 'gravemaskin'],
     subcategories: {
-      minigraver:  'Minigraver (0–6 tonn)',
-      midigraver:  'Middelsstor graver (6–20 tonn)',
-      storgraver:  'Stor graver (20+ tonn)',
-      langrekke:   'Langrekke-graver',
-      sumpgraver:  'Sumpgraver',
+      minigraver:   'Minigraver (0–6 tonn)',
+      midigraver:   'Middelsstor graver (6–20 tonn)',
+      storgraver:   'Stor graver (20+ tonn)',
+      hjulgraver:   'Hjulgraver',
+      beltegraver:  'Beltegraver',
+      langrekke:    'Langrekke-graver',
     },
   },
-  hjullaster: {
+  hjullastere: {
     label: 'Hjullastere',
-    dbValues: ['hjullaster', 'teleskoplaster'],
+    dbValues: ['Hjullastere', 'hjullaster', 'teleskoplaster'],
     subcategories: {
-      kompakt:     'Kompakt hjullaster',
-      mellomstor:  'Middelsstor hjullaster',
-      stor:        'Stor hjullaster',
-      teleskop:    'Teleskophjullaster',
-      gaffeltruck: 'Gaffeltruck (utendørs)',
+      kompakt:    'Kompakt hjullaster',
+      mellomstor: 'Middelsstor hjullaster',
+      stor:       'Stor hjullaster',
     },
   },
-  dumper: {
+  dumpers: {
     label: 'Dumpere',
-    dbValues: ['dumper'],
+    dbValues: ['Dumpers', 'dumper'],
     subcategories: {
-      minidumper:  'Minidumper (under 3 tonn)',
+      minidumper:  'Minidumper',
       bandedumper: 'Bandedumper',
       hjuldumper:  'Hjuldumper',
       knekkstyrt:  'Knekkstyrt dumper',
     },
   },
-  kompaktmaskin: {
+  kompaktmaskiner: {
     label: 'Kompaktmaskiner',
-    dbValues: ['kompaktlaster', 'kompaktmaskin', 'betong'],
+    dbValues: ['Kompaktmaskiner', 'kompaktlaster', 'kompaktmaskin'],
     subcategories: {
-      kompaktlaster:   'Kompaktlaster (bobcat-type)',
-      teleskoplaster2: 'Teleskoplaster',
-      trommel:         'Trommel/vals',
-      groftegravet:    'Grøftegraver',
+      kompaktlaster:   'Kompaktlaster',
+      teleskoplaster:  'Teleskoplaster',
+      teleskoptrucker: 'Teleskoptrucker',
     },
   },
-  kran: {
+  kraner: {
     label: 'Kraner og løft',
-    dbValues: ['kranbil', 'kran'],
+    dbValues: ['Kraner og løft', 'kranbil', 'kran'],
     subcategories: {
       mobilkran:    'Mobilkran',
-      tarnkran:     'Tårnkran',
       personlofter: 'Personløfter (saks/mast)',
-      lastebilkran: 'Lastebilkran (fastkran)',
+      lastebilkran: 'Lastebilkran',
+      tarnkran:     'Tårnkran',
+    },
+  },
+  komprimering: {
+    label: 'Komprimering og asfalt',
+    dbValues: ['Komprimering og asfalt', 'betong'],
+    subcategories: {
+      trommel:              'Trommel/vals',
+      asfaltlegger:         'Asfaltlegger',
+      fresemaskiner:        'Fresemaskiner',
+      komprimeringsmaskiner: 'Komprimeringsmaskiner',
     },
   },
   annet: {
-    label: 'Annet utstyr',
-    dbValues: ['annet', 'traktor', 'skogsutstyr'],
+    label: 'Annet',
+    dbValues: ['Annet', 'annet', 'traktor', 'skogsutstyr'],
     subcategories: {
-      asfaltlegger:  'Asfaltlegger',
-      fresemaskiner: 'Fresemaskiner',
-      palerrigg:     'Pælerigg',
-      generator:     'Generatorer',
-      annet_utstyr:  'Annet utstyr',
+      doser:       'Doser og Veihøvel',
+      palerrigg:   'Pælerigg',
+      generator:   'Generatorer',
+      utstyr:      'Utstyr og tilbehør',
     },
   },
 }
@@ -188,14 +212,21 @@ export function slugify(str: string): string {
 }
 
 export const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
+  // New category strings
+  'Gravemaskiner':          'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&q=75',
+  'Hjullastere':            'https://images.unsplash.com/photo-1625231334168-35067f8853ed?w=800&q=75',
+  'Dumpers':                'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&q=75',
+  'Kompaktmaskiner':        'https://images.unsplash.com/photo-1625231334168-35067f8853ed?w=800&q=75',
+  'Kraner og løft':         'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=75',
+  'Komprimering og asfalt': 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=75',
+  'Annet':                  'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=75',
+  // Legacy fallbacks
   gravemaskin: 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&q=75',
-  traktor: 'https://images.unsplash.com/photo-1574943320219-553eb213f72d?w=800&q=75',
-  hjullaster: 'https://images.unsplash.com/photo-1625231334168-35067f8853ed?w=800&q=75',
-  dumper: 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&q=75',
-  kranbil: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=75',
-  skogsutstyr: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&q=75',
-  betong: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=75',
-  annet: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=75',
+  hjullaster:  'https://images.unsplash.com/photo-1625231334168-35067f8853ed?w=800&q=75',
+  dumper:      'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&q=75',
+  kranbil:     'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=75',
+  betong:      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=75',
+  annet:       'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=75',
 }
 
 export function getListingImageUrl(imagePath: string): string {

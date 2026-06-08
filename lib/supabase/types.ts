@@ -1,4 +1,15 @@
+// After DB migration (ALTER TABLE listings ALTER COLUMN category TYPE TEXT),
+// category is free text. Type accepts both new strings and legacy enum values.
 export type Category =
+  // New values (post-migration)
+  | 'Gravemaskiner'
+  | 'Hjullastere'
+  | 'Dumpers'
+  | 'Kompaktmaskiner'
+  | 'Kraner og løft'
+  | 'Komprimering og asfalt'
+  | 'Annet'
+  // Legacy enum values (pre-migration compatibility)
   | 'gravemaskin'
   | 'traktor'
   | 'hjullaster'
@@ -9,6 +20,9 @@ export type Category =
   | 'annet'
   | 'teleskoplaster'
   | 'kompaktlaster'
+  | 'kompaktmaskin'
+  | 'kran'
+  | string // catch-all for any future values
 
 export type PriceType = 'fast_price' | 'negotiable' | 'auction'
 
