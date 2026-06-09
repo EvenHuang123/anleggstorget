@@ -1,12 +1,11 @@
 /**
- * Rockmann AS sync — kjører syncRockmannListings fra lib/sync/rockmann-scraper.ts
+ * Rockmann AS sync — kjører syncRockmannListings + detaljside-fetching
  *
  * Usage:
  *   npm run sync:rockmann
- *   node --import tsx/esm scripts/sync-rockmann.mjs
  *
- * Requires .env.local with NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
- * and ROCKMANN_SELLER_ID.
+ * Requires .env.local med NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+ * og ROCKMANN_SELLER_ID.
  */
 
 import { readFileSync } from 'fs'
@@ -33,15 +32,55 @@ loadEnv(envPath)
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const { syncRockmannListings, writeRockmannSyncLog } =
+  const { syncRockmannListings, writeRockmannSyncLog, fetchRockmannDetail } =
     await import('../lib/sync/rockmann-scraper.js')
+
+  const { createClient } = await import('@supabase/supabase-js')
 
   console.log('[rockmann] Starter sync...')
 
   try {
+    // 1. Kjør vanlig sync (insert/update/soft-delete)
     const result = await syncRockmannListings()
     await writeRockmannSyncLog(result, 'success')
-    console.log('[rockmann] Ferdig:', result)
+    console.log('[rockmann] Sync ferdig:', result)
+
+    // 2. Hent detaljdata for alle aktive Rockmann-listings
+    console.log('[rockmann] Starter detaljside-fetching...')
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    )
+
+    const { data: listings } = await supabase
+      .from('listings')
+      .select('id, source_external_id, images, operating_hours')
+      .eq('source', 'rockmann')
+      .eq('status', 'active')
+
+    let updated = 0
+    for (const listing of listings ?? []) {
+      const detail = await fetchRockmannDetail(listing.source_external_id)
+
+      if (detail.images.length > 1 || detail.hours !== null) {
+        const { error } = await supabase
+          .from('listings')
+          .update({
+            images:          detail.images.length > 0 ? detail.images : listing.images,
+            operating_hours: detail.hours,
+          })
+          .eq('id', listing.id)
+
+        if (!error) {
+          updated++
+          console.log(`[rockmann] Oppdatert: ${listing.source_external_id} — ${detail.images.length} bilder, ${detail.hours ?? '–'} timer`)
+        }
+      }
+    }
+
+    console.log(`[rockmann] Detaljfetching ferdig: ${updated} listings oppdatert`)
+
   } catch (err) {
     console.error('[rockmann] FEIL:', err.message)
     process.exit(1)

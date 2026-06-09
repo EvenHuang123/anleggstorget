@@ -84,6 +84,39 @@ async function fetchHtml(url: string): Promise<string> {
   throw new Error('unreachable')
 }
 
+// ── Detail page ───────────────────────────────────────────────────────────────
+
+export async function fetchRockmannDetail(finnId: string): Promise<{
+  images: string[]
+  hours:  number | null
+}> {
+  const url = `https://www.finn.no/pw/ad/construction/${finnId}?orgId=764747174`
+  try {
+    const html = await fetchHtml(url)
+    const $ = cheerio.load(html)
+
+    const images: string[] = []
+    $('div[data-carousel-container] img.centered-image').each((_i, el) => {
+      const src = $(el).attr('src') || $(el).attr('data-src') || ''
+      if (src.includes('finncdn.no') && !images.includes(src)) {
+        images.push(src.replace('/default/', '/1280w/'))
+      }
+    })
+
+    let hours: number | null = null
+    $('dl dt').each((_i, el) => {
+      const label = $(el).text().trim().toLowerCase()
+      const value = $(el).next('dd').text().trim()
+      if (label === 'arbeidstimer') hours = parseInt(value.replace(/\D/g, ''), 10) || null
+    })
+
+    await sleep(300)
+    return { images, hours }
+  } catch {
+    return { images: [], hours: null }
+  }
+}
+
 // ── Category mapping ──────────────────────────────────────────────────────────
 
 function mapCategory(title: string): { category: string; subcategory: string } {
