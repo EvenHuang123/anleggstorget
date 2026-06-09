@@ -28,6 +28,14 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'st.mascus.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.finncdn.no',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.finncdn.no',
+      },
     ],
   },
 };
