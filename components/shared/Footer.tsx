@@ -1,14 +1,16 @@
+'use client'
+
 import Link from 'next/link'
 import Logo from './Logo'
 
 const FOOTER_LINKS = {
   'Markeder': [
-    { label: 'Gravemaskiner', href: '/sok?category=gravemaskin' },
-    { label: 'Traktorer', href: '/sok?category=traktor' },
-    { label: 'Hjullastere', href: '/sok?category=hjullaster' },
-    { label: 'Dumpere', href: '/sok?category=dumper' },
-    { label: 'Kranbiler', href: '/sok?category=kranbil' },
-    { label: 'Skogsutstyr', href: '/sok?category=skogsutstyr' },
+    { label: 'Gravemaskiner',       href: '/sok?category=gravemaskiner'  },
+    { label: 'Hjullastere',         href: '/sok?category=hjullastere'    },
+    { label: 'Dumpers',             href: '/sok?category=dumpers'        },
+    { label: 'Kompaktmaskiner',     href: '/sok?category=kompaktmaskiner'},
+    { label: 'Kraner og løft',      href: '/sok?category=kraner'         },
+    { label: 'Komprimering/asfalt', href: '/sok?category=komprimering'   },
   ],
   'Tjenester': [
     { label: 'Legg ut annonse', href: '/ny-annonse' },
@@ -92,10 +94,15 @@ export default function Footer() {
           <p style={{ color: 'var(--t3)', fontSize: 12 }}>
             © {year} Anleggstorget — Norges B2B-markedsplass for tunge maskiner
           </p>
-          <div style={{ display: 'flex', gap: 20 }}>
-            <Link href="/personvern" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Personvern</Link>
+          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+            <Link href="/personvern" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Personvernerklæring</Link>
             <Link href="/vilkar" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Vilkår</Link>
-            <Link href="/personvern" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Cookies</Link>
+            <button
+              onClick={() => { localStorage.removeItem('cookie-consent'); window.location.reload() }}
+              style={{ background: 'none', border: 'none', color: 'var(--t3)', fontSize: 12, cursor: 'pointer', padding: 0 }}
+            >
+              Administrer cookies
+            </button>
           </div>
         </div>
       </div>

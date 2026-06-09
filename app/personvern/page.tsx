@@ -1,147 +1,200 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+import Navbar from '@/components/shared/Navbar'
+import Footer from '@/components/shared/Footer'
 
 export const metadata: Metadata = {
-  title: 'Personvernserklæring | Anleggstorget',
-  description: 'Les hvordan Anleggstorget behandler personopplysninger, bruker informasjonskapsler og sikrer dataen til bedrifter på plattformen vår.',
-  openGraph: {
-    title: 'Personvernserklæring | Anleggstorget',
-    description: 'Les om behandling av personopplysninger og informasjonskapsler på Anleggstorget.',
-    url: 'https://anleggstorget.no/personvern',
-  },
+  title: 'Personvernerklæring',
+  description: 'Les hvordan Anleggstorget behandler personopplysninger, bruker informasjonskapsler og sikrer dataen til bedrifter på plattformen.',
+  alternates: { canonical: 'https://anleggstorget.no/personvern' },
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: 48 }}>
+    <section style={{ marginBottom: 48 }}>
       <h2 style={{
         fontFamily: 'Barlow Condensed, sans-serif',
         fontWeight: 700, fontSize: 22,
-        color: 'var(--t1)', marginBottom: 14,
-        letterSpacing: '0.02em',
+        color: 'var(--t1)', marginBottom: 16,
+        letterSpacing: '0.01em',
+        paddingBottom: 10,
+        borderBottom: '1px solid var(--border)',
       }}>
         {title}
       </h2>
-      <div style={{ color: 'var(--t2)', fontSize: 15, lineHeight: 1.8 }}>
+      <div style={{ color: 'var(--t2)', fontSize: 15, lineHeight: 1.75 }}>
         {children}
       </div>
+    </section>
+  )
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{
+      display: 'flex', gap: 16, padding: '10px 0',
+      borderBottom: '1px solid var(--border)',
+    }}>
+      <span style={{ color: 'var(--t3)', fontSize: 14, minWidth: 180, flexShrink: 0 }}>{label}</span>
+      <span style={{ color: 'var(--t1)', fontSize: 14 }}>{value}</span>
     </div>
   )
 }
 
 export default function PersonvernPage() {
-  const updated = new Date().toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' })
-
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
-      <div style={{
-        background: 'var(--bg2)',
-        borderBottom: '1px solid var(--border)',
-        padding: '40px 24px',
-      }}>
-        <div className="container-main" style={{ maxWidth: 860 }}>
-          <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--t3)', fontSize: 13, textDecoration: 'none', marginBottom: 20 }}>
-            <ArrowLeft size={14} /> Tilbake til forsiden
-          </Link>
-          <p style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 700, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: 10 }}>
-            Juridisk
-          </p>
-          <h1 style={{ fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 800, fontSize: 40, color: 'var(--t1)', letterSpacing: '0.02em', marginBottom: 10 }}>
-            Personvernerklæring
-          </h1>
-          <p style={{ color: 'var(--t3)', fontSize: 13 }}>Sist oppdatert: {updated}</p>
-        </div>
-      </div>
+    <>
+      <Navbar />
+      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
+        <div className="container-main" style={{ maxWidth: 800, padding: '64px 24px 96px' }}>
 
-      <div className="container-main" style={{ maxWidth: 860, padding: '60px 24px 100px' }}>
-        <Section title="1. Informasjon vi samler inn">
-          <p>Anleggstorget samler inn følgende informasjon når du bruker tjenesten:</p>
-          <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[
-              ['Bedriftsinformasjon', 'Organisasjonsnummer, bedriftsnavn, kontaktperson'],
-              ['Kontaktinformasjon', 'E-postadresse, telefonnummer'],
-              ['Annonsedata', 'Bilder, beskrivelser og tekniske spesifikasjoner for maskiner du legger ut'],
-              ['Kommunikasjon', 'Meldinger sendt via plattformen'],
-              ['Teknisk data', 'IP-adresse, nettlesertype, besøkstid'],
-            ].map(([k, v]) => (
-              <li key={k}><strong style={{ color: 'var(--t1)' }}>{k}:</strong> {v}</li>
-            ))}
-          </ul>
-        </Section>
-
-        <Section title="2. Hvordan vi bruker informasjonen">
-          <p>Vi bruker informasjonen til å:</p>
-          <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[
-              'Verifisere bedrifter mot Brønnøysundregisteret',
-              'Legge til rette for kommunikasjon mellom bedrifter',
-              'Sende varslinger om nye forespørsler og meldinger',
-              'Forbedre plattformen og brukeropplevelsen',
-              'Forhindre svindel og misbruk av tjenesten',
-            ].map(t => <li key={t}>{t}</li>)}
-          </ul>
-        </Section>
-
-        <Section title="3. Deling av informasjon">
-          <p>Vi selger <strong>aldri</strong> dine personopplysninger til tredjeparter. Informasjon deles kun når det er nødvendig for tjenesten:</p>
-          <ul style={{ marginTop: 12, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[
-              'Bedriftsnavn og kontaktinfo vises i dine annonser',
-              'Brønnøysundregisteret brukes for bedriftsverifisering',
-              'E-posttjenesten Resend sender varslinger på våre vegne',
-              'Supabase lagrer data sikkert i EU-regionen',
-            ].map(t => <li key={t}>{t}</li>)}
-          </ul>
-        </Section>
-
-        <Section title="4. Dine rettigheter">
-          <p>Du har rett til å:</p>
-          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[
-              'Se hvilken informasjon vi har om deg',
-              'Rette feil eller utdatert informasjon',
-              'Slette kontoen din og all tilhørende data',
-              'Trekke tilbake samtykke til behandling av personopplysninger',
-              'Klage til Datatilsynet hvis du mener vi bryter personvernregler',
-            ].map(t => (
-              <div key={t} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                <CheckCircle2 size={15} style={{ color: '#4ade80', flexShrink: 0, marginTop: 2 }} />
-                <span>{t}</span>
-              </div>
-            ))}
+          {/* Header */}
+          <div style={{ marginBottom: 56 }}>
+            <p style={{
+              fontFamily: 'Barlow Condensed, sans-serif',
+              fontWeight: 600, fontSize: 11,
+              letterSpacing: '0.14em', textTransform: 'uppercase',
+              color: 'var(--gold)', marginBottom: 12,
+            }}>
+              GDPR
+            </p>
+            <h1 style={{
+              fontFamily: 'Barlow Condensed, sans-serif',
+              fontWeight: 800, fontSize: 'clamp(32px, 5vw, 52px)',
+              color: 'var(--t1)', lineHeight: 1.05,
+              letterSpacing: '0.01em', textTransform: 'uppercase',
+              marginBottom: 16,
+            }}>
+              Personvernerklæring
+            </h1>
+            <p style={{ color: 'var(--t3)', fontSize: 14 }}>
+              Sist oppdatert: 09.06.2026
+            </p>
           </div>
-          <p style={{ marginTop: 16 }}>
-            For å utøve dine rettigheter, kontakt oss på:{' '}
-            <a href="mailto:kontakt@anleggstorget.no" style={{ color: 'var(--gold)' }}>kontakt@anleggstorget.no</a>
-          </p>
-        </Section>
 
-        <Section title="5. Cookies og sporing">
-          <p>Anleggstorget bruker minimalt med cookies. Vi bruker kun nødvendige cookies for autentisering (innlogging) og grunnleggende funksjonalitet.</p>
-          <p style={{ marginTop: 12 }}>Vi bruker <strong>ikke</strong> sporings-cookies eller tredjeparts analyseverktøy.</p>
-        </Section>
+          {/* 1. Behandlingsansvarlig */}
+          <Section title="1. Behandlingsansvarlig">
+            <p style={{ marginBottom: 12 }}>
+              Anleggstorget er behandlingsansvarlig for personopplysninger som behandles i forbindelse med bruk av tjenesten.
+            </p>
+            <Row label="Navn" value="Anleggstorget" />
+            <Row label="E-post" value="kontakt@anleggstorget.no" />
+          </Section>
 
-        <Section title="6. Datasikkerhet">
-          <p>All data lagres kryptert hos Supabase (PostgreSQL) i EU-regionen. Vi bruker HTTPS for all kommunikasjon, og passord er hashet med bcrypt.</p>
-        </Section>
+          {/* 2. Hvilke opplysninger */}
+          <Section title="2. Hvilke personopplysninger vi behandler">
+            <ul style={{ paddingLeft: 20, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                'Navn og e-postadresse ved registrering av brukerkonto',
+                'Organisasjonsnummer og bedriftsnavn (innhentet fra Brønnøysundregisteret)',
+                'Meldinger og forespørsler sendt via forespørselsskjema',
+                'IP-adresse og tekniske loggdata via Vercel (hosting)',
+              ].map(item => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </Section>
 
-        <Section title="7. Endringer i personvernerklæringen">
-          <p>Vi kan oppdatere denne personvernerklæringen. Ved vesentlige endringer vil vi varsle deg via e-post.</p>
-        </Section>
+          {/* 3. Formål og grunnlag */}
+          <Section title="3. Formål og rettslig grunnlag">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, padding: '16px 20px' }}>
+                <p style={{ fontWeight: 600, color: 'var(--t1)', marginBottom: 4 }}>Levere tjenesten</p>
+                <p style={{ color: 'var(--t3)', fontSize: 14 }}>
+                  Nødvendig for å opprette og administrere brukerkonto, publisere og vise annonser, og sende meldinger mellom brukere.
+                  Rettslig grunnlag: avtale, jf. GDPR artikkel 6 (1) b.
+                </p>
+              </div>
+              <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, padding: '16px 20px' }}>
+                <p style={{ fontWeight: 600, color: 'var(--t1)', marginBottom: 4 }}>Verifisere bedrifter</p>
+                <p style={{ color: 'var(--t3)', fontSize: 14 }}>
+                  Vi kontrollerer organisasjonsnummer mot Brønnøysundregisteret for å sikre at kun registrerte norske bedrifter bruker plattformen.
+                  Rettslig grunnlag: berettiget interesse, jf. GDPR artikkel 6 (1) f.
+                </p>
+              </div>
+            </div>
+          </Section>
 
-        <Section title="8. Kontakt">
-          <p>
-            Spørsmål om personvern?<br />
-            E-post: <a href="mailto:kontakt@anleggstorget.no" style={{ color: 'var(--gold)' }}>kontakt@anleggstorget.no</a>
-          </p>
-        </Section>
+          {/* 4. Lagringstid */}
+          <Section title="4. Hvor lenge vi lagrer data">
+            <Row label="Brukerkontoer" value="Så lenge kontoen er aktiv" />
+            <Row label="Forespørsler og meldinger" value="2 år" />
+            <Row label="Tekniske logger (Vercel)" value="90 dager" />
+          </Section>
 
-        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 32, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          <Link href="/vilkar" style={{ color: 'var(--gold)', fontSize: 14, textDecoration: 'none' }}>Les vilkår for bruk →</Link>
-          <Link href="/" style={{ color: 'var(--t3)', fontSize: 14, textDecoration: 'none' }}>Tilbake til forsiden</Link>
+          {/* 5. Databehandlere */}
+          <Section title="5. Hvem vi deler data med">
+            <p style={{ marginBottom: 16 }}>
+              Vi deler personopplysninger med følgende databehandlere. Alle har inngått databehandleravtale med oss.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
+              {[
+                { name: 'Supabase Ireland Ltd', role: 'Databaser og autentisering', location: 'EU (Irland)' },
+                { name: 'Vercel Inc', role: 'Hosting og infrastruktur', location: 'USA (Standard Contractual Clauses)' },
+                { name: 'Resend Inc', role: 'E-postutsendelse', location: 'USA (Standard Contractual Clauses)' },
+              ].map(p => (
+                <div key={p.name} style={{
+                  background: 'var(--bg2)', padding: '14px 20px',
+                  display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8,
+                }}>
+                  <span style={{ color: 'var(--t1)', fontSize: 14, fontWeight: 500 }}>{p.name}</span>
+                  <span style={{ color: 'var(--t3)', fontSize: 13 }}>{p.role}</span>
+                  <span style={{ color: 'var(--t3)', fontSize: 13 }}>{p.location}</span>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          {/* 6. Rettigheter */}
+          <Section title="6. Dine rettigheter">
+            <p style={{ marginBottom: 16 }}>
+              Du har følgende rettigheter etter GDPR. Ta kontakt på{' '}
+              <a href="mailto:kontakt@anleggstorget.no" style={{ color: 'var(--gold)' }}>kontakt@anleggstorget.no</a>{' '}
+              — vi svarer innen 30 dager.
+            </p>
+            <ul style={{ paddingLeft: 20, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                'Rett til innsyn i hvilke opplysninger vi har om deg',
+                'Rett til retting av uriktige opplysninger',
+                'Rett til sletting («retten til å bli glemt»)',
+                'Rett til å trekke samtykke når som helst',
+                'Rett til å klage til Datatilsynet (datatilsynet.no)',
+              ].map(r => (
+                <li key={r}>{r}</li>
+              ))}
+            </ul>
+          </Section>
+
+          {/* 7. Informasjonskapsler */}
+          <Section title="7. Informasjonskapsler (cookies)">
+            <p style={{ marginBottom: 20 }}>
+              Vi bruker kun nødvendige informasjonskapsler som kreves for at tjenesten skal fungere.
+              Vi bruker for øyeblikket ingen analytiske eller markedsføringscookies.
+            </p>
+
+            <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, padding: '16px 20px', marginBottom: 16 }}>
+              <p style={{ fontWeight: 600, color: 'var(--t1)', marginBottom: 8 }}>Nødvendige (alltid aktive)</p>
+              <ul style={{ paddingLeft: 20, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <li style={{ color: 'var(--t3)', fontSize: 14 }}>Innloggingssesjon (autentisering via Supabase)</li>
+                <li style={{ color: 'var(--t3)', fontSize: 14 }}>Sikkerhet (CSRF-beskyttelse)</li>
+              </ul>
+            </div>
+
+            <p style={{ fontSize: 14, color: 'var(--t3)' }}>
+              Du kan når som helst endre ditt samtykke ved å klikke «Administrer cookies» i bunnen av siden.
+            </p>
+          </Section>
+
+          {/* 8. Endringer */}
+          <Section title="8. Endringer i personvernerklæringen">
+            <p>
+              Vi kan oppdatere denne erklæringen ved behov. Vesentlige endringer varsles via e-post til registrerte brukere.
+              Datoen for siste oppdatering vises øverst på denne siden.
+            </p>
+          </Section>
+
         </div>
-      </div>
-    </div>
+      </main>
+      <Footer />
+    </>
   )
 }

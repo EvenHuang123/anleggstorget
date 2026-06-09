@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Barlow, Barlow_Condensed } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
+import CookieBanner from '@/components/CookieBanner'
 
 const barlow = Barlow({
   subsets: ['latin'],
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="nb" className={`${barlow.variable} ${barlowCondensed.variable}`}>
       <body>
         {children}
+        <CookieBanner />
         <Toaster
           position="bottom-right"
           toastOptions={{
