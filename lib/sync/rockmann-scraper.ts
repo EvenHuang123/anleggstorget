@@ -36,7 +36,7 @@ interface ScrapedListing {
   brand:       string | null
   model:       string | null
   year:        number | null
-  price:       number
+  price:       number | null
   priceType:   'fast_price' | 'negotiable'
   category:    string
   subcategory: string
@@ -45,6 +45,11 @@ interface ScrapedListing {
   location:    string
   slug:        string
 }
+
+const EXCLUDED_KEYWORDS = [
+  'lastbærer', 'lastebil', 'henger', 'trailer',
+  'semitrailer', 'trekkvogn', 'logset', 'skogsmaskin',
+]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -141,8 +146,9 @@ function parsePage(html: string): { listings: ScrapedListing[]; hasNext: boolean
     const title = $el.find('h3.t4').text().trim()
     if (!title) return
 
-    // Skip "kjøpes" (want-to-buy ads)
+    // Skip "kjøpes" (want-to-buy ads) and irrelevant equipment
     if (/kjøpes/i.test(title)) return
+    if (EXCLUDED_KEYWORDS.some(kw => title.toLowerCase().includes(kw))) return
 
     const href       = $el.find('a').first().attr('href') ?? ''
     const externalId = href.match(/\/(\d+)\?/)?.[1] ?? ''
@@ -156,7 +162,7 @@ function parsePage(html: string): { listings: ScrapedListing[]; hasNext: boolean
     const prls     = $el.find('span.prl')
     const year     = parseInt($(prls[0]).text().trim()) || null
     const priceRaw = $(prls[1]).text().trim()
-    const price    = priceRaw ? parseInt(priceRaw.replace(/[^\d]/g, '')) || 0 : 0
+    const price    = priceRaw ? parseInt(priceRaw.replace(/[^\d]/g, '')) || null : null
 
     const location = $el.find('span.blockify.ptt').text().trim() || 'Norge'
 
@@ -171,7 +177,7 @@ function parsePage(html: string): { listings: ScrapedListing[]; hasNext: boolean
 
     listings.push({
       title, brand, model, year,
-      price, priceType: price > 0 ? 'fast_price' : 'negotiable',
+      price, priceType: price && price > 0 ? 'fast_price' : 'negotiable',
       category, subcategory, images,
       externalId, location, slug,
     })
@@ -246,10 +252,10 @@ export async function syncRockmannListings(): Promise<SyncResult> {
     .from('listings')
     .select('id, source_external_id, status, price, year')
     .eq('source', SOURCE) as {
-      data: { id: string; source_external_id: string; status: string; price: number; year: number | null }[] | null
+      data: { id: string; source_external_id: string; status: string; price: number | null; year: number | null }[] | null
     }
 
-  const dbMap = new Map<string, { id: string; status: string; price: number; year: number | null }>()
+  const dbMap = new Map<string, { id: string; status: string; price: number | null; year: number | null }>()
   for (const row of existing ?? []) {
     if (row.source_external_id) dbMap.set(row.source_external_id, row)
   }
@@ -276,7 +282,7 @@ export async function syncRockmannListings(): Promise<SyncResult> {
         model:              item.model,
         year:               item.year,
         operating_hours:    null,
-        price:              item.price,
+        price:              item.price ?? 0,
         price_type:         item.priceType,
         location:           item.location,
         images:             item.images,
