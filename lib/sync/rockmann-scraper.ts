@@ -289,8 +289,10 @@ export async function syncRockmannListings(): Promise<SyncResult> {
         views:              0,
         slug:               item.slug,
       })
-      if (error) result.errors++
-      else       result.created++
+      if (error) {
+        console.error('[rockmann] INSERT error:', JSON.stringify(error), 'title:', item.title)
+        result.errors++
+      } else result.created++
     } else {
       const changed = current.price !== item.price || current.year !== item.year
 
@@ -299,8 +301,10 @@ export async function syncRockmannListings(): Promise<SyncResult> {
         const { error } = await (supabase as any).from('listings')
           .update({ price: item.price, price_type: item.priceType, year: item.year, images: item.images })
           .eq('id', current.id)
-        if (error) result.errors++
-        else       result.updated++
+        if (error) {
+          console.error('[rockmann] UPDATE error:', JSON.stringify(error), 'id:', current.id)
+          result.errors++
+        } else result.updated++
       }
 
       // Re-activate if previously soft-deleted
