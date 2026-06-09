@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { ArrowRight, Shield, ChevronLeft, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { formatPrice, CATEGORIES, getListingImageUrl } from '@/lib/utils/format'
+import { CATEGORIES, getListingImageUrl } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
 
 export default function HeroCarousel() {
@@ -71,7 +71,7 @@ export default function HeroCarousel() {
       >
         {/* Image area */}
         <div style={{
-          height: 160,
+          height: 200,
           background: 'linear-gradient(135deg, var(--bg3) 0%, var(--bg4) 100%)',
           position: 'relative',
           overflow: 'hidden',
@@ -125,16 +125,16 @@ export default function HeroCarousel() {
         </div>
 
         {/* Card content */}
-        <div style={{ padding: '16px 20px 20px' }}>
+        <div style={{ padding: '14px 20px 16px' }}>
           <h3 style={{
             fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 17,
-            color: 'var(--t1)', marginBottom: 8, letterSpacing: '0.01em',
+            color: 'var(--t1)', marginBottom: 10, letterSpacing: '0.01em',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {listing.title}
           </h3>
 
-          <div style={{ display: 'flex', gap: 16, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 14, flexWrap: 'nowrap' }}>
             {listing.year && (
               <div>
                 <p className="label-sm" style={{ marginBottom: 2 }}>Årsmodell</p>
@@ -150,25 +150,17 @@ export default function HeroCarousel() {
               </div>
             )}
             {listing.location && (
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <p className="label-sm" style={{ marginBottom: 2 }}>Lokasjon</p>
-                <p style={{ color: 'var(--t1)', fontSize: 13, fontWeight: 500, maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p style={{ color: 'var(--t1)', fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {listing.location}
                 </p>
               </div>
             )}
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <p className="label-sm" style={{ marginBottom: 2 }}>Pris</p>
-              <p className="price-display" style={{ fontSize: 22 }}>
-                {listing.price > 0 ? formatPrice(listing.price) : 'Pris på forespørsel'}
-              </p>
-            </div>
             <Link
               href={href}
               style={{
+                marginLeft: 'auto', flexShrink: 0,
                 background: 'var(--gold3)', border: '1px solid rgba(200,149,58,0.2)',
                 color: 'var(--gold)', borderRadius: 3,
                 fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 12,
