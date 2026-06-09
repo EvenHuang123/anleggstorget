@@ -1,4 +1,6 @@
-export function formatPrice(amount: number, type?: string): string {
+export function formatPrice(amount: number | null | undefined, type?: string): string {
+  if (amount == null || amount === 0) return 'Forhandlingsbar'
+
   const formatted = new Intl.NumberFormat('nb-NO', {
     style: 'currency',
     currency: 'NOK',
