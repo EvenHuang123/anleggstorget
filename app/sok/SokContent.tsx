@@ -191,12 +191,7 @@ export default function SokContent() {
 
   const chips = [
     ...treeKeys.map(k => ({ key: 'category', value: k, label: CATEGORY_TREE[k]?.label ?? k })),
-    subcategory && { key: 'subcategory', value: subcategory, label: (() => {
-      for (const node of Object.values(CATEGORY_TREE)) {
-        if (node.subcategories[subcategory]) return node.subcategories[subcategory]
-      }
-      return subcategory
-    })() },
+    subcategory && { key: 'subcategory', value: subcategory, label: subcategory },
     location    && { key: 'location',    value: location,    label: location },
     listingType === 'sale' && { key: 'listingType', value: 'sale', label: 'Til salgs' },
     listingType === 'rent' && { key: 'listingType', value: 'rent', label: 'Til leie' },

@@ -170,14 +170,14 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
                 {checked && activeNode === node && (
                   <div style={{ marginLeft: 22, marginBottom: 4 }}>
                     {Object.entries(node.subcategories).map(([subKey, subLabel]) => {
-                      const subActive = subcategory === subKey
+                      const subActive = subcategory === subLabel
                       return (
                         <label key={subKey} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '3px 6px', cursor: 'pointer', borderRadius: 3, background: subActive ? 'var(--gold4)' : 'transparent' }}>
                           <input
                             type="radio"
                             name="subcategory"
                             checked={subActive}
-                            onChange={() => toggleSub(subKey)}
+                            onChange={() => toggleSub(subLabel)}
                             style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }}
                           />
                           <span style={{ fontSize: 12, color: subActive ? 'var(--gold)' : 'var(--t3)', fontWeight: subActive ? 600 : 400 }}>{subLabel}</span>
