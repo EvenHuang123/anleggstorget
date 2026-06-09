@@ -35,12 +35,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const listing = await fetchListing(id)
   if (!listing) return { title: 'Annonse ikke funnet' }
 
+  const priceStr = listing.price && listing.price > 0
+    ? `${listing.price.toLocaleString('nb-NO')} kr`
+    : 'Forhandlingsbar'
+
   const desc = listing.description
     ? listing.description.substring(0, 155) + '…'
-    : `${listing.brand || ''} ${listing.model || ''} – ${listing.price.toLocaleString('nb-NO')} kr`.trim()
+    : `${listing.brand || ''} ${listing.model || ''} – ${priceStr}`.trim()
 
   return {
-    title: `${listing.title} – ${listing.price.toLocaleString('nb-NO')} kr | Anleggstorget`,
+    title: `${listing.title} – ${priceStr} | Anleggstorget`,
     description: desc,
     openGraph: {
       title: listing.title,
