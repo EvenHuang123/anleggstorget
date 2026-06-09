@@ -107,7 +107,7 @@ export default function HeroCarousel() {
           )}
 
           {/* Category badge */}
-          <div className="tag tag-gold" style={{ position: 'absolute', top: 12, left: 12 }}>
+          <div className="tag tag-category" style={{ position: 'absolute', top: 12, left: 12 }}>
             {categoryLabel}
           </div>
 

@@ -39,7 +39,7 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
 
           {/* Overlays */}
           <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-            <span className="tag tag-gold">{CATEGORIES[listing.category]?.label || listing.category}</span>
+            <span className="tag tag-category">{CATEGORIES[listing.category]?.label || listing.category}</span>
             {listing.listing_type === 'rent' && (
               <span className="tag" style={{ background: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.25)' }}>Til leie</span>
             )}

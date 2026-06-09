@@ -261,7 +261,7 @@ export default function AnnonseContent({ listing, related }: Props) {
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <span className="tag tag-gold">{CATEGORIES[listing.category]?.label}</span>
+                  <span className="tag tag-category">{CATEGORIES[listing.category]?.label}</span>
                   {listing.featured && (
                     <span style={{
                       background: 'var(--gold)', color: '#0d0c0a',
