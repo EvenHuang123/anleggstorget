@@ -172,8 +172,7 @@ function parsePage(html: string): { listings: ScrapedListing[]; hasNext: boolean
     const brand = parts[0] || null
     const model = parts.slice(1).join(' ') || null
 
-    const uid  = crypto.randomUUID()
-    const slug = `${slugify(title)}-${uid.slice(0, 6)}`
+    const slug = `${slugify(title)}-${externalId}`
 
     listings.push({
       title, brand, model, year,
