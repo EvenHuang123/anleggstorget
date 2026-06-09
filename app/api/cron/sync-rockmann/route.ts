@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[sync-rockmann]', message)
-    await writeRockmannSyncLog(empty, 'error', message)
+    await writeRockmannSyncLog(empty, 'failed', message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

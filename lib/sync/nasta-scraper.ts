@@ -32,7 +32,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const BASE_URL        = 'https://bruktmarked.nasta.no'
 const NASTA_SELLER_ID = 'fc88b0fc-ef94-4199-876c-72d97424055d'
-const SOURCE          = 'nasta'
+const SOURCE          = 'nasta_as'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -385,8 +385,7 @@ export async function syncNASTAListings(): Promise<SyncResult> {
       }
 
       // Re-activate if previously removed by sync (machine re-appeared on NASTA).
-      // dbMap only contains source='nasta' rows, so this never re-activates user drafts.
-      if (existing.status === 'draft') {
+      if (existing.status === 'removed_by_sync') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any)
           .from('listings')
@@ -398,16 +397,13 @@ export async function syncNASTAListings(): Promise<SyncResult> {
     await sleep(300)
   }
 
-  // 4. Mark listings no longer on NASTA as draft (hidden from public via RLS).
-  //    To use a dedicated 'removed_by_sync' status, run:
-  //    ALTER TYPE listing_status ADD VALUE 'removed_by_sync';
-  //    and update the two status strings below + the .neq filter in annonse/[id]/page.tsx.
+  // 4. Soft-delete listings no longer on NASTA
   for (const [extId, row] of dbMap.entries()) {
     if (!seenExternalIds.has(extId) && row.status === 'active') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('listings')
-        .update({ status: 'draft' })
+        .update({ status: 'removed_by_sync', updated_at: new Date() })
         .eq('id', row.id)
       result.removed++
     }
@@ -419,7 +415,7 @@ export async function syncNASTAListings(): Promise<SyncResult> {
 
 export async function writeSyncLog(
   result: SyncResult,
-  status: 'success' | 'error',
+  status: 'success' | 'failed' | 'partial',
   errorMessage?: string,
 ): Promise<void> {
   const supabase = createClient(

@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[sync-hesselberg]', message)
-    await writeHesselbergSyncLog(empty, 'error', message)
+    await writeHesselbergSyncLog(empty, 'failed', message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

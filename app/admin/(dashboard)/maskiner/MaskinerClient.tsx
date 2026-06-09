@@ -12,7 +12,6 @@ interface Listing {
   status: string
   created_at: string
   slug: string
-  images: string[]
   seller_id: string
   profiles: { company_name: string } | null
 }
@@ -43,8 +42,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   // Truck-legacy → Annet
   'Truck og lager': 'Annet', gaffeltruck: 'Annet', lagertruck: 'Annet', trekktruck: 'Annet',
 }
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
 
 export default function MaskinerClient({ initialListings }: { initialListings: Listing[] }) {
   const [listings, setListings] = useState(initialListings)
@@ -128,7 +125,6 @@ export default function MaskinerClient({ initialListings }: { initialListings: L
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #30363d' }}>
-              <th style={{ ...s.th, width: 52 }}>Bilde</th>
               <th style={s.th}>Tittel</th>
               <th style={s.th}>Selger</th>
               <th style={s.th}>Pris</th>
@@ -141,27 +137,17 @@ export default function MaskinerClient({ initialListings }: { initialListings: L
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={9} style={{ ...s.td, textAlign: 'center', color: '#8b949e', padding: '32px 16px' }}>
+              <tr><td colSpan={8} style={{ ...s.td, textAlign: 'center', color: '#8b949e', padding: '32px 16px' }}>
                 Ingen listings funnet
               </td></tr>
             )}
             {filtered.map(l => {
-              const imgPath = l.images?.[0]
-              const imgUrl = imgPath ? `${SUPABASE_URL}/storage/v1/object/public/listing-images/${imgPath}` : null
               const isActive = l.status === 'active'
               return (
                 <tr key={l.id}
                   onMouseOver={e => (e.currentTarget.style.background = '#21262d22')}
                   onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <td style={{ ...s.td, padding: '8px 12px' }}>
-                    <div style={{ width: 40, height: 36, borderRadius: 4, background: '#21262d', overflow: 'hidden', flexShrink: 0 }}>
-                      {imgUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={imgUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      )}
-                    </div>
-                  </td>
                   <td style={{ ...s.td, maxWidth: 240 }}>
                     <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.title}</div>
                   </td>

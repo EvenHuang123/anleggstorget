@@ -364,7 +364,7 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
       else if (priceChanged || (item.images.length > 0 && item.images.length !== dbImageCount)) result.updated++
 
       // Re-activate if previously soft-deleted
-      if (current.status === 'draft') {
+      if (current.status === 'removed_by_sync') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any).from('listings').update({ status: 'active' }).eq('id', current.id)
       }
@@ -376,7 +376,7 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
   for (const [extId, row] of dbMap.entries()) {
     if (!scrapedIds.has(extId) && row.status === 'active') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('listings').update({ status: 'draft' }).eq('id', row.id)
+      await (supabase as any).from('listings').update({ status: 'removed_by_sync', updated_at: new Date() }).eq('id', row.id)
       result.removed++
     }
   }
@@ -386,7 +386,7 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase as any)
     .from('listings')
-    .update({ status: 'draft' })
+    .update({ status: 'removed_by_sync' })
     .eq('source', SOURCE)
     .eq('status', 'active')
     .in('subcategory', [...EXCLUDED_SUBCATEGORIES])
@@ -397,7 +397,7 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
 
 export async function writeHesselbergSyncLog(
   result: SyncResult,
-  status: 'success' | 'error',
+  status: 'success' | 'failed' | 'partial',
   errorMessage?: string,
 ): Promise<void> {
   const supabase = createClient(

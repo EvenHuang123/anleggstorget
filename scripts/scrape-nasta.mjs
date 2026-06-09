@@ -1,9 +1,37 @@
 /**
- * Scrapes bruktmarked.nasta.no and creates listings in Supabase for NASTA AS.
+ * Scrapes bruktmarked.nasta.no and upserts listings into Supabase for NASTA AS.
  *
  * Usage: node scripts/scrape-nasta.mjs [--dry-run]
  *
  * Requires .env.local with SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SUPABASE_URL.
+ *
+ * Before first run, execute in Supabase SQL Editor:
+ *
+ *   -- Mark existing NASTA listings with correct source (one-time migration)
+ *   UPDATE public.listings
+ *     SET source = 'nasta_as'
+ *   WHERE seller_id = 'fc88b0fc-ef94-4199-876c-72d97424055d'
+ *     AND (source IS NULL OR source = 'manual' OR source = 'nasta');
+ *
+ *   -- Unique index to prevent duplicate inserts
+ *   CREATE UNIQUE INDEX IF NOT EXISTS listings_nasta_extid_idx
+ *     ON public.listings(source_external_id)
+ *     WHERE source_external_id IS NOT NULL;
+ *
+ *   -- Remove duplicate NASTA listings — keep newest per external ID
+ *   DELETE FROM listings
+ *   WHERE id IN (
+ *     SELECT id FROM (
+ *       SELECT id,
+ *         ROW_NUMBER() OVER (
+ *           PARTITION BY source_external_id ORDER BY created_at DESC
+ *         ) AS rn
+ *       FROM listings
+ *       WHERE seller_id = 'fc88b0fc-ef94-4199-876c-72d97424055d'
+ *         AND source_external_id IS NOT NULL
+ *     ) ranked
+ *     WHERE rn > 1
+ *   );
  */
 
 import { readFileSync } from 'fs'
@@ -14,7 +42,7 @@ import { fileURLToPath } from 'url'
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const envPath = path.join(__dirname, '../.env.local')
+const envPath   = path.join(__dirname, '../.env.local')
 
 function loadEnv(filePath) {
   try {
@@ -28,74 +56,48 @@ function loadEnv(filePath) {
 
 loadEnv(envPath)
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY
+const SUPABASE_URL      = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SERVICE_KEY       = process.env.SUPABASE_SERVICE_ROLE_KEY
+const NASTA_SELLER_ID   = 'fc88b0fc-ef94-4199-876c-72d97424055d'
+const SOURCE            = 'nasta_as'
+const BASE_URL          = 'https://bruktmarked.nasta.no'
+const DRY_RUN           = process.argv.includes('--dry-run')
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
   console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local')
   process.exit(1)
 }
 
-// Listings are published under huangevenzhe@gmail.com (we manage on behalf of NASTA AS)
-const NASTA_SELLER_ID = 'fc88b0fc-ef94-4199-876c-72d97424055d'
-
-const BASE_URL = 'https://bruktmarked.nasta.no'
-const DRY_RUN  = process.argv.includes('--dry-run')
-
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
 
 // ── Category mapping ──────────────────────────────────────────────────────────
-// Maps bruktmarked.nasta.no URL segment / "Gruppe" field → our Category type
 
 const CATEGORY_MAP = {
-  // URL segments
-  'beltegraver':         'gravemaskin',
-  'midigravere-7-12t':   'gravemaskin',
-  'midigravere':         'gravemaskin',
-  'minigravere':         'gravemaskin',
-  'hjulgravere':         'gravemaskin',
-  'gravemaskiner':       'gravemaskin',
-  'hjullastere':         'hjullaster',
-  'hjullaster':          'hjullaster',
-  'beltedumpere':        'dumper',
-  'dumpere':             'dumper',
-  'dumper':              'dumper',
-  'traktorer':           'traktor',
-  'traktor':             'traktor',
-  'kranbiler':           'kranbil',
-  'kranbil':             'kranbil',
-  'skogsmaskiner':       'skogsutstyr',
-  'skogsutstyr':         'skogsutstyr',
-  'betongutstyr':        'betong',
-  'betong':              'betong',
-  'skuffer':             'annet',
-  'utstyr':              'annet',
-  'annet':               'annet',
-  // "Gruppe" text values (Norwegian)
-  'beltegraver':         'gravemaskin',
-  'hjulgraver':          'gravemaskin',
-  'minigraver':          'gravemaskin',
-  'midigraver':          'gravemaskin',
-  'hjullaster':          'hjullaster',
-  'beltedumper':         'dumper',
+  beltegraver: 'gravemaskin', 'midigravere-7-12t': 'gravemaskin',
+  midigravere: 'gravemaskin', minigravere: 'gravemaskin',
+  hjulgravere: 'gravemaskin', gravemaskiner: 'gravemaskin',
+  hjullastere: 'hjullaster',  hjullaster: 'hjullaster',
+  beltedumpere: 'dumper',     dumpere: 'dumper',     dumper: 'dumper',
+  traktorer: 'traktor',       traktor: 'traktor',
+  kranbiler: 'kranbil',       kranbil: 'kranbil',
+  skogsmaskiner: 'skogsutstyr', skogsutstyr: 'skogsutstyr',
+  betongutstyr: 'betong',     betong: 'betong',
+  hjulgraver: 'gravemaskin',  minigraver: 'gravemaskin',
+  midigraver: 'gravemaskin',  beltedumper: 'dumper',
+  skuffer: 'annet',           utstyr: 'annet',        annet: 'annet',
 }
 
 function mapCategory(urlSegment, gruppeText) {
   const seg = (urlSegment || '').toLowerCase()
-  const grp = (gruppeText || '').toLowerCase()
-
-  // Check URL segment first (more reliable)
+  const grp = (gruppeText  || '').toLowerCase()
   for (const [key, val] of Object.entries(CATEGORY_MAP)) {
     if (seg.includes(key)) return val
   }
-  // Fall back to Gruppe field text
   for (const [key, val] of Object.entries(CATEGORY_MAP)) {
     if (grp.includes(key)) return val
   }
   return 'annet'
 }
-
-// ── Weight class helper ───────────────────────────────────────────────────────
 
 function inferWeightClass(totalvektKg) {
   const kg = parseInt(String(totalvektKg || '').replace(/\D/g, ''), 10)
@@ -107,14 +109,10 @@ function inferWeightClass(totalvektKg) {
   return 'Over 40 tonn'
 }
 
-// ── Slugify ───────────────────────────────────────────────────────────────────
-
 function slugify(str) {
-  return str
-    .toLowerCase()
+  return str.toLowerCase()
     .replace(/æ/g, 'ae').replace(/ø/g, 'o').replace(/å/g, 'a')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
 // ── HTML helpers ──────────────────────────────────────────────────────────────
@@ -125,15 +123,11 @@ function extractH1(html) {
 }
 
 function extractDataPairs(html) {
-  // <span class="data">Label</span> ... <span class="data">Value</span>
-  // They appear inside <td class="header"> and <td class="cell1"> respectively
   const pairs = {}
-
-  // Strategy: extract all table rows that contain two data spans
   const rowRe = /<tr[^>]*class="item[^"]*"[^>]*>([\s\S]*?)<\/tr>/g
   let rowMatch
   while ((rowMatch = rowRe.exec(html)) !== null) {
-    const row = rowMatch[1]
+    const row   = rowMatch[1]
     const spans = [...row.matchAll(/<span class="data">([\s\S]*?)<\/span>/g)]
     if (spans.length >= 2) {
       const key   = spans[0][1].replace(/<[^>]+>/g, '').trim()
@@ -146,7 +140,7 @@ function extractDataPairs(html) {
 
 function extractImages(html) {
   const urls = []
-  const re = /data-src="(https:\/\/st\.mascus\.com\/image\/product\/large\/[^"]+)"/g
+  const re   = /data-src="(https:\/\/st\.mascus\.com\/image\/product\/large\/[^"]+)"/g
   let m
   while ((m = re.exec(html)) !== null) {
     if (!urls.includes(m[1])) urls.push(m[1])
@@ -154,16 +148,15 @@ function extractImages(html) {
   return urls
 }
 
-// ── Fetch with retry ──────────────────────────────────────────────────────────
+// ── Network helpers ───────────────────────────────────────────────────────────
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
 
 async function fetchHtml(url, retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
       const res = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; research-bot/1.0)',
-          'Accept': 'text/html',
-        },
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; research-bot/1.0)', Accept: 'text/html' },
         signal: AbortSignal.timeout(20_000),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -180,175 +173,135 @@ async function fetchBuffer(url) {
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; research-bot/1.0)' },
     signal: AbortSignal.timeout(30_000),
   })
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`)
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return Buffer.from(await res.arrayBuffer())
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)) }
+// ── Discover listing URLs ─────────────────────────────────────────────────────
 
-// ── Discover all listing URLs ─────────────────────────────────────────────────
-
-async function discoverListingUrls() {
-  const listingPaths = new Set()
-
-  // Try pages 1 → until no new listings are found or no next-page link
-  let page = 1
-  const maxPages = 20
-
-  while (page <= maxPages) {
+async function discoverListingPaths() {
+  const paths = new Set()
+  for (let page = 1; page <= 20; page++) {
     const url = page === 1
       ? `${BASE_URL}/nastaas/anlegg/`
       : `${BASE_URL}/nastaas/anlegg,${page},createdate_desc,search.html`
-
     console.log(`  Scanning page ${page}: ${url}`)
     let html
     try {
       html = await fetchHtml(url)
     } catch {
-      console.log(`  Page ${page} failed — stopping pagination`)
+      console.log(`  Page ${page} failed — stopping`)
       break
     }
-
-    const before = listingPaths.size
     const re = /href="(\/nastaas\/anlegg\/[^"]+\.html)"/g
     let m
-    while ((m = re.exec(html)) !== null) {
-      listingPaths.add(m[1])
-    }
-    const added = listingPaths.size - before
-
-    // Stop if no next-page link exists
-    const hasNext = new RegExp(`/nastaas/anlegg,${page + 1},`).test(html)
-    if (!hasNext) {
-      console.log(`  No page ${page + 1} — stopping pagination`)
+    while ((m = re.exec(html)) !== null) paths.add(m[1])
+    if (!new RegExp(`/nastaas/anlegg,${page + 1},`).test(html)) {
+      console.log(`  No page ${page + 1} — done`)
       break
     }
-
-    page++
     await sleep(400)
   }
-
-  return [...listingPaths]
+  return [...paths]
 }
 
 // ── Parse one listing ─────────────────────────────────────────────────────────
 
 function parseListing(html, listingPath) {
-  const urlSegment = listingPath.split('/')[3] // e.g. "beltegraver"
+  const urlSegment = listingPath.split('/')[3] || ''
   const title      = extractH1(html) || 'Ukjent maskin'
   const data       = extractDataPairs(html)
   const imageUrls  = extractImages(html)
 
-  // Price: "Pris eks. MVA" → strip spaces and " NOK"
-  const priceRaw  = (data['Pris eks. MVA'] || '').replace(/\s/g, '').replace(/NOK.*/, '')
-  const price     = parseInt(priceRaw, 10) || 0
-  const priceType = price === 0 ? 'negotiable' : 'fast_price'
+  const priceRaw   = (data['Pris eks. MVA'] || '').replace(/\s/g, '').replace(/NOK.*/, '')
+  const price      = parseInt(priceRaw, 10) || 0
+  const priceType  = price === 0 ? 'negotiable' : 'fast_price'
 
-  // Year
-  const year = parseInt(data['Årsmodell'] || '', 10) || null
+  const year       = parseInt(data['Årsmodell'] || '', 10) || null
 
-  // Operating hours: "6 800 t" → 6800
-  const hoursRaw = (data['Driftstimer'] || '').replace(/\s/g, '').replace(/t$/, '')
-  const hours    = parseInt(hoursRaw, 10) || null
+  const hoursRaw   = (data['Driftstimer'] || '').replace(/\s/g, '').replace(/t$/, '')
+  const hours      = parseInt(hoursRaw, 10) || null
 
-  // Location: extract city from "Mjåvannsveien 194 Kristiansand 4628, Norge"
-  // Heuristic: find the word before a 4-digit postcode
-  const lagersted = data['Lagersted'] || ''
-  let location    = lagersted
-  const cityMatch = lagersted.match(/([A-ZÆØÅ][a-zæøå]+(?:\s[A-ZÆØÅ][a-zæøå]+)*)\s+\d{4}/)
-  if (cityMatch) location = cityMatch[1]
+  const lagersted  = data['Lagersted'] || ''
+  let location     = lagersted
+  const cityMatch  = lagersted.match(/([A-ZÆØÅ][a-zæøå]+(?:\s[A-ZÆØÅ][a-zæøå]+)*)\s+\d{4}/)
+  if (cityMatch)                    location = cityMatch[1]
   else if (lagersted.includes(',')) location = lagersted.split(',')[0].trim()
-  if (!location) location = 'Kristiansand'
+  if (!location)                    location = 'Kristiansand'
 
-  // Category
-  const gruppe   = data['Gruppe'] || ''
-  const category = mapCategory(urlSegment, gruppe)
+  const category    = mapCategory(urlSegment, data['Gruppe'] || '')
+  const weightClass = inferWeightClass(data['Totalvekt'] || '')
 
-  // Weight
-  const vektRaw   = (data['Totalvekt'] || '').replace(/\s/g, '').replace(/kg.*/, '')
-  const vektKg    = parseInt(vektRaw, 10) || null
-  const weightClass = inferWeightClass(vektKg)
+  const titleParts  = title.split(' ')
+  const brand       = titleParts[0] || null
+  const model       = titleParts.slice(1).join(' ') || null
 
-  // Brand / model split: "Hitachi ZX 210 LC-6" → brand="Hitachi", model="ZX 210 LC-6"
-  const titleParts = title.split(' ')
-  const brand = titleParts[0] || null
-  const model = titleParts.slice(1).join(' ') || null
+  // Stable external ID — last path segment without .html
+  const externalId  = listingPath.split('/').pop()?.replace('.html', '') || listingPath
 
-  // Description
-  const description = data['Beskrivelse'] || null
-
-  return {
-    title,
-    brand,
-    model,
-    year,
-    category,
-    price,
-    priceType,
-    operating_hours: hours,
-    weight_class: weightClass,
-    location,
-    description,
-    imageUrls,
-    nastuuid: listingPath.split('/').pop()?.replace('.html', '') || null,
-  }
+  return { title, brand, model, year, category, price, priceType,
+           operating_hours: hours, weight_class: weightClass,
+           location, description: data['Beskrivelse'] || null,
+           imageUrls, externalId }
 }
 
-// ── Upload image to Supabase Storage ─────────────────────────────────────────
+// ── Upload images ─────────────────────────────────────────────────────────────
 
-async function uploadImage(imageUrl, listingId, index) {
-  const ext      = imageUrl.split('.').pop()?.split('?')[0] || 'jpg'
-  const filePath = `listings/${listingId}/${index}.${ext}`
-
-  try {
-    const buf = await fetchBuffer(imageUrl)
-    const { error } = await supabase.storage
-      .from('listing-images')
-      .upload(filePath, buf, {
-        contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`,
-        upsert: true,
-      })
-    if (error) throw error
-    return filePath
-  } catch (err) {
-    console.warn(`    Image upload failed (${index}): ${err.message}`)
-    return null
+async function uploadImages(imageUrls, listingId) {
+  const uploaded = []
+  for (let j = 0; j < Math.min(imageUrls.length, 20); j++) {
+    const ext      = imageUrls[j].split('.').pop()?.split('?')[0] || 'jpg'
+    const filePath = `listings/${listingId}/${j}.${ext}`
+    try {
+      const buf = await fetchBuffer(imageUrls[j])
+      const { error } = await supabase.storage
+        .from('listing-images')
+        .upload(filePath, buf, { contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`, upsert: true })
+      if (!error) uploaded.push(filePath)
+    } catch (err) {
+      console.warn(`    Image ${j} failed: ${err.message}`)
+    }
+    await sleep(150)
   }
+  return uploaded
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
+  const startMs = Date.now()
   console.log(`\n🔍 NASTA scraper — ${DRY_RUN ? 'DRY RUN' : 'LIVE'}`)
-  console.log(`   Seller: ${NASTA_SELLER_ID}\n`)
+  console.log(`   Source: ${SOURCE}  Seller: ${NASTA_SELLER_ID}\n`)
 
-  // 1. Fetch existing NASTA listings — dedup by source_external_id (NASTA UUID)
+  // 1. Load ALL existing NASTA listings (by seller_id, catches old + new source values)
   const { data: existing } = await supabase
     .from('listings')
-    .select('id, title, year, price, source_external_id, status')
+    .select('id, title, year, price, operating_hours, description, source_external_id, status, images')
     .eq('seller_id', NASTA_SELLER_ID)
 
-  const existingById  = new Map((existing || []).filter(l => l.source_external_id).map(l => [l.source_external_id, l]))
-  const existingKeys  = new Set((existing || []).map(l => `${l.title.toLowerCase()}|${l.year}|${l.price}`))
-  console.log(`   ${existing?.length ?? 0} existing listings found.\n`)
+  // Build lookup by stable external ID
+  const dbMap = new Map()
+  for (const row of existing || []) {
+    if (row.source_external_id) dbMap.set(row.source_external_id, row)
+  }
+  console.log(`   ${existing?.length ?? 0} existing listings in DB (${dbMap.size} with external ID)\n`)
 
-  // 2. Discover all listing URLs
+  // 2. Discover all listing paths on NASTA site
   console.log('📋 Discovering listing URLs...')
-  const paths = await discoverListingUrls()
+  const paths = await discoverListingPaths()
   console.log(`   Found ${paths.length} unique listing paths.\n`)
 
-  const stats = { created: 0, skipped: 0, failed: 0, removed: 0 }
-  const seenIds = new Set()
+  const stats     = { created: 0, updated: 0, reactivated: 0, skipped: 0, removed: 0, failed: 0 }
+  const seenIds   = new Set()
 
-  // 3. Process each listing
+  // 3. Process each scraped listing
   for (let i = 0; i < paths.length; i++) {
     const listingPath = paths[i]
-    const url = `${BASE_URL}${listingPath}`
     process.stdout.write(`[${i + 1}/${paths.length}] ${listingPath.split('/').pop()} `)
 
     let html
     try {
-      html = await fetchHtml(url)
+      html = await fetchHtml(`${BASE_URL}${listingPath}`)
     } catch (err) {
       console.log(`❌ fetch failed: ${err.message}`)
       stats.failed++
@@ -356,101 +309,145 @@ async function main() {
     }
 
     const parsed = parseListing(html, listingPath)
-    seenIds.add(parsed.nastuuid)
+    seenIds.add(parsed.externalId)
 
-    // Skip if already tracked by source_external_id
-    if (existingById.has(parsed.nastuuid)) {
-      console.log(`⏭  skip (already exists): "${parsed.title}" ${parsed.year} ${parsed.price}kr`)
-      stats.skipped++
-      continue
-    }
+    const dbRow = dbMap.get(parsed.externalId)
 
-    // Fallback dedup for listings imported before source_external_id existed
-    const dedupKey = `${parsed.title.toLowerCase()}|${parsed.year}|${parsed.price}`
-    if (existingKeys.has(dedupKey)) {
-      console.log(`⏭  skip (legacy dedup): "${parsed.title}" ${parsed.year} ${parsed.price}kr`)
-      stats.skipped++
-      continue
-    }
+    if (dbRow) {
+      // ── UPDATE existing listing with fresh NASTA data ──────────────────────
+      const priceChanged   = dbRow.price             !== parsed.price
+      const hoursChanged   = dbRow.operating_hours   !== parsed.operating_hours
+      const descChanged    = dbRow.description       !== parsed.description
+      const wasRemoved     = dbRow.status === 'draft'
 
-    console.log(`\n   Title:    ${parsed.title}`)
-    console.log(`   Category: ${parsed.category} | Year: ${parsed.year} | Hours: ${parsed.operating_hours}h | Price: ${parsed.price} NOK`)
-    console.log(`   Location: ${parsed.location} | Images: ${parsed.imageUrls.length}`)
+      if (!priceChanged && !hoursChanged && !descChanged && !wasRemoved) {
+        console.log(`⏭  unchanged: "${parsed.title}"`)
+        stats.skipped++
+        continue
+      }
 
-    if (DRY_RUN) {
-      console.log(`   ✓ [dry-run] would create listing`)
-      stats.created++
-      continue
-    }
+      if (!DRY_RUN) {
+        const updatePayload = {}
+        if (priceChanged)  updatePayload.price            = parsed.price
+        if (priceChanged)  updatePayload.price_type       = parsed.priceType
+        if (hoursChanged)  updatePayload.operating_hours  = parsed.operating_hours
+        if (descChanged)   updatePayload.description      = parsed.description
+        if (wasRemoved)    updatePayload.status           = 'active'
 
-    // Generate a stable UUID-like ID from nasta UUID to allow re-runs
-    const listingId = crypto.randomUUID()
+        const { error } = await supabase.from('listings').update(updatePayload).eq('id', dbRow.id)
+        if (error) {
+          console.log(`❌ update failed: ${error.message}`)
+          stats.failed++
+        } else {
+          if (wasRemoved) {
+            console.log(`♻️  reactivated: "${parsed.title}"`)
+            stats.reactivated++
+          } else {
+            const changes = [priceChanged && 'pris', hoursChanged && 'timer', descChanged && 'desc'].filter(Boolean).join(', ')
+            console.log(`✏️  updated (${changes}): "${parsed.title}"`)
+            stats.updated++
+          }
+        }
+      } else {
+        console.log(`✏️  [dry] would update: "${parsed.title}"`)
+        stats.updated++
+      }
 
-    // Upload images (max 20)
-    const uploadedPaths = []
-    for (let j = 0; j < Math.min(parsed.imageUrls.length, 20); j++) {
-      const p = await uploadImage(parsed.imageUrls[j], listingId, j)
-      if (p) uploadedPaths.push(p)
-      await sleep(150)
-    }
-    console.log(`   Uploaded ${uploadedPaths.length}/${Math.min(parsed.imageUrls.length, 20)} images`)
-
-    // Build slug
-    const slug = `${slugify(parsed.title)}-${listingId.slice(0, 6)}`
-
-    // Insert listing
-    const payload = {
-      id:                 listingId,
-      seller_id:          NASTA_SELLER_ID,
-      source_external_id: parsed.nastuuid,
-      title:              parsed.title,
-      category:           parsed.category,
-      brand:              parsed.brand,
-      model:              parsed.model,
-      year:               parsed.year,
-      operating_hours:    parsed.operating_hours,
-      weight_class:       parsed.weight_class ?? null,
-      price:              parsed.price,
-      price_type:         parsed.priceType,
-      location:           parsed.location,
-      description:        parsed.description,
-      images:             uploadedPaths,
-      status:             'active',
-      listing_type:       'sale',
-      views:              0,
-      slug,
-    }
-
-    const { error: insertErr } = await supabase.from('listings').insert(payload)
-    if (insertErr) {
-      console.log(`   ❌ insert failed: ${insertErr.message}`)
-      stats.failed++
     } else {
-      console.log(`   ✅ created: ${slug}`)
-      existingKeys.add(dedupKey)
-      stats.created++
+      // ── INSERT new listing ─────────────────────────────────────────────────
+      console.log(`\n   Title:    ${parsed.title}`)
+      console.log(`   Category: ${parsed.category} | Year: ${parsed.year} | Hours: ${parsed.operating_hours}h | Price: ${parsed.price} NOK`)
+
+      if (DRY_RUN) {
+        console.log(`   ✓ [dry-run] would insert`)
+        stats.created++
+        continue
+      }
+
+      const listingId = crypto.randomUUID()
+      const images    = await uploadImages(parsed.imageUrls, listingId)
+      console.log(`   Uploaded ${images.length}/${Math.min(parsed.imageUrls.length, 20)} images`)
+
+      const slug = `${slugify(parsed.title)}-${listingId.slice(0, 6)}`
+
+      const { error } = await supabase.from('listings').insert({
+        id:                 listingId,
+        seller_id:          NASTA_SELLER_ID,
+        source:             SOURCE,
+        source_external_id: parsed.externalId,
+        title:              parsed.title,
+        category:           parsed.category,
+        brand:              parsed.brand,
+        model:              parsed.model,
+        year:               parsed.year,
+        operating_hours:    parsed.operating_hours,
+        weight_class:       parsed.weight_class,
+        price:              parsed.price,
+        price_ex_vat:       parsed.price,
+        price_inc_vat:      Math.round(parsed.price * 1.25),
+        vat_rate:           25,
+        price_type:         parsed.priceType,
+        listing_type:       'sale',
+        location:           parsed.location,
+        description:        parsed.description,
+        images,
+        status:             'active',
+        views:              0,
+        slug,
+      })
+
+      if (error) {
+        console.log(`   ❌ insert failed: ${error.message}`)
+        stats.failed++
+      } else {
+        console.log(`   ✅ created: ${slug}`)
+        stats.created++
+        // Keep dbMap in sync so removal check is accurate
+        dbMap.set(parsed.externalId, { id: listingId, status: 'active', source_external_id: parsed.externalId })
+      }
     }
 
     await sleep(300)
   }
 
-  // 4. Mark listings no longer on NASTA as removed (status = draft)
+  // 4. Mark listings no longer on NASTA as removed (soft-delete → draft)
+  //    Only applies to listings we can reliably track (source_external_id IS NOT NULL)
   if (!DRY_RUN) {
-    for (const [extId, row] of existingById.entries()) {
+    for (const [extId, row] of dbMap.entries()) {
       if (!seenIds.has(extId) && row.status === 'active') {
         const { error } = await supabase
           .from('listings')
           .update({ status: 'draft' })
           .eq('id', row.id)
         if (!error) {
-          console.log(`🗑  removed (not on NASTA): "${row.title}" ${row.year} ${row.price}kr`)
+          console.log(`🗑  removed (gone from NASTA): id=${row.id} extId=${extId}`)
           stats.removed++
         }
       }
     }
   }
 
-  console.log(`\n📊 Done! Created: ${stats.created} | Skipped: ${stats.skipped} | Removed: ${stats.removed} | Failed: ${stats.failed}`)
+  const durationSec = ((Date.now() - startMs) / 1000).toFixed(1)
+  console.log(`\n📊 Done in ${durationSec}s`)
+  console.log(`   Created:     ${stats.created}`)
+  console.log(`   Updated:     ${stats.updated}`)
+  console.log(`   Reactivated: ${stats.reactivated}`)
+  console.log(`   Skipped:     ${stats.skipped}`)
+  console.log(`   Removed:     ${stats.removed}`)
+  console.log(`   Failed:      ${stats.failed}`)
+
+  // Write sync log if not dry-run
+  if (!DRY_RUN) {
+    await supabase.from('sync_logs').insert({
+      source:        SOURCE,
+      status:        stats.failed === 0 ? 'success' : 'partial',
+      created_count: stats.created,
+      updated_count: stats.updated + stats.reactivated,
+      removed_count: stats.removed,
+      total_scraped: paths.length,
+      duration_ms:   Date.now() - startMs,
+    })
+  }
 }
 
 main().catch(err => {
