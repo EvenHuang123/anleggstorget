@@ -4,14 +4,14 @@ import { createAdminClient } from '@/lib/admin/supabase'
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const token = request.cookies.get(COOKIE_NAME)?.value
   if (!verifyAdminToken(token)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { id } = params
+  const { id } = await params
   if (!id) return NextResponse.json({ error: 'Mangler id' }, { status: 400 })
 
   const supabase = createAdminClient()
