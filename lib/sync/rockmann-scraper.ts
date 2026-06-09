@@ -32,18 +32,19 @@ export interface SyncResult {
 }
 
 interface ScrapedListing {
-  title:       string
-  brand:       string | null
-  model:       string | null
-  year:        number | null
-  price:       number | null
-  priceType:   'fast_price' | 'negotiable'
-  category:    string
-  subcategory: string
-  images:      string[]
-  externalId:  string
-  location:    string
-  slug:        string
+  title:          string
+  brand:          string | null
+  model:          string | null
+  year:           number | null
+  price:          number | null
+  priceType:      'fast_price' | 'negotiable'
+  category:       string
+  subcategory:    string
+  images:         string[]
+  externalId:     string
+  location:       string
+  slug:           string
+  operatingHours: number | null
 }
 
 const EXCLUDED_KEYWORDS = [
@@ -82,6 +83,41 @@ async function fetchHtml(url: string): Promise<string> {
     }
   }
   throw new Error('unreachable')
+}
+
+// ── Detail page ───────────────────────────────────────────────────────────────
+
+async function fetchRockmannDetail(finnId: string): Promise<{
+  images: string[]
+  hours:  number | null
+  year:   number | null
+}> {
+  const url = `https://www.finn.no/pw/ad/construction/${finnId}?orgId=764747174`
+  try {
+    const html = await fetchHtml(url)
+    const $ = cheerio.load(html)
+
+    const images: string[] = []
+    $('div[data-carousel-container] img.centered-image').each((_i, el) => {
+      const src = $(el).attr('src') || $(el).attr('data-src') || ''
+      if (src.includes('finncdn.no') && !images.includes(src)) {
+        images.push(src.replace('/default/', '/1280w/'))
+      }
+    })
+
+    let hours: number | null = null
+    let year:  number | null = null
+    $('dl dt').each((_i, el) => {
+      const label = $(el).text().trim().toLowerCase()
+      const value = $(el).next('dd').text().trim()
+      if (label === 'arbeidstimer') hours = parseInt(value.replace(/\D/g, ''), 10) || null
+      if (label === 'årsmodell')    year  = parseInt(value, 10)                    || null
+    })
+
+    return { images, hours, year }
+  } catch {
+    return { images: [], hours: null, year: null }
+  }
 }
 
 // ── Category mapping ──────────────────────────────────────────────────────────
@@ -180,6 +216,7 @@ function parsePage(html: string): { listings: ScrapedListing[]; hasNext: boolean
       price, priceType: price && price > 0 ? 'fast_price' : 'negotiable',
       category, subcategory, images,
       externalId, location, slug,
+      operatingHours: null,
     })
   })
 
@@ -220,6 +257,18 @@ async function scrapeAllPages(): Promise<{ listings: ScrapedListing[]; log: stri
     if (hasMore) await sleep(500)
   }
 
+  // Pass 2: fetch detail page per listing for full images + hours + year
+  let detailErrors = 0
+  for (const item of all) {
+    const detail = await fetchRockmannDetail(item.externalId)
+    if (detail.images.length > 0) item.images = detail.images
+    if (detail.year !== null)      item.year   = detail.year
+    item.operatingHours = detail.hours
+    if (detail.images.length === 0) detailErrors++
+    await sleep(300)
+  }
+  if (detailErrors > 0) log.push(`Detaljsider: ${detailErrors} uten bilder`)
+
   return { listings: all, log }
 }
 
@@ -250,12 +299,12 @@ export async function syncRockmannListings(): Promise<SyncResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (supabase as any)
     .from('listings')
-    .select('id, source_external_id, status, price, year')
+    .select('id, source_external_id, status, price, year, operating_hours')
     .eq('source', SOURCE) as {
-      data: { id: string; source_external_id: string; status: string; price: number | null; year: number | null }[] | null
+      data: { id: string; source_external_id: string; status: string; price: number | null; year: number | null; operating_hours: number | null }[] | null
     }
 
-  const dbMap = new Map<string, { id: string; status: string; price: number | null; year: number | null }>()
+  const dbMap = new Map<string, { id: string; status: string; price: number | null; year: number | null; operating_hours: number | null }>()
   for (const row of existing ?? []) {
     if (row.source_external_id) dbMap.set(row.source_external_id, row)
   }
@@ -281,7 +330,7 @@ export async function syncRockmannListings(): Promise<SyncResult> {
         brand:              item.brand,
         model:              item.model,
         year:               item.year,
-        operating_hours:    null,
+        operating_hours:    item.operatingHours,
         price:              item.price,
         price_type:         item.priceType,
         location:           item.location,
@@ -293,12 +342,21 @@ export async function syncRockmannListings(): Promise<SyncResult> {
       if (error) result.errors++
       else       result.created++
     } else {
-      const changed = current.price !== item.price || current.year !== item.year
+      const changed =
+        current.price           !== item.price           ||
+        current.year            !== item.year            ||
+        current.operating_hours !== item.operatingHours
 
       if (changed) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('listings')
-          .update({ price: item.price, price_type: item.priceType, year: item.year, images: item.images })
+          .update({
+            price:           item.price,
+            price_type:      item.priceType,
+            year:            item.year,
+            operating_hours: item.operatingHours,
+            images:          item.images,
+          })
           .eq('id', current.id)
         if (error) result.errors++
         else       result.updated++
