@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect, useCallback } from 'react'
-import { Search, Plus, CheckCircle, XCircle, X, Copy, Check, RefreshCcw, Pencil, Eye, EyeOff } from 'lucide-react'
+import { Search, Plus, CheckCircle, XCircle, X, Copy, Check, RefreshCcw, Pencil, Eye, EyeOff, Trash2, AlertTriangle } from 'lucide-react'
 
 export interface CustomerRow {
   id: string
@@ -356,6 +356,71 @@ function EditModal({ row, onClose, onSaved }: {
   )
 }
 
+// ── Delete confirmation modal ─────────────────────────────────────────────────
+
+function DeleteModal({ row, onClose, onDeleted }: {
+  row: CustomerRow
+  onClose: () => void
+  onDeleted: (id: string) => void
+}) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState('')
+
+  const handleDelete = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/admin/customers/${row.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) { setError(data.error ?? 'Ukjent feil'); setLoading(false); return }
+      onDeleted(row.id)
+      onClose()
+    } catch {
+      setError('Nettverksfeil')
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Backdrop onClose={onClose}>
+      <div style={{ background: '#161b22', border: '1px solid #f85149', borderRadius: 10, padding: 28, width: '100%', maxWidth: 440 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 20 }}>
+          <div style={{ background: 'rgba(248,81,73,0.12)', border: '1px solid rgba(248,81,73,0.3)', borderRadius: 8, padding: 10, flexShrink: 0 }}>
+            <AlertTriangle size={20} style={{ color: '#f85149' }} />
+          </div>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#e6edf3', fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase' }}>
+              Slett kunde
+            </h2>
+            <p style={{ margin: '6px 0 0', color: '#8b949e', fontSize: 13, lineHeight: 1.5 }}>
+              Er du sikker på at du vil slette <strong style={{ color: '#e6edf3' }}>{row.company_name}</strong>?
+              Annonser beholdes men kobles fra selgeren. Dette kan ikke angres.
+            </p>
+          </div>
+        </div>
+
+        {error && (
+          <div style={{ background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.3)', borderRadius: 6, padding: '9px 13px', marginBottom: 16, color: '#f85149', fontSize: 13 }}>
+            {error}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onClose} disabled={loading}
+            style={{ flex: 1, background: 'none', border: '1px solid #30363d', borderRadius: 6, color: '#8b949e', fontSize: 13, cursor: 'pointer', padding: '10px 0' }}>
+            Avbryt
+          </button>
+          <button onClick={handleDelete} disabled={loading}
+            style={{ flex: 1, background: loading ? '#6e2424' : '#da3633', border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', padding: '10px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'background 0.15s' }}>
+            <Trash2 size={13} />
+            {loading ? 'Sletter...' : 'Slett kunde'}
+          </button>
+        </div>
+      </div>
+    </Backdrop>
+  )
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function KunderClient({ initialRows }: { initialRows: CustomerRow[] }) {
@@ -363,6 +428,7 @@ export default function KunderClient({ initialRows }: { initialRows: CustomerRow
   const [search, setSearch]       = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [editRow, setEditRow]     = useState<CustomerRow | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<CustomerRow | null>(null)
   const [form, setForm]           = useState<CreateForm>(EMPTY_CREATE)
   const [formError, setFormError] = useState('')
   const [formLoading, setFormLoading] = useState(false)
@@ -414,6 +480,10 @@ export default function KunderClient({ initialRows }: { initialRows: CustomerRow
 
   const handleEditSaved = useCallback((id: string, patch: Partial<CustomerRow>) => {
     setRows(rows => rows.map(r => r.id === id ? { ...r, ...patch } : r))
+  }, [])
+
+  const handleDeleted = useCallback((id: string) => {
+    setRows(rows => rows.filter(r => r.id !== id))
   }, [])
 
   return (
@@ -484,13 +554,22 @@ export default function KunderClient({ initialRows }: { initialRows: CustomerRow
                 <td style={{ ...S.td, color: row.activeListings > 0 ? '#e6edf3' : '#8b949e' }}>{row.activeListings}</td>
                 <td style={{ ...S.td, color: '#8b949e', fontSize: 13 }}>{fmtDate(row.created_at)}</td>
                 <td style={S.td}>
-                  <button onClick={() => setEditRow(row)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: '1px solid #30363d', borderRadius: 5, color: '#8b949e', fontSize: 12, cursor: 'pointer', padding: '4px 10px', transition: 'all 0.12s' }}
-                    onMouseOver={e => { e.currentTarget.style.borderColor = '#388bfd'; e.currentTarget.style.color = '#388bfd' }}
-                    onMouseOut={e => { e.currentTarget.style.borderColor = '#30363d'; e.currentTarget.style.color = '#8b949e' }}
-                  >
-                    <Pencil size={11} /> Rediger
-                  </button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => setEditRow(row)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: '1px solid #30363d', borderRadius: 5, color: '#8b949e', fontSize: 12, cursor: 'pointer', padding: '4px 10px', transition: 'all 0.12s' }}
+                      onMouseOver={e => { e.currentTarget.style.borderColor = '#388bfd'; e.currentTarget.style.color = '#388bfd' }}
+                      onMouseOut={e => { e.currentTarget.style.borderColor = '#30363d'; e.currentTarget.style.color = '#8b949e' }}
+                    >
+                      <Pencil size={11} /> Rediger
+                    </button>
+                    <button onClick={() => setDeleteTarget(row)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: '1px solid #30363d', borderRadius: 5, color: '#8b949e', fontSize: 12, cursor: 'pointer', padding: '4px 10px', transition: 'all 0.12s' }}
+                      onMouseOver={e => { e.currentTarget.style.borderColor = '#f85149'; e.currentTarget.style.color = '#f85149' }}
+                      onMouseOut={e => { e.currentTarget.style.borderColor = '#30363d'; e.currentTarget.style.color = '#8b949e' }}
+                    >
+                      <Trash2 size={11} /> Slett
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -504,6 +583,15 @@ export default function KunderClient({ initialRows }: { initialRows: CustomerRow
           row={editRow}
           onClose={() => setEditRow(null)}
           onSaved={patch => { handleEditSaved(editRow.id, patch); setEditRow(prev => prev ? { ...prev, ...patch } : null) }}
+        />
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <DeleteModal
+          row={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onDeleted={handleDeleted}
         />
       )}
 
