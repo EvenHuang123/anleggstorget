@@ -1,18 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, Shield, TrendingUp, Clock } from 'lucide-react'
-import { formatPrice } from '@/lib/utils/format'
+import { ArrowRight, TrendingUp, Clock, Shield } from 'lucide-react'
 import { useEffect, useRef } from 'react'
-
-const FEATURED_PREVIEW = {
-  title: 'Volvo EC480E Gravemaskin',
-  year: 2021,
-  hours: 3200,
-  price: 3850000,
-  location: 'Vestland',
-  category: 'Gravemaskin',
-}
+import HeroCarousel from './HeroCarousel'
 
 export default function Hero() {
   const bgRef = useRef<HTMLDivElement>(null)
@@ -158,145 +149,34 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Right: Featured card + SVG illustration */}
-          <div style={{ position: 'relative' }}>
-            {/* Machine SVG illustration (sepia-toned) */}
-            <div style={{ position: 'relative', marginBottom: 20 }}>
-              <svg viewBox="0 0 400 280" style={{
-                width: '100%', opacity: 0.18,
-                filter: 'sepia(1) brightness(0.8)',
-                position: 'absolute', top: -40, right: -20,
-              }} aria-hidden>
-                {/* Excavator silhouette */}
-                <g fill="var(--gold)">
-                  {/* Body */}
-                  <rect x="80" y="140" width="200" height="80" rx="4" />
-                  {/* Cabin */}
-                  <rect x="100" y="100" width="100" height="60" rx="4" />
-                  <rect x="110" y="108" width="80" height="44" rx="2" fill="#0d0c0a" opacity="0.5" />
-                  {/* Boom arm */}
-                  <rect x="195" y="60" width="16" height="110" rx="4" transform="rotate(-30 195 60)" />
-                  {/* Stick */}
-                  <rect x="285" y="50" width="12" height="90" rx="4" transform="rotate(20 285 50)" />
-                  {/* Bucket */}
-                  <path d="M310 120 L340 130 L335 150 L305 148 Z" rx="2" />
-                  {/* Undercarriage */}
-                  <rect x="60" y="218" width="240" height="24" rx="4" />
-                  {/* Tracks */}
-                  <rect x="50" y="212" width="260" height="8" rx="4" />
-                  <rect x="50" y="226" width="260" height="8" rx="4" />
-                  {/* Track rollers */}
-                  {[80, 120, 160, 200, 240, 280].map(x => (
-                    <circle key={x} cx={x} cy={222} r={10} />
-                  ))}
-                </g>
-              </svg>
+          {/* Right: Live listing carousel */}
+          <div style={{ position: 'relative' }} className="hero-carousel-col">
+            {/* Decorative SVG behind the card */}
+            <svg viewBox="0 0 400 280" style={{
+              width: '100%', opacity: 0.12,
+              filter: 'sepia(1) brightness(0.8)',
+              position: 'absolute', top: -40, right: -20,
+              pointerEvents: 'none',
+            }} aria-hidden>
+              <g fill="var(--gold)">
+                <rect x="80" y="140" width="200" height="80" rx="4" />
+                <rect x="100" y="100" width="100" height="60" rx="4" />
+                <rect x="110" y="108" width="80" height="44" rx="2" fill="#0d0c0a" opacity="0.5" />
+                <rect x="195" y="60" width="16" height="110" rx="4" transform="rotate(-30 195 60)" />
+                <rect x="285" y="50" width="12" height="90" rx="4" transform="rotate(20 285 50)" />
+                <path d="M310 120 L340 130 L335 150 L305 148 Z" />
+                <rect x="60" y="218" width="240" height="24" rx="4" />
+                <rect x="50" y="212" width="260" height="8" rx="4" />
+                <rect x="50" y="226" width="260" height="8" rx="4" />
+                {[80, 120, 160, 200, 240, 280].map(x => (
+                  <circle key={x} cx={x} cy={222} r={10} />
+                ))}
+              </g>
+            </svg>
+
+            <div style={{ position: 'relative', zIndex: 2 }}>
+              <HeroCarousel />
             </div>
-
-            {/* Featured listing card */}
-            <div style={{
-              background: 'var(--bg2)',
-              border: '1px solid var(--border2)',
-              borderRadius: 4,
-              overflow: 'hidden',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
-              position: 'relative',
-              zIndex: 2,
-            }}>
-              {/* Card top: image area */}
-              <div style={{
-                height: 160,
-                background: 'linear-gradient(135deg, var(--bg3) 0%, var(--bg4) 100%)',
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <svg viewBox="0 0 200 120" style={{ width: 180, opacity: 0.15 }} aria-hidden>
-                  <g fill="var(--gold)">
-                    <rect x="30" y="50" width="120" height="45" rx="3" />
-                    <rect x="40" y="28" width="60" height="38" rx="3" />
-                    <rect x="42" y="30" width="56" height="34" rx="2" fill="var(--bg4)" />
-                    <rect x="80" y="10" width="10" height="80" rx="3" transform="rotate(-25 80 10)" />
-                    <rect x="135" y="5" width="8" height="60" rx="3" transform="rotate(15 135 5)" />
-                    <path d="M155 58 L175 65 L172 80 L150 78 Z" />
-                    <rect x="20" y="93" width="160" height="14" rx="3" />
-                    {[40,65,90,115,140].map(x => <circle key={x} cx={x} cy={98} r={7} />)}
-                  </g>
-                </svg>
-
-                {/* Category badge */}
-                <div className="tag tag-gold" style={{ position: 'absolute', top: 12, left: 12 }}>
-                  {FEATURED_PREVIEW.category}
-                </div>
-
-                {/* Featured badge */}
-                <div style={{
-                  position: 'absolute', top: 12, right: 12,
-                  background: 'var(--gold)', color: '#0d0c0a',
-                  fontFamily: 'Barlow Condensed', fontWeight: 700,
-                  fontSize: 10, letterSpacing: '0.1em',
-                  textTransform: 'uppercase', padding: '3px 8px', borderRadius: 2,
-                }}>
-                  Utvalgt
-                </div>
-              </div>
-
-              {/* Card content */}
-              <div style={{ padding: '16px 20px 20px' }}>
-                <h3 style={{
-                  fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 17,
-                  color: 'var(--t1)', marginBottom: 8, letterSpacing: '0.01em',
-                }}>
-                  {FEATURED_PREVIEW.title}
-                </h3>
-
-                <div style={{ display: 'flex', gap: 16, marginBottom: 14 }}>
-                  {[
-                    { label: 'Årsmodell', value: FEATURED_PREVIEW.year },
-                    { label: 'Timer', value: `${FEATURED_PREVIEW.hours.toLocaleString('nb-NO')} t` },
-                    { label: 'Lokasjon', value: FEATURED_PREVIEW.location },
-                  ].map(({ label, value }) => (
-                    <div key={label}>
-                      <p className="label-sm" style={{ marginBottom: 2 }}>{label}</p>
-                      <p style={{ color: 'var(--t1)', fontSize: 13, fontWeight: 500 }}>{value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <p className="label-sm" style={{ marginBottom: 2 }}>Pris</p>
-                    <p className="price-display" style={{ fontSize: 22 }}>
-                      {formatPrice(FEATURED_PREVIEW.price)}
-                    </p>
-                  </div>
-                  <Link href="/sok" style={{
-                    background: 'var(--gold3)', border: '1px solid rgba(200,149,58,0.2)',
-                    color: 'var(--gold)', borderRadius: 3,
-                    fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 12,
-                    letterSpacing: '0.08em', textTransform: 'uppercase',
-                    padding: '8px 16px', textDecoration: 'none',
-                    transition: 'all 0.15s ease', display: 'inline-flex', alignItems: 'center', gap: 6,
-                  }}>
-                    Se annonse <ArrowRight size={12} />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Seller info strip */}
-              <div style={{
-                padding: '10px 20px',
-                borderTop: '1px solid var(--border)',
-                display: 'flex', alignItems: 'center', gap: 8,
-              }}>
-                <Shield size={12} style={{ color: 'var(--gold)' }} />
-                <span style={{ fontSize: 12, color: 'var(--t3)' }}>
-                  Verifisert norsk bedrift
-                </span>
-              </div>
-            </div>
-
           </div>
         </div>
       </div>
@@ -305,6 +185,7 @@ export default function Hero() {
         .hero-grid { grid-template-columns: 1fr 420px !important; }
         @media (max-width: 900px) {
           .hero-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+          .hero-carousel-col { display: none !important; }
         }
       `}</style>
     </section>
