@@ -1,16 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { syncHesselbergListings, writeHesselbergSyncLog } from '@/lib/sync/hesselberg-scraper'
 
 export const maxDuration = 300
-// Run from Frankfurt (Europe) to avoid geo-blocking by the Mascus/Hesselberg CDN
 export const preferredRegion = 'fra1'
 
-export async function GET(request: NextRequest) {
-  const auth   = request.headers.get('authorization') ?? ''
-  const secret = process.env.CRON_SECRET
+export async function GET(req: Request) {
+  const token = req.headers.get('authorization')?.replace('Bearer ', '')
 
-  if (!secret || auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (token !== process.env.CRON_SECRET) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const empty: import('@/lib/sync/hesselberg-scraper').SyncResult = {
@@ -20,11 +17,11 @@ export async function GET(request: NextRequest) {
   try {
     const result = await syncHesselbergListings()
     await writeHesselbergSyncLog(result, 'success')
-    return NextResponse.json({ ok: true, ...result })
+    return Response.json({ ok: true, ...result })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     console.error('[sync-hesselberg]', message)
     await writeHesselbergSyncLog(empty, 'failed', message)
-    return NextResponse.json({ error: message }, { status: 500 })
+    return Response.json({ error: message }, { status: 500 })
   }
 }
