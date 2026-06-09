@@ -3,16 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, ChevronDown, SlidersHorizontal } from 'lucide-react'
-import { CATEGORIES } from '@/lib/utils/format'
+import { CATEGORY_TREE } from '@/lib/utils/format'
 
 const QUICK_FILTERS = [
-  { label: 'Gravemaskiner', value: 'gravemaskin' },
-  { label: 'Traktorer', value: 'traktor' },
-  { label: 'Hjullastere', value: 'hjullaster' },
-  { label: 'Dumpere', value: 'dumper' },
-  { label: 'Kranbiler', value: 'kranbil' },
-  { label: 'Skogsutstyr', value: 'skogsutstyr' },
-  { label: 'Betongmaskiner', value: 'betong' },
+  { label: 'Gravemaskiner',        value: 'gravemaskiner'  },
+  { label: 'Hjullastere',          value: 'hjullastere'    },
+  { label: 'Dumpers',              value: 'dumpers'        },
+  { label: 'Kompaktmaskiner',      value: 'kompaktmaskiner'},
+  { label: 'Kraner og løft',       value: 'kraner'         },
+  { label: 'Komprimering/asfalt',  value: 'komprimering'   },
 ]
 
 export default function SearchBar() {
@@ -89,7 +88,7 @@ export default function SearchBar() {
               onClick={() => setCatOpen(!catOpen)}
               aria-expanded={catOpen}
               aria-haspopup="listbox"
-              aria-label={`Kategori: ${category ? CATEGORIES[category]?.label : 'Alle kategorier'}`}
+              aria-label={`Kategori: ${category ? CATEGORY_TREE[category]?.label : 'Alle kategorier'}`}
               style={{
                 width: '100%', height: 52,
                 background: 'var(--bg3)', border: '1px solid var(--border)',
@@ -100,7 +99,7 @@ export default function SearchBar() {
                 transition: 'border-color 0.15s',
               }}
             >
-              <span>{category ? CATEGORIES[category]?.label : 'Alle kategorier'}</span>
+              <span>{category ? CATEGORY_TREE[category]?.label : 'Alle kategorier'}</span>
               <ChevronDown size={14} style={{ transform: catOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }} />
             </button>
             {catOpen && (
@@ -108,13 +107,13 @@ export default function SearchBar() {
                 <div className="dropdown-item" onClick={() => { setCategory(''); setCatOpen(false) }}>
                   Alle kategorier
                 </div>
-                {Object.entries(CATEGORIES).map(([key, { label }]) => (
+                {Object.entries(CATEGORY_TREE).map(([key, node]) => (
                   <div
                     key={key}
                     className={`dropdown-item ${category === key ? 'selected' : ''}`}
                     onClick={() => { setCategory(key); setCatOpen(false) }}
                   >
-                    {label}
+                    {node.label}
                   </div>
                 ))}
               </div>
