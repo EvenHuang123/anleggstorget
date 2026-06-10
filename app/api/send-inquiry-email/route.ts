@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createServiceClient()
 
-    // Fetch inquiry with listing + profiles
+    // Fetch inquiry with listing + seller email directly from profiles
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: inq, error } = await (supabase as any)
       .from('inquiries')
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
         *,
         listing:listings (
           id, title, price, category,
-          seller:profiles!seller_id ( company_name, contact_person, id )
+          seller:profiles!seller_id ( id, company_name, contact_person, email )
         ),
         sender:profiles!sender_id ( company_name, contact_person )
       `)
@@ -25,8 +25,8 @@ export async function POST(request: NextRequest) {
         data: {
           id: string; message: string; email: string | null; phone: string | null
           listing: {
-            id: string; title: string; price: number
-            seller: { id: string; company_name: string; contact_person: string | null }
+            id: string; title: string; price: number | null
+            seller: { id: string; company_name: string; contact_person: string | null; email: string | null }
           }
           sender: { company_name: string; contact_person: string | null }
         } | null
@@ -34,26 +34,29 @@ export async function POST(request: NextRequest) {
       }
 
     if (error || !inq) {
+      console.error('[inquiry-email] Inquiry not found:', inquiryId, error)
       return NextResponse.json({ error: 'Inquiry not found' }, { status: 404 })
     }
 
-    // Get seller's email from auth.users via admin API
-    const { data: { user: sellerUser } } = await supabase.auth.admin.getUserById(inq.listing.seller.id)
-    const sellerEmail = sellerUser?.email
+    // Use email from profiles table directly (works for scraped sellers without Auth accounts)
+    const sellerEmail = inq.listing.seller.email
+    console.log('[inquiry-email] Seller:', inq.listing.seller.company_name, '→', sellerEmail ?? 'INGEN E-POST')
+
     if (!sellerEmail) {
-      console.warn('No seller email found for listing', inq.listing.id)
-      return NextResponse.json({ error: 'Seller email not found' }, { status: 404 })
+      console.warn('[inquiry-email] No email on profile for seller', inq.listing.seller.id, '— skipping')
+      return NextResponse.json({ skipped: true, reason: 'no seller email' })
     }
 
     const resendKey = process.env.RESEND_API_KEY
+    console.log('[inquiry-email] RESEND_API_KEY present:', !!resendKey)
     if (!resendKey) {
-      console.warn('RESEND_API_KEY not set — skipping email')
-      return NextResponse.json({ skipped: true })
+      console.warn('[inquiry-email] RESEND_API_KEY not set — skipping email')
+      return NextResponse.json({ skipped: true, reason: 'no resend key' })
     }
 
-    const priceFormatted = new Intl.NumberFormat('nb-NO', {
-      style: 'currency', currency: 'NOK', maximumFractionDigits: 0,
-    }).format(inq.listing.price)
+    const priceFormatted = inq.listing.price && inq.listing.price > 0
+      ? new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK', maximumFractionDigits: 0 }).format(inq.listing.price)
+      : 'Forhandlingsbar'
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://anleggstorget.no'
 
@@ -128,6 +131,10 @@ export async function POST(request: NextRequest) {
 </body>
 </html>`
 
+    const to = [sellerEmail, 'kontakt@anleggstorget.no'].filter(
+      (e, i, arr) => arr.indexOf(e) === i,   // dedup hvis selger er kontakt@
+    )
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -135,22 +142,24 @@ export async function POST(request: NextRequest) {
         Authorization: `Bearer ${resendKey}`,
       },
       body: JSON.stringify({
-        from: 'Anleggstorget <noreply@anleggstorget.no>',
-        to: sellerEmail,
-        subject: `Ny forespørsel på: ${inq.listing.title}`,
+        from:     'Anleggstorget <kontakt@anleggstorget.no>',
+        to,
+        reply_to: inq.email ?? undefined,
+        subject:  `Ny forespørsel på: ${inq.listing.title}`,
         html,
       }),
     })
 
     if (!res.ok) {
       const body = await res.text()
-      console.error('Resend API error:', res.status, body)
+      console.error('[inquiry-email] Resend API error:', res.status, body)
       return NextResponse.json({ error: 'Email send failed' }, { status: 500 })
     }
 
+    console.log('[inquiry-email] Sent to:', to.join(', '))
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error('send-inquiry-email error:', err)
+    console.error('[inquiry-email] Internal error:', err)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
