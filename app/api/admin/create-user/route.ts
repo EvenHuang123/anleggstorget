@@ -38,12 +38,13 @@ export async function POST(request: NextRequest) {
 
   // 2. Create profile
   const { error: profileErr } = await (supabase as any).from('profiles').insert({
-    id: userId,
-    company_name: companyName,
-    org_number: orgNumber,
+    id:             crypto.randomUUID(),
+    user_id:        userId,
+    company_name:   companyName,
+    org_number:     orgNumber,
     contact_person: contactPerson ?? null,
-    phone: phone ?? null,
-    verified: true,
+    email:          email,
+    verified:       true,
   })
 
   if (profileErr) {
