@@ -8,10 +8,13 @@ export default async function AdminKunderPage() {
   await requireAdmin()
   const supabase = createAdminClient()
 
-  const { data: profiles } = await (supabase as any)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profiles, error: profilesError } = await (supabase as any)
     .from('profiles')
     .select('id, company_name, org_number, contact_person, phone, email, verified, notes, updated_at, created_at')
-    .order('created_at', { ascending: false }) as { data: Profile[] | null }
+    .order('created_at', { ascending: false }) as { data: Profile[] | null; error: any }
+
+  console.log('Profiles hentet:', profiles?.length ?? 0, profilesError ? `FEIL: ${JSON.stringify(profilesError)}` : 'OK')
 
   const { data: listingRows } = await (supabase as any)
     .from('listings')
