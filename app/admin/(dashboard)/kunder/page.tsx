@@ -8,31 +8,10 @@ export default async function AdminKunderPage() {
   await requireAdmin()
   const supabase = createAdminClient()
 
-  // Try to include notes + updated_at; fall back gracefully if migration hasn't run yet.
-  let { data: profiles, error: profileErr } = await (supabase as any)
+  const { data: profiles } = await (supabase as any)
     .from('profiles')
-    .select('id, company_name, org_number, contact_person, phone, verified, notes, updated_at, created_at')
-    .order('created_at', { ascending: false }) as { data: Profile[] | null; error: any }
-
-  if (profileErr) {
-    // Column(s) missing — select without them
-    const fallback = await (supabase as any)
-      .from('profiles')
-      .select('id, company_name, org_number, contact_person, phone, verified, created_at')
-      .order('created_at', { ascending: false }) as { data: Profile[] | null }
-    profiles = fallback.data
-  }
-
-  const { data: authData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
-
-  const emailMap: Record<string, string> = {}
-  const bannedMap: Record<string, boolean> = {}
-  const now = new Date()
-  for (const u of authData?.users ?? []) {
-    emailMap[u.id] = u.email ?? ''
-    const bannedUntil = (u as any).banned_until
-    bannedMap[u.id] = !!bannedUntil && new Date(bannedUntil) > now
-  }
+    .select('id, company_name, org_number, contact_person, phone, email, verified, notes, updated_at, created_at')
+    .order('created_at', { ascending: false }) as { data: Profile[] | null }
 
   const { data: listingRows } = await (supabase as any)
     .from('listings')
@@ -46,8 +25,8 @@ export default async function AdminKunderPage() {
 
   const rows = (profiles ?? []).map(p => ({
     ...p,
-    email: emailMap[p.id] ?? '',
-    active: !bannedMap[p.id],
+    email: p.email ?? '',
+    active: true,
     notes: p.notes ?? null,
     updated_at: p.updated_at ?? null,
     activeListings: listingCounts[p.id] ?? 0,
@@ -60,6 +39,7 @@ interface Profile {
   id: string
   company_name: string
   org_number: string
+  email: string | null
   contact_person: string | null
   phone: string | null
   verified: boolean
