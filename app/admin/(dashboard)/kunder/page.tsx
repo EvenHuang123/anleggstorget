@@ -11,10 +11,14 @@ export default async function AdminKunderPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: profiles, error: profilesError } = await (supabase as any)
     .from('profiles')
-    .select('id, company_name, org_number, contact_person, phone, email, verified, notes, updated_at, created_at')
+    .select('id, company_name, org_number, email, verified, created_at, contact_person, notes')
     .order('created_at', { ascending: false }) as { data: Profile[] | null; error: any }
 
-  console.log('Profiles hentet:', profiles?.length ?? 0, profilesError ? `FEIL: ${JSON.stringify(profilesError)}` : 'OK')
+  if (profilesError) {
+    console.error('Profiles hentet: 0 FEIL:', JSON.stringify(profilesError))
+  } else {
+    console.log('Profiles hentet:', profiles?.length ?? 0, 'OK')
+  }
 
   const { data: listingRows } = await (supabase as any)
     .from('listings')
@@ -28,10 +32,11 @@ export default async function AdminKunderPage() {
 
   const rows = (profiles ?? []).map(p => ({
     ...p,
-    email: p.email ?? '',
-    active: true,
-    notes: p.notes ?? null,
-    updated_at: p.updated_at ?? null,
+    email:       p.email ?? '',
+    phone:       null,
+    active:      true,
+    notes:       p.notes ?? null,
+    updated_at:  null,
     activeListings: listingCounts[p.id] ?? 0,
   }))
 
@@ -39,14 +44,12 @@ export default async function AdminKunderPage() {
 }
 
 interface Profile {
-  id: string
-  company_name: string
-  org_number: string
-  email: string | null
+  id:             string
+  company_name:   string
+  org_number:     string
+  email:          string | null
   contact_person: string | null
-  phone: string | null
-  verified: boolean
-  notes: string | null
-  created_at: string
-  updated_at: string | null
+  verified:       boolean
+  notes:          string | null
+  created_at:     string
 }
