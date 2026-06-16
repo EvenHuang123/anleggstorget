@@ -20,7 +20,7 @@ export default function InnstillingerPage() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { window.location.href = '/logg-inn'; return }
       setEmail(session.user.email || '')
-      const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
+      const { data } = await supabase.from('profiles').select('*').eq('user_id', session.user.id).single()
       if (data) setProfile(data as Profile)
       setLoading(false)
     }
@@ -38,7 +38,7 @@ export default function InnstillingerPage() {
       company_name: profile.company_name,
       contact_person: profile.contact_person,
       phone: profile.phone,
-    }).eq('id', session.user.id)
+    }).eq('user_id', session.user.id)
 
     setSaving(false)
     if (error) {

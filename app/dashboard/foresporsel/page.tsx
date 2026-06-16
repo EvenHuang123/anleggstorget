@@ -10,11 +10,16 @@ export default async function ForesporslerPage() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) redirect('/logg-inn')
 
+  // Resolve profile.id via user_id (scraped sellers have profile.id ≠ auth user id)
+  const { data: sellerProfile } = await (supabase as any)
+    .from('profiles').select('id').eq('user_id', session.user.id).single() as { data: { id: string } | null }
+  const sellerId = sellerProfile?.id ?? session.user.id
+
   // Get the current user's listing IDs first (PostgREST can't filter on joined table in a count)
   const { data: userListings } = await (supabase as any)
     .from('listings')
     .select('id')
-    .eq('seller_id', session.user.id) as { data: { id: string }[] | null }
+    .eq('seller_id', sellerId) as { data: { id: string }[] | null }
 
   const listingIds = (userListings || []).map(l => l.id)
 

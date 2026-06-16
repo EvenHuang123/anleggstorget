@@ -59,7 +59,7 @@ export default function Navbar() {
         const { data: profile } = await (supabase as any)
           .from('profiles')
           .select('company_name')
-          .eq('id', userId)
+          .eq('user_id', userId)
           .single() as { data: { company_name: string } | null }
         setUser({
           email: data.session.user.email,

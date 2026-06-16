@@ -110,10 +110,13 @@ export default function AnnonserPage() {
     async function load() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { window.location.href = '/logg-inn'; return }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any).from('profiles').select('id').eq('user_id', session.user.id).single() as { data: { id: string } | null }
+      const sellerId = profile?.id ?? session.user.id
       const { data } = await supabase
         .from('listings')
         .select('*')
-        .eq('seller_id', session.user.id)
+        .eq('seller_id', sellerId)
         .order('created_at', { ascending: false })
       setListings((data as Listing[]) || [])
       setLoading(false)

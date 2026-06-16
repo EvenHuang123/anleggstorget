@@ -364,6 +364,7 @@ export default function NyAnnonsePage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: profileErr } = await (supabase as any).from('profiles').upsert({
         id: session.user.id,
+        user_id: session.user.id,
         company_name: meta.company_name ?? session.user.email?.split('@')[0] ?? 'Ukjent bedrift',
         org_number: meta.org_number ?? null,
         contact_person: meta.contact_person ?? null,

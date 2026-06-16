@@ -21,11 +21,16 @@ export default function DashboardPage() {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const sb = supabase as any
-      const { data: listingsData } = await sb.from('listings').select('*').eq('seller_id', session.user.id).order('created_at', { ascending: false }).limit(5)
-      const [{ data: profileData }, { data: inquiriesData }] = await Promise.all([
-        sb.from('profiles').select('company_name, verified, org_number').eq('id', session.user.id).single(),
-        sb.from('inquiries').select('*, listings(title)').in('listing_id', (listingsData as Listing[] | null)?.map((l: Listing) => l.id) || []).order('created_at', { ascending: false }).limit(5),
-      ])
+      // Resolve profile.id via user_id (scraped sellers have profile.id ≠ auth user id)
+      const { data: profileData } = await sb
+        .from('profiles')
+        .select('id, company_name, verified, org_number')
+        .eq('user_id', session.user.id)
+        .single()
+      const sellerId: string = profileData?.id ?? session.user.id
+
+      const { data: listingsData } = await sb.from('listings').select('*').eq('seller_id', sellerId).order('created_at', { ascending: false }).limit(5)
+      const { data: inquiriesData } = await sb.from('inquiries').select('*, listings(title)').in('listing_id', (listingsData as Listing[] | null)?.map((l: Listing) => l.id) || []).order('created_at', { ascending: false }).limit(5)
 
       setProfile(profileData)
       setListings((listingsData as Listing[]) || [])
