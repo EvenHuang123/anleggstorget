@@ -19,7 +19,7 @@ export default function GlemtPassordPage() {
     setError('')
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/oppdater-passord`,
+      redirectTo: `${window.location.origin}/reset-passord`,
     })
 
     setLoading(false)
