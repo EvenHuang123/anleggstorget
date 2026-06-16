@@ -10,8 +10,8 @@ export default function ResetPassordPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [ready, setReady]           = useState(false)   // token exchanged, show form
-  const [expired, setExpired]       = useState(false)   // token missing / expired
+  const [ready, setReady]           = useState(false)
+  const [expired, setExpired]       = useState(false)
   const [password, setPassword]     = useState('')
   const [confirm, setConfirm]       = useState('')
   const [showPass, setShowPass]     = useState(false)
@@ -22,19 +22,26 @@ export default function ResetPassordPage() {
   // Supabase automatically exchanges the #access_token hash when the page loads.
   // PASSWORD_RECOVERY fires once the session is established from the reset link.
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true)
-    })
+    let recovered = false
 
-    // Fallback: if user already has a valid session from the link (page refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event: string) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          recovered = true
+          setReady(true)
+        }
+      }
+    )
+
+    // In case the hash was already exchanged before the listener attached
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true)
+      if (data.session) { recovered = true; setReady(true) }
     })
 
-    // If no token arrives within 3 seconds, assume link is invalid/expired
+    // If no recovery event within 5 seconds, assume link is invalid/expired
     const timer = setTimeout(() => {
-      setExpired(prev => { return ready ? false : true })
-    }, 3000)
+      if (!recovered) setExpired(true)
+    }, 5000)
 
     return () => {
       subscription.unsubscribe()
