@@ -28,6 +28,7 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
 
 interface CategorySource {
   path:        string
+  mascusPath:  string  // sf_categorypath value for search.aspx (slashes encoded as %2f)
   category:    string  // new TEXT-based category values (post DB migration)
   subcategory: string
   label:       string  // for logging only
@@ -43,15 +44,15 @@ const EXCLUDED_SUBCATEGORIES = new Set([
 ])
 
 const CATEGORIES: CategorySource[] = [
-  { path: '/hesselberg/anlegg/hjulgraver',             category: 'Gravemaskiner',           subcategory: 'Hjulgraver',               label: 'Hjulgraver'               },
-  { path: '/hesselberg/anlegg/beltegraver',            category: 'Gravemaskiner',           subcategory: 'Beltegraver',              label: 'Beltegraver'              },
-  { path: '/hesselberg/anlegg/teleskoptrucker',        category: 'Kompaktmaskiner',         subcategory: 'Teleskoptrucker',          label: 'Teleskoptrucker'          },
-  { path: '/hesselberg/anlegg/hjullaster',             category: 'Hjullastere',             subcategory: 'Hjullaster',               label: 'Hjullaster'               },
-  { path: '/hesselberg/anlegg/personloftere',          category: 'Kraner og løft',          subcategory: 'Personløfter (saks/mast)', label: 'Personløftere'            },
-  { path: '/hesselberg/anlegg/dumper',                 category: 'Dumpers',                 subcategory: 'Dumper',                   label: 'Dumper'                   },
-  { path: '/hesselberg/anlegg/doser-veihovel',         category: 'Annet',                   subcategory: 'Doser og Veihøvel',        label: 'Doser og Veihøvel'        },
-  { path: '/hesselberg/anlegg/komprimeringsmaskiner',  category: 'Komprimering og asfalt',  subcategory: 'Komprimeringsmaskiner',    label: 'Komprimeringsmaskiner'    },
-  { path: '/hesselberg/anlegg/asfaltmaskiner',         category: 'Komprimering og asfalt',  subcategory: 'Asfaltlegger',             label: 'Asfaltmaskiner'           },
+  { path: '/hesselberg/anlegg/hjulgraver',            mascusPath: 'construction%2fexcavators%2fwheelexcavators',                                  category: 'Gravemaskiner',           subcategory: 'Hjulgraver',               label: 'Hjulgraver'               },
+  { path: '/hesselberg/anlegg/beltegraver',           mascusPath: 'construction%2fexcavators%2fcrawlerexcavators',                                category: 'Gravemaskiner',           subcategory: 'Beltegraver',              label: 'Beltegraver'              },
+  { path: '/hesselberg/anlegg/teleskoptrucker',       mascusPath: 'construction%2ftelehandlers',                                                  category: 'Kompaktmaskiner',         subcategory: 'Teleskoptrucker',          label: 'Teleskoptrucker'          },
+  { path: '/hesselberg/anlegg/hjullaster',            mascusPath: 'construction%2floaders',                                                       category: 'Hjullastere',             subcategory: 'Hjullaster',               label: 'Hjullaster'               },
+  { path: '/hesselberg/anlegg/personloftere',         mascusPath: 'construction%2fplatformsandcranes%2fpersonnellifts',                           category: 'Kraner og løft',          subcategory: 'Personløfter (saks/mast)', label: 'Personløftere'            },
+  { path: '/hesselberg/anlegg/dumper',                mascusPath: 'construction%2fdumpersmain%2fdumpers',                                         category: 'Dumpers',                 subcategory: 'Dumper',                   label: 'Dumper'                   },
+  { path: '/hesselberg/anlegg/doser-veihovel',        mascusPath: 'construction%2fdozers,construction%2froadconstruction',                        category: 'Annet',                   subcategory: 'Doser og Veihøvel',        label: 'Doser og Veihøvel'        },
+  { path: '/hesselberg/anlegg/komprimeringsmaskiner', mascusPath: 'construction%2fcompactionequipmentmain',                                       category: 'Komprimering og asfalt',  subcategory: 'Komprimeringsmaskiner',    label: 'Komprimeringsmaskiner'    },
+  { path: '/hesselberg/anlegg/asfaltmaskiner',        mascusPath: 'construction%2fasphaltmachinesmain',                                           category: 'Komprimering og asfalt',  subcategory: 'Asfaltlegger',             label: 'Asfaltmaskiner'           },
 ]
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -135,12 +136,15 @@ async function fetchDetailData(url: string): Promise<DetailData> {
     const $ = cheerio.load(html)
 
     // ── Images ────────────────────────────────────────────────────────────────
+    // Mascus lazy-loads all gallery images via data-src on img.lazyload elements.
+    // The old #links / gallery-thumbs selectors no longer exist.
     const images: string[] = []
-    $('#links a.thumb img, div.gallery-thumbs a.thumb img').each((_i, el) => {
-      const src = $(el).attr('data-src') || $(el).attr('src') || ''
-      if (src.includes('mascus.com') && !images.includes(src)) images.push(src)
+    $('img.lazyload[data-src*="mascus.com"], img[data-src*="mascus.com"]').each((_i, el) => {
+      const src = $(el).attr('data-src') || ''
+      if (src && !images.includes(src)) images.push(src)
     })
     if (images.length === 0) {
+      // Last-resort fallback: main image rendered directly (src, not data-src)
       const main = $('img.image_main').attr('src') || ''
       if (main) images.push(main)
     }
@@ -234,26 +238,33 @@ async function scrapeAllCategories(): Promise<{ listings: ScrapedListing[]; log:
   const seenIds = new Set<string>()
   const log: string[] = []
 
-  // Pass 1: scrape all category pages
+  // Pass 1: scrape all category pages via search.aspx (static HTML with tr.item listing rows)
   for (const cat of CATEGORIES) {
-    const url = `${BASE_URL}${cat.path}/`
-    try {
-      const html = await fetchHtml(url)
-      const items = parseCategoryPage(html, cat)
+    let catAdded = 0
+    for (let page = 1; page <= 10; page++) {
+      const url = `${BASE_URL}/hesselberg/search.aspx?q=&sf_categorypath=${cat.mascusPath}&sf_brand=&sf_status=1&Page=${page}&PageSize=18&SortBy=createdate_desc`
+      try {
+        const html = await fetchHtml(url)
+        const items = parseCategoryPage(html, cat)
 
-      let added = 0
-      for (const item of items) {
-        if (!seenIds.has(item.externalId)) {
-          seenIds.add(item.externalId)
-          listings.push(item)
-          added++
+        let added = 0
+        for (const item of items) {
+          if (!seenIds.has(item.externalId)) {
+            seenIds.add(item.externalId)
+            listings.push(item)
+            added++
+            catAdded++
+          }
         }
+        if (items.length === 0 || !html.includes(`Page=${page + 1}`)) break
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        log.push(`${cat.label} side ${page}: FEIL ${msg}`)
+        break
       }
-      log.push(`${cat.label}: ${added} (page len=${html.length})`)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      log.push(`${cat.label}: FEIL ${msg}`)
+      await sleep(300)
     }
+    log.push(`${cat.label}: ${catAdded}`)
     await sleep(300)
   }
 

@@ -203,9 +203,7 @@ async function fetchBuffer(url: string): Promise<Buffer> {
 async function discoverListingPaths(): Promise<string[]> {
   const paths = new Set<string>()
   for (let page = 1; page <= 20; page++) {
-    const url = page === 1
-      ? `${BASE_URL}/nastaas/anlegg/`
-      : `${BASE_URL}/nastaas/anlegg,${page},createdate_desc,search.html`
+    const url = `${BASE_URL}/nastaas/search.aspx?q=&sf_categorypath=construction&Page=${page}&PageSize=12&SortBy=createdate_desc`
     let html: string
     try {
       html = await fetchHtml(url)
@@ -215,7 +213,7 @@ async function discoverListingPaths(): Promise<string[]> {
     const re = /href="(\/nastaas\/anlegg\/[^"]+\.html)"/g
     let m: RegExpExecArray | null
     while ((m = re.exec(html)) !== null) paths.add(m[1])
-    if (!new RegExp(`/nastaas/anlegg,${page + 1},`).test(html)) break
+    if (!html.includes(`Page=${page + 1}`)) break
     await sleep(400)
   }
   return [...paths]

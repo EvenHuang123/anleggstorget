@@ -32,18 +32,19 @@ export interface SyncResult {
 }
 
 interface ScrapedListing {
-  title:       string
-  brand:       string | null
-  model:       string | null
-  year:        number | null
-  price:       number | null
-  priceType:   'fast_price' | 'negotiable'
-  category:    string
-  subcategory: string
-  images:      string[]
-  externalId:  string
-  location:    string
-  slug:        string
+  title:          string
+  brand:          string | null
+  model:          string | null
+  year:           number | null
+  price:          number | null
+  priceType:      'fast_price' | 'negotiable'
+  category:       string
+  subcategory:    string
+  images:         string[]
+  operatingHours: number | null
+  externalId:     string
+  location:       string
+  slug:           string
 }
 
 const EXCLUDED_KEYWORDS = [
@@ -211,6 +212,7 @@ function parsePage(html: string): { listings: ScrapedListing[]; hasNext: boolean
       title, brand, model, year,
       price, priceType: price && price > 0 ? 'fast_price' : 'negotiable',
       category, subcategory, images,
+      operatingHours: null,  // filled in after detail-page fetch
       externalId, location, slug,
     })
   })
@@ -252,6 +254,16 @@ async function scrapeAllPages(): Promise<{ listings: ScrapedListing[]; log: stri
     if (hasMore) await sleep(500)
   }
 
+  // Pass 2: fetch detail page for each listing — full image gallery + driftstimer
+  let detailErrors = 0
+  for (const item of all) {
+    const detail = await fetchRockmannDetail(item.externalId)
+    if (detail.images.length > 0) item.images = detail.images
+    if (detail.hours !== null) item.operatingHours = detail.hours
+    if (detail.images.length === 0) detailErrors++
+  }
+  if (detailErrors > 0) log.push(`Detaljer: ${detailErrors} maskiner uten bilder fra detaljside`)
+
   return { listings: all, log }
 }
 
@@ -282,12 +294,12 @@ export async function syncRockmannListings(): Promise<SyncResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (supabase as any)
     .from('listings')
-    .select('id, source_external_id, status, price, year')
+    .select('id, source_external_id, status, price, year, operating_hours, images')
     .eq('source', SOURCE) as {
-      data: { id: string; source_external_id: string; status: string; price: number | null; year: number | null }[] | null
+      data: { id: string; source_external_id: string; status: string; price: number | null; year: number | null; operating_hours: number | null; images: string[] }[] | null
     }
 
-  const dbMap = new Map<string, { id: string; status: string; price: number | null; year: number | null }>()
+  const dbMap = new Map<string, { id: string; status: string; price: number | null; year: number | null; operating_hours: number | null; images: string[] }>()
   for (const row of existing ?? []) {
     if (row.source_external_id) dbMap.set(row.source_external_id, row)
   }
@@ -313,7 +325,7 @@ export async function syncRockmannListings(): Promise<SyncResult> {
         brand:              item.brand,
         model:              item.model,
         year:               item.year,
-        operating_hours:    null,
+        operating_hours:    item.operatingHours,
         price:              item.price,
         price_type:         item.priceType,
         location:           item.location,
@@ -327,12 +339,23 @@ export async function syncRockmannListings(): Promise<SyncResult> {
         result.errors++
       } else result.created++
     } else {
-      const changed = current.price !== item.price || current.year !== item.year
+      const dbImageCount = (current.images ?? []).length
+      const changed =
+        current.price            !== item.price ||
+        current.year             !== item.year  ||
+        current.operating_hours  !== item.operatingHours ||
+        (item.images.length > 1 && dbImageCount <= 1)
 
       if (changed) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('listings')
-          .update({ price: item.price, price_type: item.priceType, year: item.year, images: item.images })
+          .update({
+            price:           item.price,
+            price_type:      item.priceType,
+            year:            item.year,
+            operating_hours: item.operatingHours,
+            images:          item.images.length > 0 ? item.images : current.images,
+          })
           .eq('id', current.id)
         if (error) {
           console.error('[rockmann] UPDATE error:', JSON.stringify(error), 'id:', current.id)
