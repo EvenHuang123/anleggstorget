@@ -42,6 +42,7 @@ interface ScrapedListing {
   subcategory:    string
   images:         string[]
   operatingHours: number | null
+  weightClass:    string | null
   externalId:     string
   location:       string
   slug:           string
@@ -62,6 +63,36 @@ function slugify(str: string): string {
     .replace(/æ/g, 'ae').replace(/ø/g, 'o').replace(/å/g, 'a')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+}
+
+function inferWeightClass(kg: number): string {
+  if (kg < 5000)  return 'Under 5 tonn'
+  if (kg < 10000) return '5–10 tonn'
+  if (kg < 20000) return '10–20 tonn'
+  if (kg < 40000) return '20–40 tonn'
+  return 'Over 40 tonn'
+}
+
+// Excavator model numbers encode approximate weight: model × 100 ≈ kg
+// (PC85=8.5t, PC210=21t, ZX210=21t, EC250=25t, CAT 323=23t, R920=20t)
+function inferWeightClassFromTitle(title: string): string | null {
+  const t = title.toLowerCase()
+  const excMatch = t.match(/\b(?:pc|zx|ec|ew|hx|dx|js|sk|cx|sh)\s*(\d{2,3})/)
+  if (excMatch) {
+    const n = parseInt(excMatch[1])
+    if (n >= 15 && n <= 500) return inferWeightClass(n * 100)
+  }
+  const catMatch = t.match(/\bcat\s*3(\d{2})\b/)
+  if (catMatch) {
+    const tonnes = parseInt(catMatch[1])
+    if (tonnes > 0) return inferWeightClass(tonnes * 1000)
+  }
+  const liebMatch = t.match(/\br9(\d{2})\b/)
+  if (liebMatch) {
+    const tonnes = parseInt(liebMatch[1])
+    if (tonnes > 0) return inferWeightClass(tonnes * 1000)
+  }
+  return null
 }
 
 async function fetchHtml(url: string): Promise<string> {
@@ -88,8 +119,9 @@ async function fetchHtml(url: string): Promise<string> {
 // ── Detail page ───────────────────────────────────────────────────────────────
 
 export async function fetchRockmannDetail(finnId: string): Promise<{
-  images: string[]
-  hours:  number | null
+  images:      string[]
+  hours:       number | null
+  weightClass: string | null
 }> {
   const url = `https://www.finn.no/pw/ad/construction/${finnId}?orgId=764747174`
   try {
@@ -105,16 +137,31 @@ export async function fetchRockmannDetail(finnId: string): Promise<{
     })
 
     let hours: number | null = null
+    let weightKg: number | null = null
     $('dl dt').each((_i, el) => {
       const label = $(el).text().trim().toLowerCase()
       const value = $(el).next('dd').text().trim()
-      if (label === 'arbeidstimer') hours = parseInt(value.replace(/\D/g, ''), 10) || null
+      if (label === 'arbeidstimer') {
+        const n = parseInt(value.replace(/\D/g, ''), 10)
+        if (!isNaN(n)) hours = n
+      }
+      if (label === 'vekt' || label === 'driftsvekt' || label === 'driftvekt' || label === 'totalvekt') {
+        const n = parseInt(value.replace(/[^\d]/g, ''), 10)
+        if (n > 0) weightKg = n < 200 ? n * 1000 : n
+      }
     })
 
+    // Finn.no /pw/ listings rarely include weight — infer from page title as fallback
+    let weightClass: string | null = weightKg !== null ? inferWeightClass(weightKg) : null
+    if (!weightClass) {
+      const title = $('h1').first().text().trim()
+      if (title) weightClass = inferWeightClassFromTitle(title)
+    }
+
     await sleep(300)
-    return { images, hours }
+    return { images, hours, weightClass }
   } catch {
-    return { images: [], hours: null }
+    return { images: [], hours: null, weightClass: null }
   }
 }
 
@@ -213,6 +260,7 @@ function parsePage(html: string): { listings: ScrapedListing[]; hasNext: boolean
       price, priceType: price && price > 0 ? 'fast_price' : 'negotiable',
       category, subcategory, images,
       operatingHours: null,  // filled in after detail-page fetch
+      weightClass:    null,  // filled in after detail-page fetch
       externalId, location, slug,
     })
   })
@@ -254,12 +302,13 @@ async function scrapeAllPages(): Promise<{ listings: ScrapedListing[]; log: stri
     if (hasMore) await sleep(500)
   }
 
-  // Pass 2: fetch detail page for each listing — full image gallery + driftstimer
+  // Pass 2: fetch detail page for each listing — full image gallery + driftstimer + vektklasse
   let detailErrors = 0
   for (const item of all) {
     const detail = await fetchRockmannDetail(item.externalId)
-    if (detail.images.length > 0) item.images = detail.images
-    if (detail.hours !== null) item.operatingHours = detail.hours
+    if (detail.images.length > 0) item.images      = detail.images
+    if (detail.hours       !== null) item.operatingHours = detail.hours
+    if (detail.weightClass !== null) item.weightClass    = detail.weightClass
     if (detail.images.length === 0) detailErrors++
   }
   if (detailErrors > 0) log.push(`Detaljer: ${detailErrors} maskiner uten bilder fra detaljside`)
@@ -294,12 +343,12 @@ export async function syncRockmannListings(): Promise<SyncResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (supabase as any)
     .from('listings')
-    .select('id, source_external_id, status, price, year, operating_hours, images')
+    .select('id, source_external_id, status, price, year, operating_hours, weight_class, images')
     .eq('source', SOURCE) as {
-      data: { id: string; source_external_id: string; status: string; price: number | null; year: number | null; operating_hours: number | null; images: string[] }[] | null
+      data: { id: string; source_external_id: string; status: string; price: number | null; year: number | null; operating_hours: number | null; weight_class: string | null; images: string[] }[] | null
     }
 
-  const dbMap = new Map<string, { id: string; status: string; price: number | null; year: number | null; operating_hours: number | null; images: string[] }>()
+  const dbMap = new Map<string, { id: string; status: string; price: number | null; year: number | null; operating_hours: number | null; weight_class: string | null; images: string[] }>()
   for (const row of existing ?? []) {
     if (row.source_external_id) dbMap.set(row.source_external_id, row)
   }
@@ -326,6 +375,7 @@ export async function syncRockmannListings(): Promise<SyncResult> {
         model:              item.model,
         year:               item.year,
         operating_hours:    item.operatingHours,
+        weight_class:       item.weightClass,
         price:              item.price,
         price_type:         item.priceType,
         location:           item.location,
@@ -344,6 +394,7 @@ export async function syncRockmannListings(): Promise<SyncResult> {
         current.price            !== item.price ||
         current.year             !== item.year  ||
         current.operating_hours  !== item.operatingHours ||
+        (item.weightClass !== null && current.weight_class === null) ||
         (item.images.length > 1 && dbImageCount <= 1)
 
       if (changed) {
@@ -354,6 +405,7 @@ export async function syncRockmannListings(): Promise<SyncResult> {
             price_type:      item.priceType,
             year:            item.year,
             operating_hours: item.operatingHours,
+            ...(item.weightClass ? { weight_class: item.weightClass } : {}),
             images:          item.images.length > 0 ? item.images : current.images,
           })
           .eq('id', current.id)

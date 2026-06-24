@@ -115,8 +115,9 @@ async function fetchHtml(url: string): Promise<string> {
 // ── Detail page scraping ──────────────────────────────────────────────────────
 
 interface DetailData {
-  images:      string[]
-  weightClass: string | null
+  images:         string[]
+  weightClass:    string | null
+  operatingHours: number | null
 }
 
 function inferWeightClass(kg: number): string {
@@ -127,8 +128,30 @@ function inferWeightClass(kg: number): string {
   return 'Over 40 tonn'
 }
 
-// Set to true on the first listing to log all available field_ classes
-let _fieldLogDone = false
+// Title-based fallback: excavator model numbers encode approximate weight
+// (PC85=8.5t, PC210=21t, ZX210=21t, EC250=25t, CAT 323=23t, R920=20t)
+function inferWeightClassFromTitle(title: string): string | null {
+  const t = title.toLowerCase()
+  // Komatsu PC / Hitachi ZX / Volvo EC+EW / Hyundai HX / Doosan DX / JCB JS / Kobelco SK / Case CX
+  const excMatch = t.match(/\b(?:pc|zx|ec|ew|hx|dx|js|sk|cx|sh)\s*(\d{2,3})/)
+  if (excMatch) {
+    const n = parseInt(excMatch[1])
+    if (n >= 15 && n <= 500) return inferWeightClass(n * 100)
+  }
+  // CAT 3xx: last 2 digits ≈ tonnes (CAT 308=8t, CAT 323=23t, CAT 336=36t)
+  const catMatch = t.match(/\bcat\s*3(\d{2})\b/)
+  if (catMatch) {
+    const tonnes = parseInt(catMatch[1])
+    if (tonnes > 0) return inferWeightClass(tonnes * 1000)
+  }
+  // Liebherr R9xx: last 2 digits ≈ tonnes (R920=20t, R945=45t)
+  const liebMatch = t.match(/\br9(\d{2})\b/)
+  if (liebMatch) {
+    const tonnes = parseInt(liebMatch[1])
+    if (tonnes > 0) return inferWeightClass(tonnes * 1000)
+  }
+  return null
+}
 
 async function fetchDetailData(url: string): Promise<DetailData> {
   try {
@@ -136,50 +159,54 @@ async function fetchDetailData(url: string): Promise<DetailData> {
     const $ = cheerio.load(html)
 
     // ── Images ────────────────────────────────────────────────────────────────
-    // Mascus lazy-loads all gallery images via data-src on img.lazyload elements.
-    // The old #links / gallery-thumbs selectors no longer exist.
     const images: string[] = []
     $('img.lazyload[data-src*="mascus.com"], img[data-src*="mascus.com"]').each((_i, el) => {
       const src = $(el).attr('data-src') || ''
       if (src && !images.includes(src)) images.push(src)
     })
     if (images.length === 0) {
-      // Last-resort fallback: main image rendered directly (src, not data-src)
       const main = $('img.image_main').attr('src') || ''
       if (main) images.push(main)
     }
 
-    // ── Field discovery (first listing only) ──────────────────────────────────
-    if (!_fieldLogDone) {
-      _fieldLogDone = true
-      const fields = $('[class*="field_"]').map((_i, el) =>
-        `  ${$(el).attr('class')}: ${$(el).text().trim().substring(0, 60)}`
-      ).get()
-      console.log('[hesselberg] Tilgjengelige felt på detaljside:\n' + fields.join('\n'))
-    }
+    // ── Mascus tr.item span.data field pairs (same structure as NASTA/Mascus) ──
+    const data: Record<string, string> = {}
+    $('tr.item').each((_i, row) => {
+      const spans = $(row).find('span.data')
+      if (spans.length >= 2) {
+        const key   = $(spans[0]).text().trim()
+        const value = $(spans[1]).text().replace(/ /g, ' ').replace(/\s+/g, ' ').trim()
+        if (key && value && value.length < 200) data[key] = value
+      }
+    })
 
-    // ── Weight ────────────────────────────────────────────────────────────────
+    // ── Operating hours from detail page (more complete than category page) ──
+    let operatingHours: number | null = null
+    const hoursRaw = (data['Driftstimer'] ?? '').replace(/[^\d]/g, '')
+    const hoursN   = parseInt(hoursRaw, 10)
+    if (!isNaN(hoursN)) operatingHours = hoursN
+
+    // ── Weight: Totalvekt/Driftvekt in span.data pairs (set on Mascus by seller) ──
     let weightClass: string | null = null
-    const weightSelectors = [
-      'span.field_operatingweight',
-      'span.field_weight',
-      'span.field_machineweight',
-      'span.field_totalweight',
-      'span.field_workingweight',
-    ]
-    for (const sel of weightSelectors) {
-      const raw = $(sel).text().replace(/[^\d.,]/g, '').replace(',', '.').trim()
-      const num = parseFloat(raw)
-      if (num > 0) {
-        const kg = num < 200 ? num * 1000 : num   // < 200 → assume tonnes
-        weightClass = inferWeightClass(kg)
+    for (const key of ['Totalvekt', 'Driftvekt', 'Driftsvekt', 'Vekt']) {
+      const raw = data[key]
+      if (!raw) continue
+      const kg = parseInt(raw.replace(/[^\d]/g, ''), 10)
+      if (kg > 0) {
+        weightClass = inferWeightClass(kg < 200 ? kg * 1000 : kg)
         break
       }
     }
 
-    return { images, weightClass }
+    // ── Fallback: infer from machine title when seller omitted weight ─────────
+    if (!weightClass) {
+      const title = $('h1.main_header').text().trim()
+      if (title) weightClass = inferWeightClassFromTitle(title)
+    }
+
+    return { images, weightClass, operatingHours }
   } catch {
-    return { images: [], weightClass: null }
+    return { images: [], weightClass: null, operatingHours: null }
   }
 }
 
@@ -208,7 +235,8 @@ function parseCategoryPage(html: string, cat: CategorySource): ScrapedListing[] 
     const year = parseInt(yearText.replace(/\D/g, ''), 10) || null
 
     const hoursText = $el.find('span.field_meterreadout').text()
-    const operatingHours = parseInt(hoursText.replace(/[^\d]/g, ''), 10) || null
+    const hoursN    = parseInt(hoursText.replace(/[^\d]/g, ''), 10)
+    const operatingHours = isNaN(hoursN) ? null : hoursN
 
     const titleParts = title.split(' ')
     const brand = titleParts[0] ?? null
@@ -268,13 +296,13 @@ async function scrapeAllCategories(): Promise<{ listings: ScrapedListing[]; log:
     await sleep(300)
   }
 
-  // Pass 2: fetch detail page for each unique listing (images + weight)
+  // Pass 2: fetch detail page for each unique listing (images + weight + hours)
   let imageErrors = 0
-  _fieldLogDone = false   // reset so first listing of each sync run logs fields
   for (const item of listings) {
     const detail = await fetchDetailData(item.detailUrl)
     item.images      = detail.images
     item.weightClass = detail.weightClass
+    if (detail.operatingHours !== null) item.operatingHours = detail.operatingHours
     if (item.images.length === 0) imageErrors++
     await sleep(200)
   }
