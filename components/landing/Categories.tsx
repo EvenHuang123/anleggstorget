@@ -98,27 +98,6 @@ const CATEGORIES = [
     ),
   },
   {
-    key: 'komprimering', label: 'Komprimering og asfalt',
-    description: 'Valser, asfaltleggere og fresemaskiner',
-    svgPath: (
-      <svg viewBox="0 0 48 32" style={{ width: 36, height: 24 }} aria-hidden>
-        <g fill="currentColor" opacity="0.9">
-          <rect x="4" y="16" width="30" height="12" rx="2" />
-          <rect x="8" y="8" width="10" height="10" rx="2" />
-          <rect x="9.5" y="9.5" width="7" height="7" rx="1" fill="var(--bg4)" />
-          <ellipse cx="32" cy="12" rx="8" ry="9" fill="none" stroke="currentColor" strokeWidth="2.5" />
-          <ellipse cx="32" cy="12" rx="5" ry="6" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.5" />
-          <line x1="32" y1="3" x2="32" y2="21" stroke="currentColor" strokeWidth="1.5" opacity="0.6" />
-          <line x1="24" y1="12" x2="40" y2="12" stroke="currentColor" strokeWidth="1.5" opacity="0.6" />
-          <circle cx="10" cy="28" r="3.5" />
-          <circle cx="10" cy="28" r="1.8" fill="var(--bg4)" />
-          <circle cx="28" cy="28" r="3.5" />
-          <circle cx="28" cy="28" r="1.8" fill="var(--bg4)" />
-        </g>
-      </svg>
-    ),
-  },
-  {
     key: 'annet', label: 'Annet',
     description: 'Dosere, generatorer, pælerigger og utstyr',
     svgPath: (

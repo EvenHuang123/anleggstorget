@@ -51,7 +51,6 @@ export const CATEGORIES: Record<string, { label: string; icon: string }> = {
   'Dumpers':                { label: 'Dumpere',                icon: '🚧' },
   'Kompaktmaskiner':        { label: 'Kompaktmaskiner',        icon: '⚙️' },
   'Kraner og løft':         { label: 'Kraner og løft',         icon: '🏗️' },
-  'Komprimering og asfalt': { label: 'Komprimering og asfalt', icon: '🛣️' },
   'Annet':                  { label: 'Annet',                  icon: '⚙️' },
   // Legacy enum values — shown correctly until DB migration is run
   gravemaskin:    { label: 'Gravemaskiner',          icon: '🏗️' },
@@ -64,8 +63,9 @@ export const CATEGORIES: Record<string, { label: string; icon: string }> = {
   kranbil:        { label: 'Kraner og løft',         icon: '🏗️' },
   kran:           { label: 'Kraner og løft',         icon: '🏗️' },
   skogsutstyr:    { label: 'Annet',                  icon: '⚙️' },
-  betong:         { label: 'Komprimering og asfalt', icon: '🛣️' },
+  betong:         { label: 'Annet',                  icon: '⚙️' },
   annet:          { label: 'Annet',                  icon: '⚙️' },
+  'Komprimering og asfalt': { label: 'Annet',        icon: '⚙️' },
   // Truck → Annet fallback for stray legacy listings
   'Truck og lager': { label: 'Annet', icon: '⚙️' },
   gaffeltruck:      { label: 'Annet', icon: '⚙️' },
@@ -135,19 +135,9 @@ export const CATEGORY_TREE: Record<string, CategoryNode> = {
       tarnkran:     'Tårnkran',
     },
   },
-  komprimering: {
-    label: 'Komprimering og asfalt',
-    dbValues: ['Komprimering og asfalt', 'betong'],
-    subcategories: {
-      trommel:              'Trommel/vals',
-      asfaltlegger:         'Asfaltlegger',
-      fresemaskiner:        'Fresemaskiner',
-      komprimeringsmaskiner: 'Komprimeringsmaskiner',
-    },
-  },
   annet: {
     label: 'Annet',
-    dbValues: ['Annet', 'annet', 'traktor', 'skogsutstyr'],
+    dbValues: ['Annet', 'annet', 'traktor', 'skogsutstyr', 'betong', 'Komprimering og asfalt'],
     subcategories: {
       doser:       'Doser og Veihøvel',
       palerrigg:   'Pælerigg',
@@ -220,7 +210,6 @@ export const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
   'Dumpers':                'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&q=75',
   'Kompaktmaskiner':        'https://images.unsplash.com/photo-1625231334168-35067f8853ed?w=800&q=75',
   'Kraner og løft':         'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&q=75',
-  'Komprimering og asfalt': 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=75',
   'Annet':                  'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=75',
   // Legacy fallbacks
   gravemaskin: 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=800&q=75',

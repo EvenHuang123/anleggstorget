@@ -11,7 +11,7 @@ const QUICK_FILTERS = [
   { label: 'Dumpers',              value: 'dumpers'        },
   { label: 'Kompaktmaskiner',      value: 'kompaktmaskiner'},
   { label: 'Kraner og løft',       value: 'kraner'         },
-  { label: 'Komprimering/asfalt',  value: 'komprimering'   },
+  { label: 'Annet',                value: 'annet'          },
 ]
 
 export default function SearchBar() {

@@ -7,7 +7,6 @@ export type Category =
   | 'Dumpers'
   | 'Kompaktmaskiner'
   | 'Kraner og løft'
-  | 'Komprimering og asfalt'
   | 'Annet'
   // Legacy enum values (pre-migration compatibility)
   | 'gravemaskin'

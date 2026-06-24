@@ -8,15 +8,16 @@
  *
  *   -- 2. Migrate old enum values to new category strings
  *   UPDATE public.listings SET category = CASE category
- *     WHEN 'gravemaskin'    THEN 'Gravemaskiner'
- *     WHEN 'hjullaster'     THEN 'Hjullastere'
- *     WHEN 'teleskoplaster' THEN 'Hjullastere'
- *     WHEN 'kompaktlaster'  THEN 'Kompaktmaskiner'
- *     WHEN 'dumper'         THEN 'Dumpers'
- *     WHEN 'kranbil'        THEN 'Kraner og løft'
- *     WHEN 'betong'         THEN 'Komprimering og asfalt'
- *     WHEN 'traktor'        THEN 'Annet'
- *     WHEN 'skogsutstyr'    THEN 'Annet'
+ *     WHEN 'gravemaskin'         THEN 'Gravemaskiner'
+ *     WHEN 'hjullaster'          THEN 'Hjullastere'
+ *     WHEN 'teleskoplaster'      THEN 'Hjullastere'
+ *     WHEN 'kompaktlaster'       THEN 'Kompaktmaskiner'
+ *     WHEN 'dumper'              THEN 'Dumpers'
+ *     WHEN 'kranbil'             THEN 'Kraner og løft'
+ *     WHEN 'betong'              THEN 'Annet'
+ *     WHEN 'traktor'             THEN 'Annet'
+ *     WHEN 'skogsutstyr'         THEN 'Annet'
+ *     WHEN 'Komprimering og asfalt' THEN 'Annet'
  *     ELSE 'Annet'
  *   END;
  *
@@ -30,7 +31,6 @@ export const MAIN_CATEGORIES = [
   'Dumpers',
   'Kompaktmaskiner',
   'Kraner og løft',
-  'Komprimering og asfalt',
   'Annet',
 ] as const
 
@@ -67,12 +67,6 @@ export const SUBCATEGORIES: Record<MainCategory, readonly string[]> = {
     'Lastebilkran',
     'Tårnkran',
   ],
-  'Komprimering og asfalt': [
-    'Trommel/vals',
-    'Asfaltlegger',
-    'Fresemaskiner',
-    'Komprimeringsmaskiner',
-  ],
   'Annet': [
     'Doser og Veihøvel',
     'Pælerigg',
@@ -81,15 +75,14 @@ export const SUBCATEGORIES: Record<MainCategory, readonly string[]> = {
   ],
 }
 
-/** URL slug keys → used for ?category= param, breadcrumbs, and filter state */
+/** URL slug keys — used for ?category= param, breadcrumbs, and filter state */
 export const CATEGORY_SLUGS: Record<MainCategory, string> = {
-  'Gravemaskiner':           'gravemaskiner',
-  'Hjullastere':             'hjullastere',
-  'Dumpers':                 'dumpers',
-  'Kompaktmaskiner':         'kompaktmaskiner',
-  'Kraner og løft':          'kraner',
-  'Komprimering og asfalt':  'komprimering',
-  'Annet':                   'annet',
+  'Gravemaskiner':  'gravemaskiner',
+  'Hjullastere':    'hjullastere',
+  'Dumpers':        'dumpers',
+  'Kompaktmaskiner':'kompaktmaskiner',
+  'Kraner og løft': 'kraner',
+  'Annet':          'annet',
 }
 
 /** Reverse: slug → category name */
@@ -99,23 +92,24 @@ export const SLUG_TO_CATEGORY: Record<string, MainCategory> = Object.fromEntries
 
 /** Legacy enum values → new category name (for unmigrated listings) */
 export const LEGACY_CATEGORY_MAP: Record<string, MainCategory> = {
-  gravemaskin:    'Gravemaskiner',
-  hjullaster:     'Hjullastere',
-  teleskoplaster: 'Hjullastere',
-  kompaktlaster:  'Kompaktmaskiner',
-  kompaktmaskin:  'Kompaktmaskiner',
-  dumper:         'Dumpers',
-  kranbil:        'Kraner og løft',
-  kran:           'Kraner og løft',
-  betong:         'Komprimering og asfalt',
-  traktor:        'Annet',
-  skogsutstyr:    'Annet',
-  annet:          'Annet',
+  gravemaskin:          'Gravemaskiner',
+  hjullaster:           'Hjullastere',
+  teleskoplaster:       'Hjullastere',
+  kompaktlaster:        'Kompaktmaskiner',
+  kompaktmaskin:        'Kompaktmaskiner',
+  dumper:               'Dumpers',
+  kranbil:              'Kraner og løft',
+  kran:                 'Kraner og løft',
+  betong:               'Annet',
+  traktor:              'Annet',
+  skogsutstyr:          'Annet',
+  annet:                'Annet',
+  'Komprimering og asfalt': 'Annet',
   // Truck → Annet (legacy, for any stray listings already in DB)
-  'Truck og lager': 'Annet',
-  gaffeltruck:    'Annet',
-  lagertruck:     'Annet',
-  trekktruck:     'Annet',
+  'Truck og lager':     'Annet',
+  gaffeltruck:          'Annet',
+  lagertruck:           'Annet',
+  trekktruck:           'Annet',
 }
 
 /** Resolve a raw DB category value (old or new) to a display label */

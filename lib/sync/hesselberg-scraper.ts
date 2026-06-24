@@ -51,8 +51,8 @@ const CATEGORIES: CategorySource[] = [
   { path: '/hesselberg/anlegg/personloftere',         mascusPath: 'construction%2fplatformsandcranes%2fpersonnellifts',                           category: 'Kraner og løft',          subcategory: 'Personløfter (saks/mast)', label: 'Personløftere'            },
   { path: '/hesselberg/anlegg/dumper',                mascusPath: 'construction%2fdumpersmain%2fdumpers',                                         category: 'Dumpers',                 subcategory: 'Dumper',                   label: 'Dumper'                   },
   { path: '/hesselberg/anlegg/doser-veihovel',        mascusPath: 'construction%2fdozers,construction%2froadconstruction',                        category: 'Annet',                   subcategory: 'Doser og Veihøvel',        label: 'Doser og Veihøvel'        },
-  { path: '/hesselberg/anlegg/komprimeringsmaskiner', mascusPath: 'construction%2fcompactionequipmentmain',                                       category: 'Komprimering og asfalt',  subcategory: 'Komprimeringsmaskiner',    label: 'Komprimeringsmaskiner'    },
-  { path: '/hesselberg/anlegg/asfaltmaskiner',        mascusPath: 'construction%2fasphaltmachinesmain',                                           category: 'Komprimering og asfalt',  subcategory: 'Asfaltlegger',             label: 'Asfaltmaskiner'           },
+  { path: '/hesselberg/anlegg/komprimeringsmaskiner', mascusPath: 'construction%2fcompactionequipmentmain',                                       category: 'Annet',                   subcategory: 'Utstyr og tilbehør',       label: 'Komprimeringsmaskiner'    },
+  { path: '/hesselberg/anlegg/asfaltmaskiner',        mascusPath: 'construction%2fasphaltmachinesmain',                                           category: 'Annet',                   subcategory: 'Utstyr og tilbehør',       label: 'Asfaltmaskiner'           },
 ]
 
 // ── Types ─────────────────────────────────────────────────────────────────────

@@ -100,9 +100,9 @@ const CATEGORY_MAP: Record<string, string> = {
   traktor:             'Annet',
   skogsmaskiner:       'Annet',
   skogsutstyr:         'Annet',
-  // Concrete/compaction → Komprimering og asfalt
-  betongutstyr:        'Komprimering og asfalt',
-  betong:              'Komprimering og asfalt',
+  // Concrete/compaction → Annet
+  betongutstyr:        'Annet',
+  betong:              'Annet',
 }
 
 function mapCategory(urlSegment: string, gruppeText: string): string {

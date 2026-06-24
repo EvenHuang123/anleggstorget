@@ -10,7 +10,7 @@ const FOOTER_LINKS = {
     { label: 'Dumpers',             href: '/sok?category=dumpers'        },
     { label: 'Kompaktmaskiner',     href: '/sok?category=kompaktmaskiner'},
     { label: 'Kraner og løft',      href: '/sok?category=kraner'         },
-    { label: 'Komprimering/asfalt', href: '/sok?category=komprimering'   },
+    { label: 'Annet utstyr',        href: '/sok?category=annet'          },
   ],
   'Tjenester': [
     { label: 'Legg ut annonse', href: '/ny-annonse' },

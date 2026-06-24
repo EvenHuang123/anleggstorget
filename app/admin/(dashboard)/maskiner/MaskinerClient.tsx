@@ -33,12 +33,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   'Dumpers':                'Dumpers',
   'Kompaktmaskiner':        'Kompaktmaskiner',
   'Kraner og løft':         'Kraner og løft',
-  'Komprimering og asfalt': 'Komprimering og asfalt',
   'Annet':                  'Annet',
+  'Komprimering og asfalt': 'Annet',
   // Legacy enum fallbacks
   gravemaskin: 'Gravemaskiner', hjullaster: 'Hjullastere', dumper: 'Dumpers',
   traktor: 'Annet', kranbil: 'Kraner og løft', skogsutstyr: 'Annet',
-  betong: 'Komprimering og asfalt', kompaktlaster: 'Kompaktmaskiner', annet: 'Annet',
+  betong: 'Annet', kompaktlaster: 'Kompaktmaskiner', annet: 'Annet',
   // Truck-legacy → Annet
   'Truck og lager': 'Annet', gaffeltruck: 'Annet', lagertruck: 'Annet', trekktruck: 'Annet',
 }

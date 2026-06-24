@@ -170,45 +170,92 @@ export async function fetchRockmannDetail(finnId: string): Promise<{
 function mapCategory(title: string): { category: string; subcategory: string } {
   const t = title.toLowerCase()
 
-  // Hjulgraver before general graver check
-  if (t.includes('ew') || t.includes('hjulgraver') || t.match(/\bew\d/))
+  // Komatsu HD dump trucks — check before general komatsu/graver rule
+  if (t.match(/\bkomatsu\s*hd\d/) || t.match(/\bhd\d{3}/))
+    return { category: 'Dumpers', subcategory: 'Knekkstyrt dumper' }
+
+  // Hjulgraver (wheeled excavator) — before general beltegraver check
+  if (
+    t.includes('hjulgraver')        ||
+    t.match(/\bew\d/)               || // Volvo EW-series wheeled excavators
+    t.match(/\bpw\d/)               || // Komatsu PW-series wheeled
+    t.match(/\bmh\d/)               || // Liebherr MH wheeled
+    t.includes('wheeled excavator')
+  )
     return { category: 'Gravemaskiner', subcategory: 'Hjulgraver' }
 
-  // Beltegraver
+  // Beltegraver — broadened with Kobelco SK, JCB JS, Eurocomach, Doosan DX/DL
   if (
-    t.match(/\br9\d{2}/) || t.includes('liebherr r') ||
-    t.match(/\bec\d/)    || t.match(/\bpc\d/)        ||
-    t.match(/\bzx\d/)    || t.includes('hitachi')    ||
-    t.includes('graver') || t.includes('excavator')  ||
-    t.includes('komatsu')|| t.includes('cat 3')      ||
+    t.match(/\br9\d{2}/)         || t.includes('liebherr r')   ||
+    t.match(/\bec\d/)            || t.match(/\bpc\d/)           ||
+    t.match(/\bzx\d/)            || t.match(/\bzaxis\d/)        ||
+    t.includes('hitachi')        || t.includes('graver')        ||
+    t.includes('excavator')      || t.includes('kobelco')       ||
+    t.includes('eurocomach')     || t.includes('jcb')           ||
+    t.match(/\bsk\d{2,3}/)       || // Kobelco SK-series
+    t.match(/\bdx\d{2,3}/)       || // Doosan DX-series
+    t.match(/\bdl\d{2,3}/)       || // Doosan DL-series (excavator)
+    t.match(/\bjs\d{2,3}/)       || // JCB JS-series excavators
+    t.match(/\bcat\s*3[0-9]{2}/) || // Cat 300-series excavators
+    t.match(/\bcat\s*m\d{3}/)    || // Cat M-series wheeled excavators
+    (t.includes('komatsu') && !t.match(/\bhd\d/) && !t.match(/\bwa\d/)) ||
     t.match(/\b32[0-9]\b/)
   )
     return { category: 'Gravemaskiner', subcategory: 'Beltegraver' }
 
-  // Hjullastere
+  // Hjullastere — fixed word-boundary: L70H, L90H2, L150G all now match
   if (
-    t.match(/\bl[6-9]\d\b/) || t.match(/\bl[12]\d{2}\b/) ||
-    t.match(/\bwa\d/)       || t.includes('hjullaster')   ||
-    t.match(/\b908m\b/)     || t.match(/\b938\b/)         ||
-    t.includes('wheel loader')
+    t.match(/\bl[6-9]\d/)        || // Volvo L60–L99 (no end boundary → catches L70H, L90H2)
+    t.match(/\bl[12]\d{2}/)      || // Volvo L100–L299 (catches L150G, L150H, L180)
+    t.match(/\bwa\d/)            || // Komatsu WA-series
+    t.includes('hjullaster')     ||
+    t.includes('wheel loader')   ||
+    t.match(/\b908m\b/)          || // Cat 908M
+    t.match(/\b9[23][0-9][km]?\b/) || // Cat 910–939 compact wheel loaders
+    t.match(/\b9[5-9][0-9][k]?\b/)  // Cat 950–990 large wheel loaders
   )
     return { category: 'Hjullastere', subcategory: 'Hjullaster' }
 
+  // Kompaktmaskiner (skid steers, compact track loaders, telehandlers)
+  if (
+    t.includes('teleskoptrucker') || t.includes('telehandler')   ||
+    t.includes('teleskoplaster')  || t.includes('kompaktlaster') ||
+    t.includes('skidsteer')       || t.includes('skid steer')    ||
+    t.includes('bobcat')          ||
+    t.match(/\bcat\s*2[12678]\d/) || // Cat 216, 226, 236, 246, 256, 272, 287
+    t.match(/\bcat\s*2[89]\d\b/)  || // Cat 289, 299
+    t.match(/\bjcb\s*(t[0-9]|loadall)/i)
+  )
+    return { category: 'Kompaktmaskiner', subcategory: 'Kompaktlaster' }
+
   // Dumpers / articulated haulers
   if (
-    t.match(/\ba[2-5][05]\b/) || t.includes('bell b')   ||
-    t.includes('dumper')      || t.includes('articulated')
+    t.match(/\ba[2-5][05]\b/)    || t.includes('bell b')      ||
+    t.includes('dumper')          || t.includes('articulated')  ||
+    t.match(/\bcat\s*7[34]\d\b/) || // Cat 730, 735, 740
+    t.match(/\bta[12]\d\b/)         // Terex TA articulated
   )
     return { category: 'Dumpers', subcategory: 'Knekkstyrt dumper' }
 
-  // Crushing / screening
+  // Kraner og løft
   if (
-    t.includes('metso')    || t.includes('keestrack') ||
-    t.includes('portafill')|| t.includes('finlay')    ||
-    t.match(/\blt[0-9]/)
+    t.includes('kran')      || t.includes('crane')    ||
+    t.includes('personlift')|| t.includes('boom lift') ||
+    t.includes('scissor')   || t.match(/\bmpk\d/)
   )
-    return { category: 'Komprimering og asfalt', subcategory: 'Komprimeringsmaskiner' }
+    return { category: 'Kraner og løft', subcategory: 'Personløfter (saks/mast)' }
 
+  // Crushing/screening/compaction/asphalt → Annet
+  if (
+    t.includes('metso')     || t.includes('keestrack')  ||
+    t.includes('portafill') || t.includes('finlay')     ||
+    t.match(/\blt[0-9]/)    || t.includes('vals')       ||
+    t.includes('kompaktor') || t.includes('asfalt')     ||
+    t.includes('compactor') || t.includes('fresing')
+  )
+    return { category: 'Annet', subcategory: 'Utstyr og tilbehør' }
+
+  console.warn(`[KATEGORI UKJENT] Tittel: "${title}" | Kilde: "rockmann"`)
   return { category: 'Annet', subcategory: 'Utstyr og tilbehør' }
 }
 
