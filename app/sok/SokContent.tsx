@@ -350,29 +350,60 @@ export default function SokContent() {
           ))}
           <button
             onClick={() => router.replace('/sok', { scroll: false })}
-            style={{ fontSize: 11, color: 'var(--t3)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+            style={{
+              fontSize: 11, color: 'var(--t2)', background: 'none',
+              border: '1px solid var(--border2)', cursor: 'pointer',
+              borderRadius: 20, padding: '3px 10px', whiteSpace: 'nowrap', flexShrink: 0,
+            }}
           >
             Nullstill alle
           </button>
         </div>
       )}
 
-      {/* Mobile collapsible filters */}
-      <div className="show-filter-btn">
-        {showMobileFilters && (
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, marginBottom: 16, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
-              <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 13, color: 'var(--t1)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+      {/* Mobile bottom-sheet drawer */}
+      {showMobileFilters && (
+        <div
+          className="show-filter-btn"
+          style={{ position: 'fixed', inset: 0, zIndex: 200, flexDirection: 'column', justifyContent: 'flex-end' }}
+        >
+          {/* Backdrop */}
+          <div
+            onClick={() => setShowMobileFilters(false)}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }}
+          />
+          {/* Sheet */}
+          <div style={{
+            position: 'relative', zIndex: 1,
+            background: 'var(--bg2)',
+            borderRadius: '16px 16px 0 0',
+            maxHeight: '88vh',
+            display: 'flex', flexDirection: 'column',
+            overflow: 'hidden',
+          }}>
+            {/* Drag handle */}
+            <div style={{ position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', width: 36, height: 4, background: 'var(--border2)', borderRadius: 2 }} />
+            {/* Sheet header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '20px 20px 12px',
+              borderBottom: '1px solid var(--border)',
+              flexShrink: 0,
+            }}>
+              <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 14, color: 'var(--t1)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                 Filtrer maskiner
               </span>
-              <button onClick={() => setShowMobileFilters(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t2)' }}>
-                <X size={16} />
+              <button onClick={() => setShowMobileFilters(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t2)', padding: 4, display: 'flex' }}>
+                <X size={18} />
               </button>
             </div>
-            <ListingFilters onClose={() => setShowMobileFilters(false)} resultCount={totalCount} searchParams={searchParams} onFilterChange={setParam} availableBrands={availableBrands} availableLocations={availableLocations} />
+            {/* Scrollable filter list */}
+            <div style={{ overflowY: 'auto', flex: 1 }}>
+              <ListingFilters onClose={() => setShowMobileFilters(false)} resultCount={totalCount} searchParams={searchParams} onFilterChange={setParam} availableBrands={availableBrands} availableLocations={availableLocations} />
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Main layout */}
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>

@@ -46,8 +46,8 @@ function Divider() {
   return <div style={{ height: 1, background: 'var(--border)', margin: '2px 0' }} />
 }
 
-function SectionHeader({ label, active, open, onToggle }: {
-  label: string; active?: boolean; open: boolean; onToggle: () => void
+function SectionHeader({ label, active, count, open, onToggle }: {
+  label: string; active?: boolean; count?: number; open: boolean; onToggle: () => void
 }) {
   return (
     <button
@@ -58,12 +58,30 @@ function SectionHeader({ label, active, open, onToggle }: {
         padding: '10px 0', cursor: 'pointer',
       }}
     >
-      <span style={{
-        fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 11,
-        letterSpacing: '0.1em', textTransform: 'uppercase',
-        color: active ? 'var(--gold)' : 'var(--t2)',
-      }}>
-        {label}{active ? ' ●' : ''}
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{
+          fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 11,
+          letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: active ? 'var(--gold)' : 'var(--t2)',
+        }}>
+          {label}
+        </span>
+        {active && count != null && count > 0 && (
+          <span style={{
+            background: 'var(--gold)', color: '#0d0c0a',
+            borderRadius: 10, padding: '1px 6px',
+            fontSize: 9, fontWeight: 800, fontFamily: 'Barlow Condensed', letterSpacing: '0.04em',
+            lineHeight: 1.4,
+          }}>
+            {count}
+          </span>
+        )}
+        {active && (count == null || count === 0) && (
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: 'var(--gold)', display: 'inline-block', flexShrink: 0,
+          }} />
+        )}
       </span>
       <ChevronDown size={12} style={{ color: 'var(--t3)', transition: 'transform 0.15s', transform: open ? 'rotate(180deg)' : 'none' }} />
     </button>
@@ -111,8 +129,11 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
   const toggleSection = (k: keyof typeof openSections) =>
     setOpenSections(s => ({ ...s, [k]: !s[k] }))
 
-  // "Vis alle merker" toggle
-  const [showAllBrands, setShowAllBrands] = useState(false)
+  // "Vis alle"-toggles
+  const [showAllBrands,    setShowAllBrands]    = useState(false)
+  const [showAllLocations, setShowAllLocations] = useState(false)
+
+  const LOCATIONS_VISIBLE = 8
 
   // ── Brand ordering: priority brands first (if present in DB), then rest ──
   const sortedBrands = (() => {
@@ -209,21 +230,26 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
           Filtre
         </span>
         {hasFilters && (
-          <button onClick={resetAll} style={{ background: 'none', border: 'none', color: 'var(--t3)', fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3 }}>
-            <X size={10} /> Nullstill alle
+          <button onClick={resetAll} style={{
+            background: 'none', border: '1px solid var(--border2)',
+            color: 'var(--t2)', fontSize: 11, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 3,
+            borderRadius: 4, padding: '3px 8px',
+          }}>
+            <X size={9} /> Nullstill alle
           </button>
         )}
       </div>
 
       {/* ── Merke ─────────────────────────────────────────────────────────── */}
       <Divider />
-      <SectionHeader label="Merke" active={selectedBrands.length > 0} open={openSections.merke} onToggle={() => toggleSection('merke')} />
+      <SectionHeader label="Merke" active={selectedBrands.length > 0} count={selectedBrands.length} open={openSections.merke} onToggle={() => toggleSection('merke')} />
       {openSections.merke && (
         <div style={{ paddingBottom: 4 }}>
           {visibleBrands.map(b => {
             const checked = selectedBrands.includes(b)
             return (
-              <label key={b} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', cursor: 'pointer', borderRadius: 3, background: checked ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}>
+              <label key={b} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 6px', cursor: 'pointer', borderRadius: 3, background: checked ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}>
                 <input
                   type="checkbox"
                   checked={checked}
@@ -249,14 +275,14 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
 
       {/* ── Kategori ──────────────────────────────────────────────────────── */}
       <Divider />
-      <SectionHeader label="Kategori" active={selectedCats.length > 0} open={openSections.kategori} onToggle={() => toggleSection('kategori')} />
+      <SectionHeader label="Kategori" active={selectedCats.length > 0} count={selectedCats.length + (subcategory ? 1 : 0)} open={openSections.kategori} onToggle={() => toggleSection('kategori')} />
       {openSections.kategori && (
         <div style={{ paddingBottom: 4 }}>
           {Object.entries(CATEGORY_TREE).map(([key, node]) => {
             const checked = selectedCats.includes(key)
             return (
               <div key={key}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', cursor: 'pointer', borderRadius: 3, background: checked ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 6px', cursor: 'pointer', borderRadius: 3, background: checked ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}>
                   <input
                     type="checkbox"
                     checked={checked}
@@ -276,7 +302,7 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
                     {Object.entries(node.subcategories).map(([subKey, subLabel]) => {
                       const subActive = subcategory === subKey
                       return (
-                        <label key={subKey} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '3px 6px', cursor: 'pointer', borderRadius: 3, background: subActive ? 'var(--gold4)' : 'transparent' }}>
+                        <label key={subKey} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 6px', cursor: 'pointer', borderRadius: 3, background: subActive ? 'var(--gold4)' : 'transparent' }}>
                           <input
                             type="radio"
                             name="subcategory"
@@ -337,7 +363,7 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
           {HOURS_PRESETS.map(p => {
             const active = hoursMin === p.min && hoursMax === p.max
             return (
-              <label key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', cursor: 'pointer', borderRadius: 3, background: active ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}>
+              <label key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 6px', cursor: 'pointer', borderRadius: 3, background: active ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}>
                 <input
                   type="checkbox"
                   checked={active}
@@ -422,31 +448,39 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
           ) : (
             <>
               {location && !availableLocations.includes(location) && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', borderRadius: 3, background: 'var(--gold4)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 6px', borderRadius: 3, background: 'var(--gold4)' }}>
                   <input type="radio" name="location" checked readOnly style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }} />
                   <span style={{ fontSize: 13, color: 'var(--t1)', fontWeight: 600 }}>{location}</span>
                 </label>
               )}
               <label
                 onClick={() => onFilterChange({ location: '' })}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', cursor: 'pointer', borderRadius: 3, background: !location ? 'var(--gold4)' : 'transparent' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 6px', cursor: 'pointer', borderRadius: 3, background: !location ? 'var(--gold4)' : 'transparent' }}
               >
                 <input type="radio" name="location" checked={!location} readOnly style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }} />
                 <span style={{ fontSize: 13, color: !location ? 'var(--t1)' : 'var(--t2)', fontWeight: !location ? 600 : 400 }}>Hele Norge</span>
               </label>
-              {availableLocations.map(loc => {
+              {(showAllLocations ? availableLocations : availableLocations.slice(0, LOCATIONS_VISIBLE)).map(loc => {
                 const active = location === loc
                 return (
                   <label
                     key={loc}
                     onClick={() => onFilterChange({ location: active ? '' : loc })}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', cursor: 'pointer', borderRadius: 3, background: active ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 6px', cursor: 'pointer', borderRadius: 3, background: active ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}
                   >
                     <input type="radio" name="location" checked={active} readOnly style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }} />
                     <span style={{ fontSize: 13, color: active ? 'var(--t1)' : 'var(--t2)', fontWeight: active ? 600 : 400 }}>{loc}</span>
                   </label>
                 )
               })}
+              {availableLocations.length > LOCATIONS_VISIBLE && (
+                <button
+                  onClick={() => setShowAllLocations(s => !s)}
+                  style={{ fontSize: 11, color: 'var(--t3)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', width: '100%', textAlign: 'left' }}
+                >
+                  {showAllLocations ? 'Vis færre' : `Vis alle (${availableLocations.length - LOCATIONS_VISIBLE} til)`}
+                </button>
+              )}
             </>
           )}
         </div>
