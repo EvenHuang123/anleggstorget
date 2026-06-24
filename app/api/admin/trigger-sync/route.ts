@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, ...result })
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      await writeRockmannSyncLog({ created: 0, updated: 0, removed: 0, totalScraped: 0, errors: 0, durationMs: 0 }, 'failed', message)
+      await writeRockmannSyncLog({ created: 0, updated: 0, removed: 0, totalScraped: 0, errors: 0, durationMs: 0, details: [] }, 'failed', message)
       return NextResponse.json({ error: message }, { status: 500 })
     }
   }

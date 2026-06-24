@@ -22,6 +22,14 @@ const UA       = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/53
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+export interface ListingDetail {
+  externalId:  string
+  title:       string
+  hours:       number | null
+  weightClass: string | null
+  status:      'created' | 'updated' | 'unchanged'
+}
+
 export interface SyncResult {
   created:      number
   updated:      number
@@ -29,6 +37,7 @@ export interface SyncResult {
   totalScraped: number
   errors:       number
   durationMs:   number
+  details:      ListingDetail[]
 }
 
 interface ScrapedListing {
@@ -138,14 +147,16 @@ export async function fetchRockmannDetail(finnId: string): Promise<{
 
     let hours: number | null = null
     let weightKg: number | null = null
+    const HOURS_LABELS  = new Set(['arbeidstimer', 'driftstimer', 'maskintimer', 'timer'])
+    const WEIGHT_LABELS = new Set(['vekt', 'driftsvekt', 'driftvekt', 'totalvekt', 'driftssvekt'])
     $('dl dt').each((_i, el) => {
       const label = $(el).text().trim().toLowerCase()
       const value = $(el).next('dd').text().trim()
-      if (label === 'arbeidstimer') {
+      if (HOURS_LABELS.has(label)) {
         const n = parseInt(value.replace(/\D/g, ''), 10)
-        if (!isNaN(n)) hours = n
+        if (!isNaN(n) && n > 0) hours = n
       }
-      if (label === 'vekt' || label === 'driftsvekt' || label === 'driftvekt' || label === 'totalvekt') {
+      if (WEIGHT_LABELS.has(label)) {
         const n = parseInt(value.replace(/[^\d]/g, ''), 10)
         if (n > 0) weightKg = n < 200 ? n * 1000 : n
       }
@@ -153,10 +164,19 @@ export async function fetchRockmannDetail(finnId: string): Promise<{
 
     // Finn.no /pw/ listings rarely include weight — infer from page title as fallback
     let weightClass: string | null = weightKg !== null ? inferWeightClass(weightKg) : null
+    let weightSource = weightKg !== null ? 'dl' : null
     if (!weightClass) {
       const title = $('h1').first().text().trim()
-      if (title) weightClass = inferWeightClassFromTitle(title)
+      if (title) {
+        weightClass = inferWeightClassFromTitle(title)
+        if (weightClass) weightSource = 'title'
+      }
     }
+
+    console.log(
+      `[rockmann] ${finnId}: timer=${hours ?? 'mangler'} vekt=${weightClass ?? 'mangler'}` +
+      (weightSource ? ` (kilde: ${weightSource})` : ''),
+    )
 
     await sleep(300)
     return { images, hours, weightClass }
@@ -375,7 +395,7 @@ export async function syncRockmannListings(): Promise<SyncResult> {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
 
-  const result: SyncResult = { created: 0, updated: 0, removed: 0, totalScraped: 0, errors: 0, durationMs: 0 }
+  const result: SyncResult = { created: 0, updated: 0, removed: 0, totalScraped: 0, errors: 0, durationMs: 0, details: [] }
 
   // 1. Scrape all pages
   const { listings, log } = await scrapeAllPages()
@@ -434,26 +454,35 @@ export async function syncRockmannListings(): Promise<SyncResult> {
       if (error) {
         console.error('[rockmann] INSERT error:', JSON.stringify(error), 'title:', item.title)
         result.errors++
-      } else result.created++
+      } else {
+        result.created++
+        result.details.push({
+          externalId:  item.externalId,
+          title:       item.title,
+          hours:       item.operatingHours,
+          weightClass: item.weightClass,
+          status:      'created',
+        })
+      }
     } else {
       const dbImageCount = (current.images ?? []).length
       const changed =
-        current.price            !== item.price ||
-        current.year             !== item.year  ||
-        current.operating_hours  !== item.operatingHours ||
-        (item.weightClass !== null && current.weight_class === null) ||
+        current.price !== item.price ||
+        current.year  !== item.year  ||
+        (item.operatingHours !== null && item.operatingHours !== current.operating_hours) ||
+        (item.weightClass    !== null && item.weightClass    !== current.weight_class)    ||
         (item.images.length > 1 && dbImageCount <= 1)
 
       if (changed) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('listings')
           .update({
-            price:           item.price,
-            price_type:      item.priceType,
-            year:            item.year,
-            operating_hours: item.operatingHours,
-            ...(item.weightClass ? { weight_class: item.weightClass } : {}),
-            images:          item.images.length > 0 ? item.images : current.images,
+            price:      item.price,
+            price_type: item.priceType,
+            year:       item.year,
+            ...(item.operatingHours !== null ? { operating_hours: item.operatingHours } : {}),
+            ...(item.weightClass    !== null ? { weight_class:    item.weightClass    } : {}),
+            images: item.images.length > 0 ? item.images : current.images,
           })
           .eq('id', current.id)
         if (error) {
@@ -461,6 +490,14 @@ export async function syncRockmannListings(): Promise<SyncResult> {
           result.errors++
         } else result.updated++
       }
+
+      result.details.push({
+        externalId:  item.externalId,
+        title:       item.title,
+        hours:       item.operatingHours,
+        weightClass: item.weightClass,
+        status:      changed ? 'updated' : 'unchanged',
+      })
 
       // Re-activate if previously soft-deleted
       if (current.status === 'removed_by_sync') {

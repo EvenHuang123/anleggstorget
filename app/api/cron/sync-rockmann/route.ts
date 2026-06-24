@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   }
 
   const empty: import('@/lib/sync/rockmann-scraper').SyncResult = {
-    created: 0, updated: 0, removed: 0, totalScraped: 0, errors: 0, durationMs: 0,
+    created: 0, updated: 0, removed: 0, totalScraped: 0, errors: 0, durationMs: 0, details: [],
   }
 
   try {
