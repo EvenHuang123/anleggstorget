@@ -81,7 +81,8 @@ export default function SokContent() {
   const [viewMode, setViewMode]                   = useState<'grid' | 'list'>('grid')
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [searchInput, setSearchInput]             = useState(searchParams.get('q') || '')
-  const [availableBrands, setAvailableBrands]     = useState<string[]>([])
+  const [availableBrands,    setAvailableBrands]    = useState<string[]>([])
+  const [availableLocations, setAvailableLocations] = useState<string[]>([])
 
   // Read ALL filter + pagination params from URL
   const q            = searchParams.get('q')             || ''
@@ -109,21 +110,16 @@ export default function SokContent() {
     !!(yearFrom || yearTo), !!(hoursMin || hoursMax), !!listedWithin,
   ].filter(Boolean).length
 
-  // Fetch available brands once on mount
+  // Fetch available brands and locations once on mount
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(supabase as any)
-      .from('listings')
-      .select('brand')
-      .eq('status', 'active')
-      .not('brand', 'is', null)
-      .order('brand')
-      .limit(500)
+    const sb = supabase as any // eslint-disable-line @typescript-eslint/no-explicit-any
+    sb.from('listings').select('brand').eq('status', 'active').not('brand', 'is', null).order('brand').limit(500)
       .then(({ data }: { data: { brand: string }[] | null }) => {
-        if (data) {
-          const unique = [...new Set(data.map(r => r.brand).filter(Boolean))]
-          setAvailableBrands(unique)
-        }
+        if (data) setAvailableBrands([...new Set(data.map(r => r.brand).filter(Boolean))])
+      })
+    sb.from('listings').select('location').eq('status', 'active').not('location', 'is', null).order('location').limit(500)
+      .then(({ data }: { data: { location: string }[] | null }) => {
+        if (data) setAvailableLocations([...new Set(data.map(r => r.location).filter(Boolean))].sort())
       })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -169,8 +165,8 @@ export default function SokContent() {
         }
         qb = qb.eq('subcategory', subcategoryLabel)
       }
-      if (q)           qb = qb.ilike('title', `%${q}%`)
-      if (location)    qb = qb.ilike('location', `%${location}%`)
+      if (q)        qb = qb.ilike('title', `%${q}%`)
+      if (location) qb = qb.eq('location', location)
       if (listingType === 'sale') qb = qb.eq('listing_type', 'sale')
       else if (listingType === 'rent') qb = qb.eq('listing_type', 'rent')
       if (minPrice) qb = qb.gte('price_ex_vat', parseInt(minPrice))
@@ -373,7 +369,7 @@ export default function SokContent() {
                 <X size={16} />
               </button>
             </div>
-            <ListingFilters onClose={() => setShowMobileFilters(false)} resultCount={totalCount} searchParams={searchParams} onFilterChange={setParam} availableBrands={availableBrands} />
+            <ListingFilters onClose={() => setShowMobileFilters(false)} resultCount={totalCount} searchParams={searchParams} onFilterChange={setParam} availableBrands={availableBrands} availableLocations={availableLocations} />
           </div>
         )}
       </div>
@@ -381,7 +377,7 @@ export default function SokContent() {
       {/* Main layout */}
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         <div className="filters-sidebar">
-          <ListingFilters searchParams={searchParams} onFilterChange={setParam} availableBrands={availableBrands} />
+          <ListingFilters searchParams={searchParams} onFilterChange={setParam} availableBrands={availableBrands} availableLocations={availableLocations} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>

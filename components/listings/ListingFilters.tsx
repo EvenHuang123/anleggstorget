@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import type { ReadonlyURLSearchParams } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { X, ChevronDown, ChevronRight } from 'lucide-react'
-import { CATEGORY_TREE, NORWEGIAN_COUNTIES } from '@/lib/utils/format'
+import { CATEGORY_TREE } from '@/lib/utils/format'
 
 interface Props {
   onClose?: () => void
@@ -12,6 +12,7 @@ interface Props {
   searchParams: ReadonlyURLSearchParams
   onFilterChange: (updates: Record<string, string>) => void
   availableBrands?: string[]
+  availableLocations?: string[]
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -71,7 +72,7 @@ function SectionHeader({ label, active, open, onToggle }: {
 
 // ── component ─────────────────────────────────────────────────────────────────
 
-export default function ListingFilters({ onClose, resultCount, searchParams, onFilterChange, availableBrands = [] }: Props) {
+export default function ListingFilters({ onClose, resultCount, searchParams, onFilterChange, availableBrands = [], availableLocations = [] }: Props) {
   const router = useRouter()
 
   // ── Read filter state from URL ────────────────────────────────────────────
@@ -408,15 +409,47 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
       <Divider />
       <SectionHeader label="Område" active={!!location} open={openSections.omrade} onToggle={() => toggleSection('omrade')} />
       {openSections.omrade && (
-        <select
-          value={location}
-          onChange={e => onFilterChange({ location: e.target.value })}
-          className="input-base"
-          style={{ fontSize: 13, padding: '7px 9px', cursor: 'pointer', marginTop: 2, marginBottom: 6 }}
-        >
-          <option value="">Hele Norge</option>
-          {NORWEGIAN_COUNTIES.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
+        <div style={{ paddingBottom: 4 }}>
+          {availableLocations.length === 0 ? (
+            <select
+              value={location}
+              onChange={e => onFilterChange({ location: e.target.value })}
+              className="input-base"
+              style={{ fontSize: 13, padding: '7px 9px', cursor: 'pointer', marginTop: 2, marginBottom: 6 }}
+            >
+              <option value="">Hele Norge</option>
+            </select>
+          ) : (
+            <>
+              {location && !availableLocations.includes(location) && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', borderRadius: 3, background: 'var(--gold4)' }}>
+                  <input type="radio" name="location" checked readOnly style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: 'var(--t1)', fontWeight: 600 }}>{location}</span>
+                </label>
+              )}
+              <label
+                onClick={() => onFilterChange({ location: '' })}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', cursor: 'pointer', borderRadius: 3, background: !location ? 'var(--gold4)' : 'transparent' }}
+              >
+                <input type="radio" name="location" checked={!location} readOnly style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: !location ? 'var(--t1)' : 'var(--t2)', fontWeight: !location ? 600 : 400 }}>Hele Norge</span>
+              </label>
+              {availableLocations.map(loc => {
+                const active = location === loc
+                return (
+                  <label
+                    key={loc}
+                    onClick={() => onFilterChange({ location: active ? '' : loc })}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', cursor: 'pointer', borderRadius: 3, background: active ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}
+                  >
+                    <input type="radio" name="location" checked={active} readOnly style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, color: active ? 'var(--t1)' : 'var(--t2)', fontWeight: active ? 600 : 400 }}>{loc}</span>
+                  </label>
+                )
+              })}
+            </>
+          )}
+        </div>
       )}
 
       {/* ── Pris ───────────────────────────────────────────────────────────── */}
