@@ -29,6 +29,10 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: 'https://anleggstorget.no',
+    languages: {
+      'nb-NO': 'https://anleggstorget.no',
+      'x-default': 'https://anleggstorget.no',
+    },
   },
   description:
     'Norges B2B-markedsplass for verifiserte bedrifter. Kjøp, selg og leie gravemaskiner, hjullastere, dumpere og anleggsutstyr trygt og gratis.',

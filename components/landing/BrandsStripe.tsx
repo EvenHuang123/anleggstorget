@@ -1,12 +1,19 @@
+import Link from 'next/link'
+
 const BRANDS = [
   'Volvo', 'Caterpillar', 'Komatsu', 'Liebherr', 'Hitachi',
   'Doosan', 'JCB', 'Mecalac', 'Terex', 'Kobelco',
   'John Deere', 'Case', 'New Holland', 'Claas', 'Fendt',
 ]
 
-export default function BrandsStripe() {
-  const doubled = [...BRANDS, ...BRANDS]
+const brandStyle = {
+  fontFamily: 'Barlow Condensed', fontWeight: 700,
+  fontSize: 15, letterSpacing: '0.08em', textTransform: 'uppercase' as const,
+  color: 'var(--t3)', whiteSpace: 'nowrap' as const,
+  transition: 'color 0.15s', textDecoration: 'none',
+}
 
+export default function BrandsStripe() {
   return (
     <div style={{
       background: 'var(--bg2)',
@@ -36,20 +43,18 @@ export default function BrandsStripe() {
           className="animate-ticker"
           style={{ display: 'flex', alignItems: 'center', gap: 0, whiteSpace: 'nowrap' }}
         >
-          {doubled.map((brand, i) => (
-            <div key={i} style={{
-              padding: '0 32px',
-              borderRight: '1px solid var(--border)',
-              flexShrink: 0,
-            }}>
-              <span style={{
-                fontFamily: 'Barlow Condensed', fontWeight: 700,
-                fontSize: 15, letterSpacing: '0.08em', textTransform: 'uppercase',
-                color: 'var(--t3)', whiteSpace: 'nowrap',
-                transition: 'color 0.15s',
-              }}>
+          {/* First set — real links for SEO */}
+          {BRANDS.map(brand => (
+            <div key={brand} style={{ padding: '0 32px', borderRight: '1px solid var(--border)', flexShrink: 0 }}>
+              <Link href={`/sok?brand=${encodeURIComponent(brand)}`} style={brandStyle}>
                 {brand}
-              </span>
+              </Link>
+            </div>
+          ))}
+          {/* Second set — visual duplicate for seamless loop, hidden from crawlers */}
+          {BRANDS.map(brand => (
+            <div key={`dup-${brand}`} aria-hidden="true" style={{ padding: '0 32px', borderRight: '1px solid var(--border)', flexShrink: 0 }}>
+              <span style={brandStyle}>{brand}</span>
             </div>
           ))}
         </div>

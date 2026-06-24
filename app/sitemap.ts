@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import { articles } from '@/lib/guides/articles'
 
 // Force HTTPS — env var may be http:// on local/staging but sitemap must always be HTTPS in prod
@@ -21,6 +21,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/om-oss`,                       lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${BASE}/kontakt`,                      lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE}/guide`,                        lastModified: now, changeFrequency: 'weekly',  priority: 0.8 },
+    { url: `${BASE}/sok?category=gravemaskiner`,   lastModified: now, changeFrequency: 'daily',   priority: 0.7 },
+    { url: `${BASE}/sok?category=hjullastere`,     lastModified: now, changeFrequency: 'daily',   priority: 0.7 },
+    { url: `${BASE}/sok?category=dumpers`,         lastModified: now, changeFrequency: 'daily',   priority: 0.7 },
+    { url: `${BASE}/sok?category=kompaktmaskiner`, lastModified: now, changeFrequency: 'daily',   priority: 0.7 },
+    { url: `${BASE}/sok?category=kraner`,          lastModified: now, changeFrequency: 'daily',   priority: 0.7 },
+    { url: `${BASE}/sok?category=annet`,           lastModified: now, changeFrequency: 'daily',   priority: 0.6 },
     ...articles.map(a => ({
       url: `${BASE}/guide/${a.slug}`,
       lastModified: new Date(a.updatedAt),
@@ -30,7 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   try {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any

@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+import { organizationSchema, websiteSchema } from '@/lib/schema'
 
 // Revalidate homepage every 60 s — FeaturedListings uses public client (no cookies = cacheable)
 export const revalidate = 60
@@ -105,6 +106,8 @@ const faqJsonLd = {
 export default function HomePage() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema()) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema()) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <Navbar />
       <main>

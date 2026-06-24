@@ -6,6 +6,8 @@ import Footer from '@/components/shared/Footer'
 import AnnonseContent from './AnnonseContent'
 import { createPublicClient } from '@/lib/supabase/public'
 import type { Listing } from '@/lib/supabase/types'
+import { CATEGORIES, getListingImageUrl } from '@/lib/utils/format'
+import { listingSchema, breadcrumbSchema } from '@/lib/schema'
 
 // ISR: re-render at most once every 5 minutes. No cookies() call = static-cacheable.
 export const revalidate = 300
@@ -51,15 +53,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? listing.description.substring(0, 155) + '…'
     : `${listing.brand || ''} ${listing.model || ''} – ${priceStr}`.trim()
 
+  const slug = listing.slug || id
+  const ogImage = listing.images?.[0]
+    ? getListingImageUrl(listing.images[0])
+    : '/og-image.jpg'
+
   return {
-    title: `${listing.title} – ${priceStr} | Anleggstorget`,
+    title: { absolute: `${listing.title} – ${priceStr} | Anleggstorget` },
     description: desc,
+    alternates: {
+      canonical: `https://anleggstorget.no/annonse/${slug}`,
+    },
     openGraph: {
       title: listing.title,
       description: desc,
-      images: listing.images?.[0]
-        ? [`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/listing-images/${listing.images[0]}`]
-        : ['/og-image.jpg'],
+      url: `https://anleggstorget.no/annonse/${slug}`,
+      images: [ogImage],
     },
   }
 }
@@ -88,8 +97,19 @@ export default async function AnnonsePage({ params }: Props) {
   }
 
 
+  const slug = listing.slug || id
+  const categoryLabel = CATEGORIES[listing.category]?.label || listing.category
+  const breadcrumbs = [
+    { name: 'Hjem', url: 'https://anleggstorget.no' },
+    { name: 'Maskiner', url: 'https://anleggstorget.no/sok' },
+    { name: categoryLabel, url: `https://anleggstorget.no/sok?category=${listing.category}` },
+    { name: listing.title, url: `https://anleggstorget.no/annonse/${slug}` },
+  ]
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(listingSchema(listing)) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(breadcrumbs)) }} />
       <Navbar />
       <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
         <AnnonseContent listing={listing} related={related} />

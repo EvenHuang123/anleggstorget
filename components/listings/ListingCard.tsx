@@ -20,7 +20,11 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
   )
 
   return (
-    <Link href={`/annonse/${listing.slug || listing.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+    <Link
+      href={`/annonse/${listing.slug || listing.id}`}
+      aria-label={`${listing.title}${listing.brand ? ` – ${listing.brand}` : ''}${listing.location ? `, ${listing.location}` : ''} – ${CATEGORIES[listing.category]?.label || listing.category}`}
+      style={{ textDecoration: 'none', display: 'block' }}
+    >
       <article className="card card-gold" style={{ overflow: 'hidden', cursor: 'pointer' }}>
         {/* Image */}
         <div className="listing-img-wrap">
