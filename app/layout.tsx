@@ -22,16 +22,16 @@ const barlowCondensed = Barlow_Condensed({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://anleggstorget.no'),
+  metadataBase: new URL('https://www.anleggstorget.no'),
   title: {
     default: 'Anleggstorget – Kjøp og selg tunge maskiner | B2B Maskinmarkedsplass',
     template: '%s | Anleggstorget',
   },
   alternates: {
-    canonical: 'https://anleggstorget.no',
+    canonical: 'https://www.anleggstorget.no',
     languages: {
-      'nb-NO': 'https://anleggstorget.no',
-      'x-default': 'https://anleggstorget.no',
+      'nb-NO': 'https://www.anleggstorget.no',
+      'x-default': 'https://www.anleggstorget.no',
     },
   },
   description:
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'nb_NO',
     siteName: 'Anleggstorget',
-    url: 'https://anleggstorget.no',
+    url: 'https://www.anleggstorget.no',
     title: 'Anleggstorget – Norges B2B-markedsplass for tunge maskiner',
     description: 'Kjøp, selg og leie anleggsmaskiner mellom verifiserte norske bedrifter. Gratis annonsering.',
     images: ['/og-image.jpg'],

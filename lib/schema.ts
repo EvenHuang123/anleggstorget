@@ -1,7 +1,7 @@
 import type { Listing } from '@/lib/supabase/types'
 import { getListingImageUrl } from '@/lib/utils/format'
 
-const BASE = 'https://anleggstorget.no'
+const BASE = 'https://www.anleggstorget.no'
 
 export function organizationSchema() {
   return {

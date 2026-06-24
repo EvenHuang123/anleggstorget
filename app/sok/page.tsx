@@ -57,7 +57,7 @@ export async function generateMetadata({ searchParams }: SokProps): Promise<Meta
     return {
       title: { absolute: `${brand} maskiner til salgs | Anleggstorget` },
       description: `Kjøp brukte ${brand}-maskiner fra verifiserte norske bedrifter. Gravemaskiner, hjullastere og mer på Anleggstorget.`,
-      alternates: { canonical: `https://anleggstorget.no/sok?brand=${encodeURIComponent(brand)}` },
+      alternates: { canonical: `https://www.anleggstorget.no/sok?brand=${encodeURIComponent(brand)}` },
     }
   }
 
@@ -66,7 +66,7 @@ export async function generateMetadata({ searchParams }: SokProps): Promise<Meta
       title: { absolute: `${cat.title} | Anleggstorget` },
       description: cat.description,
       keywords: cat.keywords,
-      alternates: { canonical: `https://anleggstorget.no/sok?category=${category}` },
+      alternates: { canonical: `https://www.anleggstorget.no/sok?category=${category}` },
       openGraph: {
         title: cat.title,
         description: cat.description,
@@ -78,7 +78,7 @@ export async function generateMetadata({ searchParams }: SokProps): Promise<Meta
     title: 'Finn maskiner – Søk brukte gravemaskiner og anleggsutstyr',
     description: 'Søk blant brukte gravemaskiner, hjullastere, dumpere, traktorer og annet anleggsutstyr fra verifiserte norske bedrifter. Gratis å browse.',
     keywords: ['søk maskin', 'finn gravemaskin', 'brukt hjullaster', 'dumper til salgs', 'traktor Norge', 'anleggsutstyr', 'maskin søk'],
-    alternates: { canonical: 'https://anleggstorget.no/sok' },
+    alternates: { canonical: 'https://www.anleggstorget.no/sok' },
     openGraph: {
       title: 'Finn maskiner | Anleggstorget',
       description: 'Søk blant brukte gravemaskiner, hjullastere og anleggsutstyr fra verifiserte norske bedrifter.',

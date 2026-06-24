@@ -62,12 +62,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: { absolute: `${listing.title} – ${priceStr} | Anleggstorget` },
     description: desc,
     alternates: {
-      canonical: `https://anleggstorget.no/annonse/${slug}`,
+      canonical: `https://www.anleggstorget.no/annonse/${slug}`,
     },
     openGraph: {
       title: listing.title,
       description: desc,
-      url: `https://anleggstorget.no/annonse/${slug}`,
+      url: `https://www.anleggstorget.no/annonse/${slug}`,
       images: [ogImage],
     },
   }
@@ -101,9 +101,9 @@ export default async function AnnonsePage({ params }: Props) {
   const categoryLabel = CATEGORIES[listing.category]?.label || listing.category
   const breadcrumbs = [
     { name: 'Hjem', url: 'https://anleggstorget.no' },
-    { name: 'Maskiner', url: 'https://anleggstorget.no/sok' },
-    { name: categoryLabel, url: `https://anleggstorget.no/sok?category=${listing.category}` },
-    { name: listing.title, url: `https://anleggstorget.no/annonse/${slug}` },
+    { name: 'Maskiner', url: 'https://www.anleggstorget.no/sok' },
+    { name: categoryLabel, url: `https://www.anleggstorget.no/sok?category=${listing.category}` },
+    { name: listing.title, url: `https://www.anleggstorget.no/annonse/${slug}` },
   ]
 
   return (
