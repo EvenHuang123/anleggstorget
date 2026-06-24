@@ -75,29 +75,58 @@ export default function SokContent() {
   const pathname = usePathname()
   const supabase = createClient()
 
-  const [listings, setListings]           = useState<Listing[]>([])
-  const [totalCount, setTotalCount]       = useState(0)
-  const [loading, setLoading]             = useState(true)
-  const [viewMode, setViewMode]           = useState<'grid' | 'list'>('grid')
+  const [listings, setListings]                   = useState<Listing[]>([])
+  const [totalCount, setTotalCount]               = useState(0)
+  const [loading, setLoading]                     = useState(true)
+  const [viewMode, setViewMode]                   = useState<'grid' | 'list'>('grid')
   const [showMobileFilters, setShowMobileFilters] = useState(false)
-  const [searchInput, setSearchInput]     = useState(searchParams.get('q') || '')
+  const [searchInput, setSearchInput]             = useState(searchParams.get('q') || '')
+  const [availableBrands, setAvailableBrands]     = useState<string[]>([])
 
   // Read ALL filter + pagination params from URL
-  const q            = searchParams.get('q')           || ''
-  const categoryParam= searchParams.get('category')    || ''
-  const subcategory  = searchParams.get('subcategory') || ''
-  const location     = searchParams.get('location')    || ''
-  const listingType  = searchParams.get('listingType') || ''
-  const minPrice     = searchParams.get('minPrice')    || ''
-  const maxPrice     = searchParams.get('maxPrice')    || ''
-  const sort         = searchParams.get('sort')        || 'newest'
+  const q            = searchParams.get('q')             || ''
+  const categoryParam= searchParams.get('category')      || ''
+  const subcategory  = searchParams.get('subcategory')   || ''
+  const location     = searchParams.get('location')      || ''
+  const listingType  = searchParams.get('listingType')   || ''
+  const minPrice     = searchParams.get('minPrice')      || ''
+  const maxPrice     = searchParams.get('maxPrice')      || ''
+  const brand        = searchParams.get('brand')         || ''
+  const yearFrom     = searchParams.get('year_from')     || ''
+  const yearTo       = searchParams.get('year_to')       || ''
+  const hoursMin     = searchParams.get('hours_min')     || ''
+  const hoursMax     = searchParams.get('hours_max')     || ''
+  const listedWithin = searchParams.get('listed_within') || ''
+  const sort         = searchParams.get('sort')          || 'newest'
   const page         = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
 
-  const treeKeys = categoryParam.split(',').filter(Boolean)
+  const treeKeys      = categoryParam.split(',').filter(Boolean)
+  const selectedBrands = brand.split(',').filter(Boolean)
 
   const activeFilterCount = [
-    treeKeys.length > 0, !!subcategory, !!location, !!listingType, !!(minPrice || maxPrice),
+    treeKeys.length > 0, !!subcategory, !!location, !!listingType,
+    !!(minPrice || maxPrice), selectedBrands.length > 0,
+    !!(yearFrom || yearTo), !!(hoursMin || hoursMax), !!listedWithin,
   ].filter(Boolean).length
+
+  // Fetch available brands once on mount
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(supabase as any)
+      .from('listings')
+      .select('brand')
+      .eq('status', 'active')
+      .not('brand', 'is', null)
+      .order('brand')
+      .limit(500)
+      .then(({ data }: { data: { brand: string }[] | null }) => {
+        if (data) {
+          const unique = [...new Set(data.map(r => r.brand).filter(Boolean))]
+          setAvailableBrands(unique)
+        }
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Filter changes — always read window.location.search so we never use a
   // stale React-state snapshot (useCallback with searchParams dep can silently
@@ -147,6 +176,20 @@ export default function SokContent() {
       if (minPrice) qb = qb.gte('price_ex_vat', parseInt(minPrice))
       if (maxPrice) qb = qb.lte('price_ex_vat', parseInt(maxPrice))
 
+      if (selectedBrands.length === 1)    qb = qb.eq('brand', selectedBrands[0])
+      else if (selectedBrands.length > 1) qb = qb.in('brand', selectedBrands)
+      if (yearFrom)  qb = qb.gte('year', parseInt(yearFrom))
+      if (yearTo)    qb = qb.lte('year', parseInt(yearTo))
+      if (hoursMin)  qb = qb.gte('operating_hours', parseInt(hoursMin))
+      if (hoursMax)  qb = qb.lte('operating_hours', parseInt(hoursMax))
+      if (listedWithin) {
+        const days = parseInt(listedWithin)
+        if (!isNaN(days)) {
+          const cutoff = new Date(Date.now() - days * 86400000).toISOString()
+          qb = qb.gte('created_at', cutoff)
+        }
+      }
+
       if (sort === 'newest')          qb = qb.order('created_at',  { ascending: false })
       else if (sort === 'price_asc')  qb = qb.order('price_ex_vat', { ascending: true,  nullsFirst: false })
       else if (sort === 'price_desc') qb = qb.order('price_ex_vat', { ascending: false, nullsFirst: false })
@@ -163,7 +206,7 @@ export default function SokContent() {
     } finally {
       setLoading(false)
     }
-  }, [q, categoryParam, subcategory, location, listingType, minPrice, maxPrice, sort, page])
+  }, [q, categoryParam, subcategory, location, listingType, minPrice, maxPrice, sort, page, brand, yearFrom, yearTo, hoursMin, hoursMax, listedWithin])
 
   useEffect(() => { fetchListings() }, [fetchListings])
   useEffect(() => { setSearchInput(searchParams.get('q') || '') }, [pathname, searchParams])
@@ -191,12 +234,25 @@ export default function SokContent() {
       p.delete('subcategory')
       p.delete('page')
       router.replace(`/sok?${p.toString()}`, { scroll: false })
+    } else if (key === 'brand' && value) {
+      const next = selectedBrands.filter(b => b !== value)
+      setParam({ brand: next.join(',') })
+    } else if (key === 'hours') {
+      setParam({ hours_min: '', hours_max: '' })
     } else {
       setParam({ [key]: '' })
     }
   }
 
+  const hoursLabel = (() => {
+    if (hoursMin && hoursMax) return `${Number(hoursMin).toLocaleString('nb-NO')}–${Number(hoursMax).toLocaleString('nb-NO')} t`
+    if (hoursMin) return `Over ${Number(hoursMin).toLocaleString('nb-NO')} t`
+    if (hoursMax) return `Under ${Number(hoursMax).toLocaleString('nb-NO')} t`
+    return ''
+  })()
+
   const chips = [
+    ...selectedBrands.map(b => ({ key: 'brand', value: b, label: b })),
     ...treeKeys.map(k => ({ key: 'category', value: k, label: CATEGORY_TREE[k]?.label ?? k })),
     subcategory && { key: 'subcategory', value: subcategory, label: (() => {
       for (const node of Object.values(CATEGORY_TREE)) {
@@ -209,6 +265,10 @@ export default function SokContent() {
     listingType === 'rent' && { key: 'listingType', value: 'rent', label: 'Til leie' },
     minPrice    && { key: 'minPrice',    value: minPrice,    label: `Fra ${Number(minPrice).toLocaleString('nb-NO')} kr` },
     maxPrice    && { key: 'maxPrice',    value: maxPrice,    label: `Til ${Number(maxPrice).toLocaleString('nb-NO')} kr` },
+    yearFrom    && { key: 'year_from',   value: yearFrom,    label: `Fra ${yearFrom}` },
+    yearTo      && { key: 'year_to',     value: yearTo,      label: `Til ${yearTo}` },
+    (hoursMin || hoursMax) && { key: 'hours', value: '', label: hoursLabel },
+    listedWithin && { key: 'listed_within', value: listedWithin, label: `Siste ${listedWithin} dager` },
   ].filter(Boolean) as { key: string; value: string; label: string }[]
 
   const headingLabel = treeKeys.length > 0
@@ -313,7 +373,7 @@ export default function SokContent() {
                 <X size={16} />
               </button>
             </div>
-            <ListingFilters onClose={() => setShowMobileFilters(false)} resultCount={totalCount} searchParams={searchParams} onFilterChange={setParam} />
+            <ListingFilters onClose={() => setShowMobileFilters(false)} resultCount={totalCount} searchParams={searchParams} onFilterChange={setParam} availableBrands={availableBrands} />
           </div>
         )}
       </div>
@@ -321,7 +381,7 @@ export default function SokContent() {
       {/* Main layout */}
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         <div className="filters-sidebar">
-          <ListingFilters searchParams={searchParams} onFilterChange={setParam} />
+          <ListingFilters searchParams={searchParams} onFilterChange={setParam} availableBrands={availableBrands} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>

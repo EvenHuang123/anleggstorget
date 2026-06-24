@@ -11,9 +11,14 @@ interface Props {
   resultCount?: number
   searchParams: ReadonlyURLSearchParams
   onFilterChange: (updates: Record<string, string>) => void
+  availableBrands?: string[]
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
+
+// Brands shown directly (rest hidden behind "Vis alle")
+const PRIORITY_BRANDS = ['Volvo', 'Cat', 'Komatsu', 'Hitachi', 'JCB', 'Liebherr', 'Kobelco', 'Doosan', 'Hyundai']
+const BRANDS_VISIBLE  = 8
 
 const PRICE_PRESETS = [
   { label: 'Under 500k', min: '',        max: '500000'  },
@@ -21,6 +26,19 @@ const PRICE_PRESETS = [
   { label: '1M–2M',      min: '1000000', max: '2000000' },
   { label: '2M–5M',      min: '2000000', max: '5000000' },
   { label: 'Over 5M',    min: '5000000', max: ''        },
+]
+
+const HOURS_PRESETS = [
+  { label: 'Under 2 000 t',  min: '',      max: '2000'  },
+  { label: '2 000–5 000 t',  min: '2000',  max: '5000'  },
+  { label: '5 000–10 000 t', min: '5000',  max: '10000' },
+  { label: 'Over 10 000 t',  min: '10000', max: ''       },
+]
+
+const LISTED_WITHIN_OPTIONS = [
+  { label: 'Alle',          value: ''   },
+  { label: 'Siste 7 dager', value: '7'  },
+  { label: 'Siste 30 dager',value: '30' },
 ]
 
 function Divider() {
@@ -53,49 +71,85 @@ function SectionHeader({ label, active, open, onToggle }: {
 
 // ── component ─────────────────────────────────────────────────────────────────
 
-export default function ListingFilters({ onClose, resultCount, searchParams, onFilterChange }: Props) {
+export default function ListingFilters({ onClose, resultCount, searchParams, onFilterChange, availableBrands = [] }: Props) {
   const router = useRouter()
 
-  // ── Read filter state from the single URL source of truth (passed from parent)
-  const selectedCats = (searchParams.get('category') || '').split(',').filter(Boolean)
-  const subcategory  = searchParams.get('subcategory') || ''
-  const location     = searchParams.get('location')    || ''
-  const listingType  = searchParams.get('listingType') || ''
+  // ── Read filter state from URL ────────────────────────────────────────────
+  const selectedCats   = (searchParams.get('category')      || '').split(',').filter(Boolean)
+  const subcategory    = searchParams.get('subcategory')    || ''
+  const location       = searchParams.get('location')       || ''
+  const listingType    = searchParams.get('listingType')    || ''
+  const selectedBrands = (searchParams.get('brand')         || '').split(',').filter(Boolean)
+  const listedWithin   = searchParams.get('listed_within')  || ''
+  const hoursMin       = searchParams.get('hours_min')      || ''
+  const hoursMax       = searchParams.get('hours_max')      || ''
 
-  // Price inputs need local state so typing feels smooth; debounced push to URL
-  const [localMin, setLocalMin] = useState(searchParams.get('minPrice') || '')
-  const [localMax, setLocalMax] = useState(searchParams.get('maxPrice') || '')
+  // Price + year need local state so typing feels smooth; debounced push to URL
+  const [localMin, setLocalMin]     = useState(searchParams.get('minPrice')  || '')
+  const [localMax, setLocalMax]     = useState(searchParams.get('maxPrice')  || '')
+  const [localYearFrom, setLocalYearFrom] = useState(searchParams.get('year_from') || '')
+  const [localYearTo,   setLocalYearTo]   = useState(searchParams.get('year_to')   || '')
   useEffect(() => {
-    setLocalMin(searchParams.get('minPrice') || '')
-    setLocalMax(searchParams.get('maxPrice') || '')
+    setLocalMin(searchParams.get('minPrice')  || '')
+    setLocalMax(searchParams.get('maxPrice')  || '')
+    setLocalYearFrom(searchParams.get('year_from') || '')
+    setLocalYearTo(searchParams.get('year_to')     || '')
   }, [searchParams])
 
-  // Collapsible sections
+  // Collapsible sections — new ones default open so they're discoverable
   const [openSections, setOpenSections] = useState({
-    kategori: true, type: true, omrade: true, pris: true,
+    merke:      true,
+    kategori:   true,
+    aarsmodell: false,
+    timer:      false,
+    siste:      false,
+    type:       true,
+    omrade:     true,
+    pris:       true,
   })
   const toggleSection = (k: keyof typeof openSections) =>
     setOpenSections(s => ({ ...s, [k]: !s[k] }))
 
-  // Toggle a main category (multi-select); also clears subcategory
+  // "Vis alle merker" toggle
+  const [showAllBrands, setShowAllBrands] = useState(false)
+
+  // ── Brand ordering: priority brands first (if present in DB), then rest ──
+  const sortedBrands = (() => {
+    if (availableBrands.length === 0) return PRIORITY_BRANDS
+    const available = new Set(availableBrands)
+    const priority  = PRIORITY_BRANDS.filter(b => available.has(b))
+    const others    = availableBrands.filter(b => !PRIORITY_BRANDS.includes(b)).sort()
+    // Also include any selected brands not in available list (stale selection)
+    const stale = selectedBrands.filter(b => !available.has(b))
+    return [...stale, ...priority, ...others]
+  })()
+
+  const visibleBrands = showAllBrands ? sortedBrands : sortedBrands.slice(0, BRANDS_VISIBLE)
+  const hiddenCount   = sortedBrands.length - BRANDS_VISIBLE
+
+  // ── Category helpers ──────────────────────────────────────────────────────
   const toggleCat = (treeKey: string) => {
     const next = selectedCats.includes(treeKey)
       ? selectedCats.filter(c => c !== treeKey)
       : [...selectedCats, treeKey]
-    const updates: Record<string, string> = {
-      category: next.join(','),
-      subcategory: '',
-    }
-    onFilterChange(updates)
+    onFilterChange({ category: next.join(','), subcategory: '' })
   }
 
-  // Toggle subcategory (click same = deselect)
   const toggleSub = (sub: string) =>
     onFilterChange({ subcategory: subcategory === sub ? '' : sub })
 
-  // Debounced price update — ref ensures latest onFilterChange is always called
+  // ── Brand toggle ──────────────────────────────────────────────────────────
+  const toggleBrand = (b: string) => {
+    const next = selectedBrands.includes(b)
+      ? selectedBrands.filter(x => x !== b)
+      : [...selectedBrands, b]
+    onFilterChange({ brand: next.join(',') })
+  }
+
+  // ── Debounced inputs ──────────────────────────────────────────────────────
   const onFilterChangeRef = useRef(onFilterChange)
   useEffect(() => { onFilterChangeRef.current = onFilterChange }, [onFilterChange])
+
   const priceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const handlePrice = (key: 'minPrice' | 'maxPrice', value: string) => {
     if (key === 'minPrice') setLocalMin(value); else setLocalMax(value)
@@ -103,18 +157,36 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
     priceTimer.current = setTimeout(() => onFilterChangeRef.current({ [key]: value }), 400)
   }
 
+  const yearTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const handleYear = (key: 'year_from' | 'year_to', value: string) => {
+    if (key === 'year_from') setLocalYearFrom(value); else setLocalYearTo(value)
+    clearTimeout(yearTimer.current)
+    yearTimer.current = setTimeout(() => onFilterChangeRef.current({ [key]: value }), 400)
+  }
+
+  // ── Hours preset toggle (click same = deselect) ───────────────────────────
+  const toggleHoursPreset = (min: string, max: string) => {
+    const isActive = hoursMin === min && hoursMax === max
+    onFilterChange({ hours_min: isActive ? '' : min, hours_max: isActive ? '' : max })
+  }
+
+  // ── Reset all ─────────────────────────────────────────────────────────────
   const resetAll = () => {
     const q = new URLSearchParams(window.location.search).get('q')
     router.replace(q ? `/sok?q=${encodeURIComponent(q)}` : '/sok', { scroll: false })
     onClose?.()
   }
 
-  const hasFilters = selectedCats.length > 0 || !!(
-    subcategory || location || listingType || searchParams.get('minPrice') || searchParams.get('maxPrice')
+  const hasFilters = selectedCats.length > 0 || selectedBrands.length > 0 || !!(
+    subcategory || location || listingType ||
+    searchParams.get('minPrice') || searchParams.get('maxPrice') ||
+    searchParams.get('year_from') || searchParams.get('year_to') ||
+    hoursMin || hoursMax || listedWithin
   )
 
-  // Subcategories to show: only when exactly one main category is selected
   const activeNode = selectedCats.length === 1 ? CATEGORY_TREE[selectedCats[0]] : null
+
+  const currentYear = new Date().getFullYear()
 
   return (
     <aside style={{
@@ -142,6 +214,38 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
         )}
       </div>
 
+      {/* ── Merke ─────────────────────────────────────────────────────────── */}
+      <Divider />
+      <SectionHeader label="Merke" active={selectedBrands.length > 0} open={openSections.merke} onToggle={() => toggleSection('merke')} />
+      {openSections.merke && (
+        <div style={{ paddingBottom: 4 }}>
+          {visibleBrands.map(b => {
+            const checked = selectedBrands.includes(b)
+            return (
+              <label key={b} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', cursor: 'pointer', borderRadius: 3, background: checked ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggleBrand(b)}
+                  style={{ accentColor: 'var(--gold)', width: 14, height: 14, flexShrink: 0 }}
+                />
+                <span style={{ fontSize: 13, color: checked ? 'var(--t1)' : 'var(--t2)', fontWeight: checked ? 600 : 400 }}>
+                  {b}
+                </span>
+              </label>
+            )
+          })}
+          {hiddenCount > 0 && (
+            <button
+              onClick={() => setShowAllBrands(s => !s)}
+              style={{ fontSize: 11, color: 'var(--t3)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', width: '100%', textAlign: 'left' }}
+            >
+              {showAllBrands ? 'Vis færre' : `Vis alle (${hiddenCount} til)`}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ── Kategori ──────────────────────────────────────────────────────── */}
       <Divider />
       <SectionHeader label="Kategori" active={selectedCats.length > 0} open={openSections.kategori} onToggle={() => toggleSection('kategori')} />
@@ -166,7 +270,6 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
                   )}
                 </label>
 
-                {/* Subcategories — only for this node if it's the single selected cat */}
                 {checked && activeNode === node && (
                   <div style={{ marginLeft: 22, marginBottom: 4 }}>
                     {Object.entries(node.subcategories).map(([subKey, subLabel]) => {
@@ -184,7 +287,6 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
                         </label>
                       )
                     })}
-                    {/* Deselect subcategory */}
                     {subcategory && (
                       <button
                         onClick={() => onFilterChange({ subcategory: '' })}
@@ -198,6 +300,79 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* ── Årsmodell ─────────────────────────────────────────────────────── */}
+      <Divider />
+      <SectionHeader label="Årsmodell" active={!!(searchParams.get('year_from') || searchParams.get('year_to'))} open={openSections.aarsmodell} onToggle={() => toggleSection('aarsmodell')} />
+      {openSections.aarsmodell && (
+        <div style={{ paddingBottom: 6 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2 }}>
+            <input
+              type="number" value={localYearFrom}
+              onChange={e => handleYear('year_from', e.target.value)}
+              placeholder="Fra år" min="1990" max={currentYear}
+              className="input-base"
+              style={{ fontSize: 12, padding: '6px 8px' }}
+            />
+            <span style={{ color: 'var(--t3)', fontSize: 11, flexShrink: 0 }}>–</span>
+            <input
+              type="number" value={localYearTo}
+              onChange={e => handleYear('year_to', e.target.value)}
+              placeholder="Til år" min="1990" max={currentYear}
+              className="input-base"
+              style={{ fontSize: 12, padding: '6px 8px' }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Driftstimer ───────────────────────────────────────────────────── */}
+      <Divider />
+      <SectionHeader label="Driftstimer" active={!!(hoursMin || hoursMax)} open={openSections.timer} onToggle={() => toggleSection('timer')} />
+      {openSections.timer && (
+        <div style={{ paddingBottom: 4 }}>
+          {HOURS_PRESETS.map(p => {
+            const active = hoursMin === p.min && hoursMax === p.max
+            return (
+              <label key={p.label} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 6px', cursor: 'pointer', borderRadius: 3, background: active ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}>
+                <input
+                  type="checkbox"
+                  checked={active}
+                  onChange={() => toggleHoursPreset(p.min, p.max)}
+                  style={{ accentColor: 'var(--gold)', width: 14, height: 14, flexShrink: 0 }}
+                />
+                <span style={{ fontSize: 13, color: active ? 'var(--t1)' : 'var(--t2)', fontWeight: active ? 600 : 400 }}>
+                  {p.label}
+                </span>
+              </label>
+            )
+          })}
+        </div>
+      )}
+
+      {/* ── Nyeste annonser ────────────────────────────────────────────────── */}
+      <Divider />
+      <SectionHeader label="Lagt ut" active={!!listedWithin} open={openSections.siste} onToggle={() => toggleSection('siste')} />
+      {openSections.siste && (
+        <div style={{ display: 'flex', gap: 4, paddingBottom: 6, paddingTop: 2, flexWrap: 'wrap' }}>
+          {LISTED_WITHIN_OPTIONS.map(({ label, value }) => (
+            <button
+              key={value || 'all'}
+              onClick={() => onFilterChange({ listed_within: value })}
+              style={{
+                flex: 1, minWidth: 60, padding: '7px 4px', borderRadius: 3,
+                border: `1px solid ${listedWithin === value ? 'rgba(200,149,58,0.5)' : 'var(--border)'}`,
+                background: listedWithin === value ? 'var(--gold3)' : 'var(--bg3)',
+                color: listedWithin === value ? 'var(--gold)' : 'var(--t2)',
+                fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 11,
+                cursor: 'pointer', transition: 'all 0.1s',
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       )}
 
@@ -249,7 +424,6 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
       <SectionHeader label="Pris (NOK)" active={!!(searchParams.get('minPrice') || searchParams.get('maxPrice'))} open={openSections.pris} onToggle={() => toggleSection('pris')} />
       {openSections.pris && (
         <div style={{ paddingBottom: 6 }}>
-          {/* Presets */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 8 }}>
             {PRICE_PRESETS.map(p => {
               const curMin = searchParams.get('minPrice') || ''
@@ -273,8 +447,6 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
               )
             })}
           </div>
-
-          {/* Min/max inputs */}
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <input
               type="number" value={localMin}
