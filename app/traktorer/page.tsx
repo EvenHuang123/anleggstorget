@@ -46,7 +46,7 @@ const config: CategoryPageConfig = {
     { label: 'Gravemaskiner', href: '/gravemaskiner' },
     { label: 'Hjullastere', href: '/hjullastere' },
     { label: 'Dumpere', href: '/dumpere' },
-    { label: 'Skogsutstyr', href: '/sok?category=skogsutstyr' },
+    { label: 'Annet utstyr', href: '/sok?category=annet' },
   ],
 }
 

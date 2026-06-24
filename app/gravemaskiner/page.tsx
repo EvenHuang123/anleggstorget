@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 }
 
 const config: CategoryPageConfig = {
-  category: 'gravemaskin',
+  category: 'gravemaskiner',
   h1: 'Gravemaskiner til salgs i Norge',
   intro: [
     'Anleggstorget er Norges B2B-markedsplass for kjøp og salg av gravemaskiner mellom verifiserte bedrifter. Her finner du bandgravemaskiner, hjulgravemaskiner og minigravere fra ledende merker som Volvo, Caterpillar, Komatsu, Hitachi, Liebherr og Doosan.',
@@ -45,8 +45,8 @@ const config: CategoryPageConfig = {
   relatedCategories: [
     { label: 'Hjullastere', href: '/hjullastere' },
     { label: 'Dumpere', href: '/dumpere' },
-    { label: 'Kranbiler', href: '/sok?category=kranbil' },
-    { label: 'Skogsutstyr', href: '/sok?category=skogsutstyr' },
+    { label: 'Kraner og løft', href: '/sok?category=kraner' },
+    { label: 'Annet utstyr', href: '/sok?category=annet' },
   ],
 }
 

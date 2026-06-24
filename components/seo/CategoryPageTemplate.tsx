@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/shared/Navbar'
 import Footer from '@/components/shared/Footer'
 import ListingCard from '@/components/listings/ListingCard'
+import { treeKeysToDbValues } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
 
 export interface CategoryPageConfig {
@@ -18,11 +19,17 @@ async function getCategoryListings(category: string): Promise<Listing[]> {
   try {
     const supabase = await createClient()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    let qb = (supabase as any)
       .from('listings')
       .select('*, profiles(company_name, verified, org_number), favorites_count:favorites(count)')
       .eq('status', 'active')
-      .eq('category', category)
+
+    const dbCats = treeKeysToDbValues([category])
+    const cats = dbCats.length > 0 ? dbCats : [category]
+    if (cats.length === 1) qb = qb.eq('category', cats[0])
+    else                   qb = qb.in('category', cats)
+
+    const { data } = await qb
       .order('created_at', { ascending: false })
       .limit(12) as { data: Listing[] | null }
     return data ?? []

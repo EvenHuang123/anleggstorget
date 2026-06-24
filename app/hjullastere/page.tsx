@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 }
 
 const config: CategoryPageConfig = {
-  category: 'hjullaster',
+  category: 'hjullastere',
   h1: 'Hjullastere til salgs i Norge',
   intro: [
     'Anleggstorget er Norges B2B-markedsplass for kjøp og salg av hjullastere mellom verifiserte bedrifter. Her finner du kompaktlastere, teleskoplastere og store hjullastere fra ledende merker som Volvo, Caterpillar, Komatsu, Liebherr og Manitou.',
@@ -46,7 +46,7 @@ const config: CategoryPageConfig = {
     { label: 'Gravemaskiner', href: '/gravemaskiner' },
     { label: 'Dumpere', href: '/dumpere' },
     { label: 'Traktorer', href: '/traktorer' },
-    { label: 'Kranbiler', href: '/sok?category=kranbil' },
+    { label: 'Kraner og løft', href: '/sok?category=kraner' },
   ],
 }
 

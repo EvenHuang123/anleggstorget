@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 }
 
 const config: CategoryPageConfig = {
-  category: 'dumper',
+  category: 'dumpers',
   h1: 'Dumpere til salgs i Norge',
   intro: [
     'Anleggstorget er Norges B2B-markedsplass for kjøp og salg av dumpere mellom verifiserte bedrifter. Her finner du artikulerte dumpere, rigide dumpere og minidumpere fra ledende merker som Volvo, Bell, Komatsu, Caterpillar, Terex og Doosan.',
@@ -46,7 +46,7 @@ const config: CategoryPageConfig = {
     { label: 'Gravemaskiner', href: '/gravemaskiner' },
     { label: 'Hjullastere', href: '/hjullastere' },
     { label: 'Traktorer', href: '/traktorer' },
-    { label: 'Kranbiler', href: '/sok?category=kranbil' },
+    { label: 'Kraner og løft', href: '/sok?category=kraner' },
   ],
 }
 
