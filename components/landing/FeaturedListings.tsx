@@ -1,12 +1,12 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import AnimatedListingGrid from '@/components/landing/AnimatedListingGrid'
 import type { Listing } from '@/lib/supabase/types'
 
 async function getFeaturedListings(): Promise<Listing[]> {
   try {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
     const { data } = await supabase
       .from('listings')
       .select('*, profiles(company_name, verified, org_number), favorites_count:favorites(count)')

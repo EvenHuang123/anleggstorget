@@ -3,6 +3,8 @@ import { Barlow, Barlow_Condensed } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import CookieBanner from '@/components/CookieBanner'
+import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Analytics } from '@vercel/analytics/react'
 
 const barlow = Barlow({
   subsets: ['latin'],
@@ -61,6 +63,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="nb" className={`${barlow.variable} ${barlowCondensed.variable}`}>
       <body>
         {children}
+        <SpeedInsights />
+        <Analytics />
         <CookieBanner />
         <Toaster
           position="bottom-right"

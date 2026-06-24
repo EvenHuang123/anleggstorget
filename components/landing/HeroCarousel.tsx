@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, Shield, ChevronLeft, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { CATEGORIES, getListingImageUrl } from '@/lib/utils/format'
@@ -77,12 +78,12 @@ export default function HeroCarousel() {
           overflow: 'hidden',
         }}>
           {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={imageUrl}
               alt={listing.title}
-              loading="lazy"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              fill
+              sizes="420px"
+              style={{ objectFit: 'cover' }}
             />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>

@@ -1,9 +1,17 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { ArrowRight, TrendingUp, Clock, Shield } from 'lucide-react'
 import { useEffect, useRef } from 'react'
-import HeroCarousel from './HeroCarousel'
+
+// Lazy-load: HeroCarousel fetches data client-side. Splitting it keeps the
+// hero text + LCP image in the main bundle, carousel code in a separate chunk.
+const HeroCarousel = dynamic(() => import('./HeroCarousel'), {
+  ssr: false,
+  loading: () => <div className="card shimmer" style={{ borderRadius: 4, height: 340 }} />,
+})
 
 export default function Hero() {
   const bgRef = useRef<HTMLDivElement>(null)
@@ -26,17 +34,20 @@ export default function Hero() {
       alignItems: 'center',
       overflow: 'hidden',
     }}>
-      {/* Background photo — parallax */}
+      {/* Background photo — Next.js Image for WebP + preload (LCP candidate) */}
       <div ref={bgRef} style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 0,
-        backgroundImage: 'url("/url.jpg")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        opacity: 0.28,
-        willChange: 'transform',
-      }} />
+        position: 'absolute', inset: 0, zIndex: 0,
+        opacity: 0.28, willChange: 'transform',
+      }}>
+        <Image
+          src="/url.jpg"
+          alt=""
+          fill
+          priority
+          quality={85}
+          style={{ objectFit: 'cover' }}
+        />
+      </div>
 
       {/* Gradient overlay for readability */}
       <div style={{

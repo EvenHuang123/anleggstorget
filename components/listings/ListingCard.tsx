@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
+import { useState } from 'react'
 import { Heart, MapPin, Clock, Calendar, ArrowRight, Shield } from 'lucide-react'
 import { formatPrice, formatNumber, formatRelativeDate, getListingImageUrl, getListingFallbackImage, CATEGORIES } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
@@ -12,29 +14,24 @@ interface Props {
 }
 
 export default function ListingCard({ listing, onToggleFavorite, isFavorite }: Props) {
-  const imageUrl = listing.images?.[0]
-    ? getListingImageUrl(listing.images[0])
-    : getListingFallbackImage(listing.category)
+  const fallback = getListingFallbackImage(listing.category)
+  const [imgSrc, setImgSrc] = useState(
+    listing.images?.[0] ? getListingImageUrl(listing.images[0]) : fallback
+  )
 
   return (
     <Link href={`/annonse/${listing.slug || listing.id}`} style={{ textDecoration: 'none', display: 'block' }}>
       <article className="card card-gold" style={{ overflow: 'hidden', cursor: 'pointer' }}>
         {/* Image */}
         <div className="listing-img-wrap">
-          <img
-            src={imageUrl}
+          <Image
+            src={imgSrc}
             alt={`${listing.title}${listing.location ? ` – ${listing.location}` : ''} – ${CATEGORIES[listing.category]?.label || listing.category} til salgs`}
-            loading="lazy"
-            onError={e => {
-              const el = e.currentTarget as HTMLImageElement
-              el.src = getListingFallbackImage(listing.category)
-            }}
-            style={{
-              position: 'absolute', inset: 0, width: '100%', height: '100%',
-              objectFit: 'cover',
-              transition: 'transform 0.3s ease',
-            }}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 360px"
+            onError={() => setImgSrc(fallback)}
             className="listing-img"
+            style={{ objectFit: 'cover', transition: 'transform 0.3s ease' }}
           />
 
           {/* Overlays */}

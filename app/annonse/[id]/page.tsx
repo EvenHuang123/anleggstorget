@@ -4,8 +4,17 @@ import { notFound } from 'next/navigation'
 import Navbar from '@/components/shared/Navbar'
 import Footer from '@/components/shared/Footer'
 import AnnonseContent from './AnnonseContent'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
 import type { Listing } from '@/lib/supabase/types'
+
+// ISR: re-render at most once every 5 minutes. No cookies() call = static-cacheable.
+export const revalidate = 300
+export const dynamicParams = true
+
+export async function generateStaticParams() {
+  // Build-time: generate nothing. Pages are SSR'd on first request, then cached.
+  return []
+}
 
 interface Props {
   params: Promise<{ id: string }>
@@ -13,8 +22,7 @@ interface Props {
 
 async function fetchListing(slugOrId: string) {
   try {
-    const supabase = await createClient()
-    // Try slug first, fall back to ID — never expose draft or sync-removed listings
+    const supabase = createPublicClient()
     for (const field of ['slug', 'id']) {
       const { data } = await (supabase as any)
         .from('listings')
@@ -65,7 +73,7 @@ export default async function AnnonsePage({ params }: Props) {
   // Related listings — same category, exclude current
   let related: Listing[] = []
   try {
-    const supabase = await createClient()
+    const supabase = createPublicClient()
     const { data } = await (supabase as any)
       .from('listings')
       .select('*, profiles(company_name, verified)')

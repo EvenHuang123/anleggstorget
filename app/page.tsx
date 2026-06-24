@@ -1,6 +1,9 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
+
+// Revalidate homepage every 60 s — FeaturedListings uses public client (no cookies = cacheable)
+export const revalidate = 60
 import { CheckCircle2, Shield, Users, MapPin, TrendingUp } from 'lucide-react'
 import Navbar from '@/components/shared/Navbar'
 
@@ -102,8 +105,6 @@ const faqJsonLd = {
 export default function HomePage() {
   return (
     <>
-      {/* Preload hero background — tells browser to fetch before CSS is parsed */}
-      <link rel="preload" as="image" href="/url.jpg" fetchPriority="high" />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <Navbar />
       <main>
