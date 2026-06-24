@@ -128,28 +128,66 @@ function inferWeightClass(kg: number): string {
   return 'Over 40 tonn'
 }
 
-// Title-based fallback: excavator model numbers encode approximate weight
-// (PC85=8.5t, PC210=21t, ZX210=21t, EC250=25t, CAT 323=23t, R920=20t)
+// Title-based fallback — used when seller has not filled in weight on the listing.
+// Hesselberg's Mascus detail pages DO include Totalvekt/Driftvekt when present;
+// this function covers machines where the seller omitted those fields.
 function inferWeightClassFromTitle(title: string): string | null {
   const t = title.toLowerCase()
-  // Komatsu PC / Hitachi ZX / Volvo EC+EW / Hyundai HX / Doosan DX / JCB JS / Kobelco SK / Case CX
+
+  // Excavators whose model number × 100 ≈ operating weight in kg:
+  // Komatsu PC, Hitachi ZX, Volvo EC/EW, Hyundai HX/R, Doosan DX,
+  // JCB JS, Kobelco SK, Case CX/CK, Sumitomo SH
   const excMatch = t.match(/\b(?:pc|zx|ec|ew|hx|dx|js|sk|cx|sh)\s*(\d{2,3})/)
   if (excMatch) {
     const n = parseInt(excMatch[1])
     if (n >= 15 && n <= 500) return inferWeightClass(n * 100)
   }
-  // CAT 3xx: last 2 digits ≈ tonnes (CAT 308=8t, CAT 323=23t, CAT 336=36t)
-  const catMatch = t.match(/\bcat\s*3(\d{2})\b/)
-  if (catMatch) {
-    const tonnes = parseInt(catMatch[1])
+
+  // Cat excavators: Cat 308/315/320/323/330/340/349 — last 2 digits = tonnes
+  // Use (?!\d) instead of \b so "Cat 323D", "Cat 320G" also match
+  const catExcMatch = t.match(/\bcat\s*3(\d{2})(?!\d)/)
+  if (catExcMatch) {
+    const tonnes = parseInt(catExcMatch[1])
     if (tonnes > 0) return inferWeightClass(tonnes * 1000)
   }
-  // Liebherr R9xx: last 2 digits ≈ tonnes (R920=20t, R945=45t)
-  const liebMatch = t.match(/\br9(\d{2})\b/)
+
+  // Cat dozers: D3–D11 (e.g. Cat D6T LGP ≈ 23 000 kg)
+  const CAT_DOZER_KG: Record<number, number> = {
+    3: 8500, 4: 9000, 5: 13000, 6: 22000,
+    7: 27000, 8: 38000, 9: 50000, 10: 70000, 11: 105000,
+  }
+  const catDozerMatch = t.match(/\bcat\s*d(\d{1,2})/)
+  if (catDozerMatch) {
+    const kg = CAT_DOZER_KG[parseInt(catDozerMatch[1])]
+    if (kg) return inferWeightClass(kg)
+  }
+
+  // Liebherr mining excavators: R920, R930, R940 — last 2 digits = tonnes
+  const liebMatch = t.match(/\br9(\d{2})/)
   if (liebMatch) {
     const tonnes = parseInt(liebMatch[1])
     if (tonnes > 0) return inferWeightClass(tonnes * 1000)
   }
+
+  // Volvo wheel loaders: L35=5t, L60=13t, L90=17t, L110=22t, L150=29t, L220=42t
+  const volvoLMatch = t.match(/\bvolvo\s*l(\d+)/)
+  if (volvoLMatch) {
+    const n = parseInt(volvoLMatch[1])
+    if (n < 55)  return '5–10 tonn'
+    if (n < 100) return '10–20 tonn'
+    if (n < 200) return '20–40 tonn'
+    return 'Over 40 tonn'
+  }
+
+  // Komatsu wheel loaders: WA200=15t, WA320=21t, WA400=24t, WA600=41t
+  const waMatch = t.match(/\bwa(\d{2,3})/)
+  if (waMatch) {
+    const n = parseInt(waMatch[1])
+    if (n < 280) return '10–20 tonn'
+    if (n < 580) return '20–40 tonn'
+    return 'Over 40 tonn'
+  }
+
   return null
 }
 
