@@ -38,6 +38,63 @@ export function websiteSchema() {
   }
 }
 
+export function faqSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'Hvordan fungerer Anleggstorget?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Anleggstorget er en B2B-markedsplass kun for verifiserte norske bedrifter. Registrer din bedrift gratis ved å verifisere organisasjonsnummeret mot Brønnøysundregisteret, legg ut annonser for maskiner du vil selge eller leie ut, og kom i direkte kontakt med andre bedrifter. Ingen mellommenn, ingen provisjon.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Er alle bedrifter verifiserte?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Ja, alle bedrifter på Anleggstorget er automatisk verifisert mot Brønnøysundregisteret før de kan legge ut annonser. Vi sjekker organisasjonsnummer og bedriftsnavn i sanntid, noe som sikrer at kun ekte, registrerte norske bedrifter kan handle på plattformen.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Koster det å legge ut annonser?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Nei, det er helt gratis å legge ut annonser på Anleggstorget. Vi tar ingen provisjon på salg, ingen skjulte kostnader, og ingen abonnementsavgift. Plattformen er 100% gratis for alle verifiserte bedrifter.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Hvilke typer maskiner kan jeg kjøpe, selge og leie?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Du kan kjøpe, selge og leie alle typer anleggsmaskiner på Anleggstorget: gravemaskiner, hjullastere, dumpere, traktorer, kraner, kompaktlastere, veivalser og mer. Alt fra små minigravere på 1–2 tonn til store anleggsmaskiner på 40+ tonn.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Hvordan kontakter jeg en selger?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Klikk på "Kontakt selger" på en annonse, fyll ut en kort melding med ditt spørsmål, så får selgeren beskjed på e-post umiddelbart. Du kan også se selgerens bedriftsinformasjon, organisasjonsnummer og kontaktdetaljer direkte på annonsen.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Kan jeg leie ut maskiner på Anleggstorget?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Ja! Anleggstorget støtter både salg og utleie av maskiner. Når du legger ut en annonse kan du spesifisere at maskinen er til leie, og oppgi leiepris per dag, uke eller måned.',
+        },
+      },
+    ],
+  }
+}
+
 export function listingSchema(listing: Listing) {
   const slug = listing.slug || listing.id
   const images = (listing.images ?? []).map(img => getListingImageUrl(img)).filter(Boolean)

@@ -3,7 +3,7 @@ import { createPublicClient } from '@/lib/supabase/public'
 import { articles } from '@/lib/guides/articles'
 
 // Force HTTPS — env var may be http:// on local/staging but sitemap must always be HTTPS in prod
-const rawBase = process.env.NEXT_PUBLIC_SITE_URL || 'https://anleggstorget.no'
+const rawBase = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.anleggstorget.no'
 const BASE = rawBase.includes('localhost') ? rawBase : rawBase.replace(/^http:\/\//, 'https://')
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

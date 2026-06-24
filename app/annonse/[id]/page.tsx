@@ -8,13 +8,13 @@ import { createPublicClient } from '@/lib/supabase/public'
 import type { Listing } from '@/lib/supabase/types'
 import { CATEGORIES, getListingImageUrl } from '@/lib/utils/format'
 import { listingSchema, breadcrumbSchema } from '@/lib/schema'
+import { getListing } from '@/lib/listings'
 
 // ISR: re-render at most once every 5 minutes. No cookies() call = static-cacheable.
 export const revalidate = 300
 export const dynamicParams = true
 
 export async function generateStaticParams() {
-  // Build-time: generate nothing. Pages are SSR'd on first request, then cached.
   return []
 }
 
@@ -22,27 +22,10 @@ interface Props {
   params: Promise<{ id: string }>
 }
 
-async function fetchListing(slugOrId: string) {
-  try {
-    const supabase = createPublicClient()
-    for (const field of ['slug', 'id']) {
-      const { data } = await (supabase as any)
-        .from('listings')
-        .select('*, profiles(*), favorites_count:favorites(count)')
-        .eq(field, slugOrId)
-        .in('status', ['active', 'sold', 'reserved'])
-        .single() as { data: Listing | null }
-      if (data) return data
-    }
-    return null
-  } catch {
-    return null
-  }
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
-  const listing = await fetchListing(id)
+  // getListing is cached via React cache() — no extra Supabase call when page component runs
+  const listing = await getListing(id)
   if (!listing) return { title: 'Annonse ikke funnet' }
 
   const priceStr = listing.price && listing.price > 0
@@ -75,7 +58,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function AnnonsePage({ params }: Props) {
   const { id } = await params
-  const listing = await fetchListing(id)
+  // React cache() deduplicates: this is the same call as generateMetadata — zero extra fetch
+  const listing = await getListing(id)
 
   if (!listing) notFound()
 
@@ -96,11 +80,10 @@ export default async function AnnonsePage({ params }: Props) {
     related = []
   }
 
-
   const slug = listing.slug || id
   const categoryLabel = CATEGORIES[listing.category]?.label || listing.category
   const breadcrumbs = [
-    { name: 'Hjem', url: 'https://anleggstorget.no' },
+    { name: 'Hjem', url: 'https://www.anleggstorget.no' },
     { name: 'Maskiner', url: 'https://www.anleggstorget.no/sok' },
     { name: categoryLabel, url: `https://www.anleggstorget.no/sok?category=${listing.category}` },
     { name: listing.title, url: `https://www.anleggstorget.no/annonse/${slug}` },
