@@ -216,33 +216,31 @@ async function fetchHtml(url: string, retries = 3): Promise<string> {
 
 // ── Detail page images ────────────────────────────────────────────────────────
 
-async function fetchDetailImages(slug: string, fallback: string | null): Promise<string[]> {
+async function fetchDetailImages(slug: string, listFallback: string | null): Promise<string[]> {
   const url = `${BASE_URL}/b/${slug}`
   try {
     const html = await fetchHtml(url)
     const $ = cheerio.load(html)
     const images: string[] = []
 
-    // Prioritise .gallery, then fall back to any product upload image on the page
-    const $gallery = $('.gallery img, .images img, .photo img, .slider img')
-    const $fallback = $('img[src*="/uploads/"]')
+    // img.featuredImg = main product image (#1), always unique per listing
+    const featuredSrc = $('img.featuredImg').attr('src') ?? ''
+    if (featuredSrc) images.push(cleanImageUrl(featuredSrc))
 
-    const $targets = $gallery.length > 0 ? $gallery : $fallback
-
-    $targets.each((_i, el) => {
-      const src = $(el).attr('src') || $(el).attr('data-src') || ''
+    // img[src*="640x640_640x640"] = gallery thumbnails (#2+)
+    // Logo uses 320x0_320x0 and never matches this pattern
+    $('img[src*="640x640_640x640"]').each((_i, el) => {
+      const src = $(el).attr('src') ?? ''
       if (!src) return
       const clean = cleanImageUrl(src)
-      // Only include product upload images; skip logos/icons
-      if (!clean.includes('/uploads/')) return
-      if (images.includes(clean)) return
-      images.push(clean)
+      if (!images.includes(clean)) images.push(clean)
     })
 
-    return images
+    console.log(`[OSLOMASKIN] ${slug}: ${images.length} bilder funnet`)
+    return images.length > 0 ? images : (listFallback ? [listFallback] : [])
   } catch (err) {
     console.warn(`[oslomaskin] Detaljside-fetch feilet for ${slug}:`, err instanceof Error ? err.message : err)
-    return fallback ? [fallback] : []
+    return listFallback ? [listFallback] : []
   }
 }
 
@@ -389,24 +387,26 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
       if (error) result.errors++
       else       result.created++
     } else {
-      const priceChanged = current.price !== item.price
-      const hoursChanged = current.operating_hours !== item.operatingHours
+      const priceChanged  = current.price !== item.price
+      const hoursChanged  = current.operating_hours !== item.operatingHours
+      // Always update images to fix any previously stored incorrect images
+      const imagesChanged = item.images.length > 0
 
-      if (priceChanged || hoursChanged) {
+      if (priceChanged || hoursChanged || imagesChanged) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('listings')
           .update({
-            price:           item.price,
-            price_type:      item.priceType,
+            price:      item.price,
+            price_type: item.priceType,
             // Protect: do not overwrite with null if DB already has a value
             ...(item.operatingHours !== null ? { operating_hours: item.operatingHours } : {}),
             ...(item.weightClass    !== null ? { weight_class:    item.weightClass    } : {}),
-            images:          item.images.length > 0 ? item.images : current.images,
+            images:     item.images.length > 0 ? item.images : current.images,
           })
           .eq('id', current.id)
 
         if (error) result.errors++
-        else       result.updated++
+        else if (priceChanged || hoursChanged) result.updated++
       }
 
       if (current.status === 'removed_by_sync') {
