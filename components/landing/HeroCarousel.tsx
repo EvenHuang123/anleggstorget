@@ -148,37 +148,28 @@ export default function HeroCarousel() {
           )}
         </div>
 
-        {/* Informasjonsboks — 30% av kortets høyde */}
-        <div style={{ padding: '12px 16px 0' }}>
-          <h3 style={{
-            fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 18,
-            color: '#fff', marginBottom: 8, letterSpacing: '0.01em',
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>
-            {listing.title}
-          </h3>
-
-          <div style={{ display: 'flex', gap: 16 }}>
-            {listing.year && (
-              <div>
-                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 1 }}>Årsmodell</p>
-                <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 500 }}>{listing.year}</p>
-              </div>
-            )}
-            {listing.location && (
-              <div style={{ minWidth: 0 }}>
-                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 1 }}>Lokasjon</p>
-                <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {listing.location}
-                </p>
-              </div>
+        {/* Informasjonsboks — tittel + metadata på én rad */}
+        <div style={{ padding: '10px 16px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h3 style={{
+              fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 18,
+              color: '#fff', margin: 0, letterSpacing: '0.01em',
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              flex: 1, marginRight: 16,
+            }}>
+              {listing.title}
+            </h3>
+            {(listing.year || listing.location) && (
+              <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                {[listing.year, listing.location].filter(Boolean).join(' · ')}
+              </span>
             )}
           </div>
         </div>
 
         {/* Footer: pil-knapper + dots til venstre, SE ANNONSE til høyre */}
         <div style={{
-          padding: '10px 16px 14px',
+          padding: '8px 16px 12px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
