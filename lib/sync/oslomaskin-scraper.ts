@@ -459,9 +459,10 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('listings')
           .update({
+            category:   item.category,
+            subcategory: item.subcategory,
             price:      item.price,
             price_type: item.priceType,
-            // Protect: do not overwrite with null if DB already has a value
             ...(item.operatingHours !== null ? { operating_hours: item.operatingHours } : {}),
             ...(item.weightClass    !== null ? { weight_class:    item.weightClass    } : {}),
             images:     item.images.length > 0 ? item.images : current.images,
