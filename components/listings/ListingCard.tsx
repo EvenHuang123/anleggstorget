@@ -156,7 +156,7 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
                 </p>
               )}
               {listing.price_type === 'negotiable' && !listing.price_inc_vat && (
-                <p style={{ fontSize: 11, color: 'var(--t3)' }}>Forhandlingsbar</p>
+                <p aria-hidden="true" style={{ fontSize: 11, color: 'var(--t3)' }}>Forhandlingsbar</p>
               )}
             </div>
             <div style={{

@@ -115,16 +115,16 @@ export default function AnnonseContent({ listing, related }: Props) {
     <>
       <div className="container-main" style={{ padding: '32px 24px 80px' }}>
         {/* Breadcrumbs */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 28, flexWrap: 'wrap' }}>
+        <nav aria-label="Brødsmule-navigering" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 28, flexWrap: 'wrap' }}>
           <Link href="/" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Hjem</Link>
-          <ChevronRight size={12} style={{ color: 'var(--t3)' }} />
+          <ChevronRight size={12} style={{ color: 'var(--t3)' }} aria-hidden="true" />
           <Link href="/sok" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Maskiner</Link>
-          <ChevronRight size={12} style={{ color: 'var(--t3)' }} />
+          <ChevronRight size={12} style={{ color: 'var(--t3)' }} aria-hidden="true" />
           <Link href={`/sok?category=${listing.category}`} style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>
             {CATEGORIES[listing.category]?.label}
           </Link>
-          <ChevronRight size={12} style={{ color: 'var(--t3)' }} />
-          <span style={{ color: 'var(--t2)', fontSize: 12 }}>{listing.title}</span>
+          <ChevronRight size={12} style={{ color: 'var(--t3)' }} aria-hidden="true" />
+          <span aria-current="page" style={{ color: 'var(--t2)', fontSize: 12 }}>{listing.title}</span>
         </nav>
 
         {/* Main grid */}
@@ -238,11 +238,14 @@ export default function AnnonseContent({ listing, related }: Props) {
 
               {/* Thumbnails */}
               {images.length > 1 && (
-                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+                <div role="list" aria-label="Bildeoversikt" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
                   {images.map((img, i) => (
                     <button
                       key={i}
+                      role="listitem"
                       onClick={() => setActiveImg(i)}
+                      aria-label={`${listing.title} – bilde ${i + 1} av ${images.length}`}
+                      aria-current={i === activeImg ? 'true' : undefined}
                       style={{
                         width: 76, height: 54, borderRadius: 3, overflow: 'hidden', flexShrink: 0,
                         border: `2px solid ${i === activeImg ? 'var(--gold)' : 'transparent'}`,
@@ -250,7 +253,7 @@ export default function AnnonseContent({ listing, related }: Props) {
                         transition: 'border-color 0.15s', position: 'relative',
                       }}
                     >
-                      <img src={img} alt={`${listing.title} – bilde ${i + 1}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={img} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </button>
                   ))}
                 </div>
@@ -282,6 +285,8 @@ export default function AnnonseContent({ listing, related }: Props) {
               </div>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                 <button
+                  aria-label={isFav ? 'Fjern fra favoritter' : 'Legg til i favoritter'}
+                  aria-pressed={isFav}
                   onClick={async () => {
                     if (favLoading) return
                     const { data: { session } } = await supabase.auth.getSession()
@@ -311,6 +316,7 @@ export default function AnnonseContent({ listing, related }: Props) {
                   <Heart size={16} fill={isFav ? 'var(--gold)' : 'none'} color={isFav ? 'var(--gold)' : 'var(--t2)'} />
                 </button>
                 <button
+                  aria-label="Del denne annonsen"
                   onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('Lenke kopiert!') }}
                   style={{
                     background: 'var(--bg3)', border: '1px solid var(--border)',
@@ -642,6 +648,7 @@ export default function AnnonseContent({ listing, related }: Props) {
                 </p>
               </div>
               <button
+                aria-label="Lukk forespørselsskjema"
                 onClick={() => setInquiryOpen(false)}
                 style={{
                   background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 3,

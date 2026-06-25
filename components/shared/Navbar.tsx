@@ -105,6 +105,7 @@ export default function Navbar() {
 
   return (
     <nav
+      aria-label="Hovednavigasjon"
       style={{
         position: 'sticky',
         top: 0,

@@ -82,7 +82,7 @@ export default function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema()) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema()) }} />
       <Navbar />
-      <main>
+      <main id="main-content">
         <Hero />
         <section style={{
           background: 'var(--bg2)',

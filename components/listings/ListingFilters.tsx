@@ -52,6 +52,7 @@ function SectionHeader({ label, active, count, open, onToggle }: {
   return (
     <button
       onClick={onToggle}
+      aria-expanded={open}
       style={{
         width: '100%', background: 'none', border: 'none',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',

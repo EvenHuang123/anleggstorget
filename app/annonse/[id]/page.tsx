@@ -94,7 +94,7 @@ export default async function AnnonsePage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(listingSchema(listing)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(breadcrumbs)) }} />
       <Navbar />
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
+      <main id="main-content" style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
         <AnnonseContent listing={listing} related={related} />
       </main>
       <Footer />

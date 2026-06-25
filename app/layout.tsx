@@ -3,6 +3,7 @@ import { Barlow, Barlow_Condensed } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import CookieBanner from '@/components/CookieBanner'
+import { SkipToContent } from '@/components/SkipToContent'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
 
@@ -66,6 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="nb" className={`${barlow.variable} ${barlowCondensed.variable}`}>
       <body>
+        <SkipToContent />
         {children}
         <SpeedInsights />
         <Analytics />
