@@ -7,6 +7,7 @@ import { ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getListingImageUrl } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
+import { CategoryBadge } from '@/components/ui/CategoryBadge'
 
 export default function HeroCarousel() {
   const [listings, setListings] = useState<Listing[]>([])
@@ -130,8 +131,8 @@ export default function HeroCarousel() {
 
           {/* Category badge — skjules for 'Annet' */}
           {listing.category && listing.category !== 'Annet' && (
-            <div className="tag tag-category" style={{ position: 'absolute', top: 14, left: 14 }}>
-              {listing.category}
+            <div style={{ position: 'absolute', top: 14, left: 14 }}>
+              <CategoryBadge label={listing.category} />
             </div>
           )}
 

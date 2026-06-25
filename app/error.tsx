@@ -28,7 +28,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
         ⚠️
       </div>
       <div>
-        <h1 style={{ fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 28, color: 'var(--t1)', textTransform: 'uppercase', marginBottom: 8 }}>
+        <h1 style={{ fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 28, color: 'var(--t1)', marginBottom: 8 }}>
           Noe gikk galt
         </h1>
         <p style={{ color: 'var(--t3)', fontSize: 14 }}>En uventet feil har oppstått. Prøv igjen.</p>

@@ -104,7 +104,6 @@ export default function Hero() {
               fontSize: 'clamp(52px, 7vw, 96px)',
               lineHeight: 0.92,
               letterSpacing: '0.01em',
-              textTransform: 'uppercase',
               color: 'var(--t1)',
               marginBottom: 28,
             }}>

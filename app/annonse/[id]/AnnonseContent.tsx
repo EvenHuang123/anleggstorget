@@ -12,6 +12,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatPrice, formatNumber, formatDate, formatRelativeDate, CATEGORIES, getListingImageUrl } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
 import ListingCard from '@/components/listings/ListingCard'
+import { CategoryBadge } from '@/components/ui/CategoryBadge'
 import toast from 'react-hot-toast'
 
 interface Props {
@@ -264,7 +265,7 @@ export default function AnnonseContent({ listing, related }: Props) {
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 20 }}>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                  <span className="tag tag-category">{CATEGORIES[listing.category]?.label}</span>
+                  <CategoryBadge label={CATEGORIES[listing.category]?.label ?? listing.category} />
                   {listing.featured && (
                     <span style={{
                       background: 'var(--gold)', color: '#0d0c0a',

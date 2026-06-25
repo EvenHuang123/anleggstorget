@@ -280,7 +280,7 @@ export default function SokContent() {
 
       {/* Page header */}
       <div style={{ marginBottom: 16 }}>
-        <h1 style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 26, color: 'var(--t1)', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: 2 }}>
+        <h1 style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 26, color: 'var(--t1)', letterSpacing: '0.02em', marginBottom: 2 }}>
           {headingLabel}
         </h1>
         <p style={{ color: 'var(--t3)', fontSize: 13 }}>

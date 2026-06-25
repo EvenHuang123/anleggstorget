@@ -37,7 +37,7 @@ export default function CtaSection() {
         <h2 style={{
           fontFamily: 'Barlow Condensed', fontWeight: 800,
           fontSize: 'clamp(36px, 5vw, 64px)',
-          textTransform: 'uppercase', letterSpacing: '0.01em',
+          letterSpacing: '0.01em',
           color: 'var(--t1)', marginBottom: 20, lineHeight: 0.95,
         }}>
           Selg din maskin til{' '}

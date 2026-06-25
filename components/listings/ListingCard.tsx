@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { Heart, MapPin, Clock, Calendar, ArrowRight, Shield } from 'lucide-react'
 import { formatPrice, formatNumber, formatRelativeDate, getListingImageUrl, getListingFallbackImage, CATEGORIES } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
+import { CategoryBadge } from '@/components/ui/CategoryBadge'
 
 interface Props {
   listing: Listing
@@ -40,7 +41,7 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
 
           {/* Overlays */}
           <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 2, display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-            <span className="tag tag-category">{CATEGORIES[listing.category]?.label || listing.category}</span>
+            <CategoryBadge label={CATEGORIES[listing.category]?.label || listing.category} />
             {listing.listing_type === 'rent' && (
               <span className="tag" style={{ background: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.25)' }}>Til leie</span>
             )}
@@ -154,9 +155,6 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
                 <p style={{ fontSize: 11, color: 'var(--t3)', marginTop: 1 }}>
                   {formatPrice(listing.price_inc_vat)} inkl. mva
                 </p>
-              )}
-              {listing.price_type === 'negotiable' && !listing.price_inc_vat && (
-                <p aria-hidden="true" style={{ fontSize: 11, color: 'var(--t3)' }}>Forhandlingsbar</p>
               )}
             </div>
             <div style={{

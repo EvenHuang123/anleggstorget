@@ -17,7 +17,7 @@ export default function NotFound() {
         404
       </p>
       <div style={{ marginTop: -40 }}>
-        <h1 style={{ fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 32, color: 'var(--t1)', textTransform: 'uppercase', marginBottom: 10 }}>
+        <h1 style={{ fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 32, color: 'var(--t1)', marginBottom: 10 }}>
           Side ikke funnet
         </h1>
         <p style={{ color: 'var(--t3)', fontSize: 15, marginBottom: 28 }}>
