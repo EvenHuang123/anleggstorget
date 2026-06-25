@@ -437,14 +437,19 @@ export default function AnnonseContent({ listing, related }: Props) {
                 <span style={{ color: 'var(--t3)', fontSize: 13 }}>Dette er din egen annonse</span>
               </div>
             ) : !sent ? (
-              <button
-                onClick={() => setInquiryOpen(true)}
-                className="btn-primary"
-                style={{ width: '100%', justifyContent: 'center', height: 50, fontSize: 14 }}
-              >
-                <MessageSquare size={16} />
-                Send forespørsel til selger
-              </button>
+              <>
+                <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--t3)', marginBottom: 8 }}>
+                  Gratis og uforpliktende — selger svarer vanligvis innen 24 timer
+                </p>
+                <button
+                  onClick={() => setInquiryOpen(true)}
+                  className="btn-primary"
+                  style={{ width: '100%', justifyContent: 'center', height: 50, fontSize: 14 }}
+                >
+                  <MessageSquare size={16} />
+                  Send forespørsel til selger
+                </button>
+              </>
             ) : (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px',

@@ -13,7 +13,12 @@ const HeroCarousel = dynamic(() => import('./HeroCarousel'), {
   loading: () => <div className="card shimmer" style={{ borderRadius: 16, height: 480 }} />,
 })
 
-export default function Hero() {
+interface HeroProps {
+  listingCount?: number
+  sellerCount?: number
+}
+
+export default function Hero({ listingCount = 0, sellerCount = 0 }: HeroProps) {
   const bgRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -129,6 +134,24 @@ export default function Hero() {
                 <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Icon size={14} aria-hidden="true" style={{ color: 'var(--gold)' }} />
                   <span style={{ fontSize: 14, color: 'var(--t1)', fontFamily: 'Barlow', fontWeight: 400 }}>{text}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Live stats */}
+            <div style={{ display: 'flex', gap: 32, marginBottom: 36, flexWrap: 'wrap' }}>
+              {[
+                { value: listingCount > 0 ? `${listingCount}+` : '—', label: 'maskiner tilgjengelig' },
+                { value: sellerCount > 0 ? `${sellerCount}+` : '—', label: 'verifiserte bedrifter' },
+                { value: '100%', label: 'gratis å bruke' },
+              ].map(({ value, label }) => (
+                <div key={label}>
+                  <div style={{
+                    fontFamily: 'Barlow Condensed, sans-serif',
+                    fontWeight: 800, fontSize: 28,
+                    color: 'var(--gold)', lineHeight: 1,
+                  }}>{value}</div>
+                  <div style={{ fontSize: 13, color: 'var(--t2)', marginTop: 4 }}>{label}</div>
                 </div>
               ))}
             </div>

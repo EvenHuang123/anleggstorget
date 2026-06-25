@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { Search, SortDesc, Grid3X3, LayoutList, X, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, SortDesc, Grid3X3, LayoutList, X, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight, Bell } from 'lucide-react'
 import ListingCard from '@/components/listings/ListingCard'
 import ListingFilters from '@/components/listings/ListingFilters'
 import { createClient } from '@/lib/supabase/client'
@@ -83,6 +83,9 @@ export default function SokContent() {
   const [searchInput, setSearchInput]             = useState(searchParams.get('q') || '')
   const [availableBrands,    setAvailableBrands]    = useState<string[]>([])
   const [availableLocations, setAvailableLocations] = useState<string[]>([])
+  const [alertEmail,   setAlertEmail]   = useState('')
+  const [alertSent,    setAlertSent]    = useState(false)
+  const [alertLoading, setAlertLoading] = useState(false)
 
   // Read ALL filter + pagination params from URL
   const q            = searchParams.get('q')             || ''
@@ -142,6 +145,28 @@ export default function SokContent() {
     if (newPage <= 1) p.delete('page'); else p.set('page', String(newPage))
     router.replace(`/sok?${p.toString()}`, { scroll: true })
   }, [router])
+
+  const handleSaveSearch = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!alertEmail || alertLoading) return
+    setAlertLoading(true)
+    try {
+      const res = await fetch('/api/saved-searches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: alertEmail,
+          query: q || null,
+          category: categoryParam || null,
+          brand: brand || null,
+          max_price: maxPrice ? parseInt(maxPrice, 10) : null,
+        }),
+      })
+      if (res.ok) setAlertSent(true)
+    } finally {
+      setAlertLoading(false)
+    }
+  }, [alertEmail, alertLoading, q, categoryParam, brand, maxPrice])
 
   // ── Fetch listings with count ────────────────────────────────────────────
   const fetchListings = useCallback(async () => {
@@ -478,6 +503,58 @@ export default function SokContent() {
               {/* Pagination */}
               <Pagination page={page} total={totalCount} onPage={goToPage} />
             </>
+          )}
+
+          {/* Bli varslet-boks */}
+          {!alertSent ? (
+            <div style={{
+              border: '1px solid var(--border)',
+              borderRadius: 4,
+              padding: '20px 24px',
+              marginTop: 32,
+              background: 'var(--bg2)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+                <Bell size={16} style={{ color: 'var(--gold)', flexShrink: 0, marginTop: 2 }} />
+                <div>
+                  <p style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 15, color: 'var(--t1)', marginBottom: 4 }}>
+                    Finner du ikke det du leter etter?
+                  </p>
+                  <p style={{ fontSize: 13, color: 'var(--t3)', margin: 0 }}>
+                    Legg igjen e-posten din, så varsler vi deg når nye maskiner matcher søket ditt.
+                  </p>
+                </div>
+              </div>
+              <form onSubmit={handleSaveSearch} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <input
+                  type="email"
+                  placeholder="din@epost.no"
+                  required
+                  value={alertEmail}
+                  onChange={e => setAlertEmail(e.target.value)}
+                  className="input-base"
+                  style={{ flex: '1 1 200px', height: 40, minWidth: 0 }}
+                />
+                <button
+                  type="submit"
+                  disabled={alertLoading}
+                  className="btn-secondary"
+                  style={{ height: 40, fontSize: 13, padding: '0 18px', whiteSpace: 'nowrap' }}
+                >
+                  {alertLoading ? 'Lagrer…' : 'Bli varslet'}
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div style={{
+              border: '1px solid rgba(74,222,128,0.25)',
+              borderRadius: 4, padding: '16px 20px', marginTop: 32,
+              background: 'rgba(74,222,128,0.06)',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <Bell size={15} style={{ color: '#4ade80', flexShrink: 0 }} />
+              <span style={{ fontSize: 14, color: '#4ade80' }}>Takk! Vi varsler deg når nye maskiner matcher søket ditt.</span>
+            </div>
           )}
         </div>
       </div>

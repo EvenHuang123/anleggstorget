@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { organizationSchema, websiteSchema, faqSchema } from '@/lib/schema'
+import { createPublicClient } from '@/lib/supabase/public'
 
 // Revalidate homepage every 60 s — FeaturedListings uses public client (no cookies = cacheable)
 export const revalidate = 60
@@ -75,7 +76,13 @@ const FAQ_ITEMS = [
   { q: 'Kan jeg leie ut maskiner på Anleggstorget?', a: 'Ja! Anleggstorget støtter både salg og utleie av maskiner. Når du legger ut en annonse kan du spesifisere at maskinen er til leie, og oppgi leiepris per dag, uke eller måned. Du kan også velge å tilby både salg og leie på samme maskin.' },
 ]
 
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = createPublicClient()
+  const [{ count: listingCount }, { count: sellerCount }] = await Promise.all([
+    supabase.from('listings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+  ])
+
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema()) }} />
@@ -83,7 +90,7 @@ export default function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema()) }} />
       <Navbar />
       <main id="main-content">
-        <Hero />
+        <Hero listingCount={listingCount ?? 0} sellerCount={sellerCount ?? 0} />
         <section style={{
           background: 'var(--bg2)',
           borderTop: '1px solid var(--border)',

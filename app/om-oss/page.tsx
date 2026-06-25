@@ -413,6 +413,37 @@ export default function OmOssPage() {
         </div>
       </section>
 
+      {/* Klar til å komme i gang */}
+      <section style={{
+        padding: '80px 24px',
+        textAlign: 'center',
+        borderTop: '1px solid var(--border)',
+        background: 'linear-gradient(180deg, transparent 0%, rgba(200,149,58,0.04) 100%)',
+      }}>
+        <div style={{ maxWidth: 480, margin: '0 auto' }}>
+          <h2 style={{
+            fontFamily: 'Barlow Condensed, sans-serif',
+            fontWeight: 800, fontSize: 36,
+            letterSpacing: '0.02em', textTransform: 'uppercase',
+            color: 'var(--t1)', marginBottom: 16,
+          }}>
+            Klar til å komme i gang?
+          </h2>
+          <p style={{ color: 'var(--t2)', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
+            Registrer bedriften din gratis og nå verifiserte norske anleggsbedrifter.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/registrer" className="btn-primary" style={{ fontSize: 14, padding: '14px 28px' }}>
+              Registrer gratis
+              <ArrowRight size={16} />
+            </Link>
+            <Link href="/sok" className="btn-secondary" style={{ padding: '14px 28px' }}>
+              Finn maskiner
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <style>{`
         @media (max-width: 640px) {
           .verify-grid { grid-template-columns: 1fr !important; }
