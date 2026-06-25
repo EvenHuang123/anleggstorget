@@ -61,8 +61,8 @@ function SectionHeader({ label, active, count, open, onToggle }: {
     >
       <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{
-          fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 11,
-          letterSpacing: '0.1em', textTransform: 'uppercase',
+          fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 12,
+          letterSpacing: '0.02em',
           color: active ? 'var(--gold)' : 'var(--t2)',
         }}>
           {label}
@@ -227,7 +227,7 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
 
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 13, color: 'var(--t1)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        <span style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 14, color: 'var(--t1)', letterSpacing: '0.02em' }}>
           Filtre
         </span>
         {hasFilters && (

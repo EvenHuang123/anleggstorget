@@ -466,7 +466,9 @@ export default function AnnonseContent({ listing, related }: Props) {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 18, color: 'var(--gold)',
                 }}>
-                  {(listing.profiles?.company_name || 'S')[0]}
+                  {listing.profiles?.company_name
+                    ? listing.profiles.company_name.split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase()
+                    : '?'}
                 </div>
                 <div>
                   <p style={{ fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 15, color: 'var(--t1)' }}>

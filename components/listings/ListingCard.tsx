@@ -150,8 +150,8 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
                   <span style={{ fontFamily: 'Barlow', fontSize: 10, fontWeight: 400, color: 'var(--t3)', marginLeft: 4 }}>eks. mva</span>
                 )}
               </p>
-              {/* Inc-VAT line — only when price_inc_vat is populated */}
-              {listing.price_inc_vat != null && (
+              {/* Inc-VAT line — only when there is an actual price */}
+              {listing.price_inc_vat != null && listing.price_inc_vat > 0 && (
                 <p style={{ fontSize: 11, color: 'var(--t3)', marginTop: 1 }}>
                   {formatPrice(listing.price_inc_vat)} inkl. mva
                 </p>
