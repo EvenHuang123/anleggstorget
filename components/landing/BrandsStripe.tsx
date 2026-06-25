@@ -19,7 +19,7 @@ export default function BrandsStripe() {
       background: 'var(--bg2)',
       borderTop: '1px solid var(--border)',
       borderBottom: '1px solid var(--border)',
-      padding: '40px 0',
+      padding: '80px 0',
       overflow: 'hidden',
     }}>
       <div style={{ textAlign: 'center', marginBottom: 28 }}>

@@ -146,7 +146,7 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
               {/* Primary price — ex VAT if available, else legacy price */}
               <p className="price-display" style={{ fontSize: 17 }}>
                 {formatPrice(listing.price_ex_vat ?? listing.price, listing.price_type)}
-                {listing.price_ex_vat != null && (
+                {listing.price_ex_vat != null && listing.price_ex_vat > 0 && (
                   <span style={{ fontFamily: 'Barlow', fontSize: 10, fontWeight: 400, color: 'var(--t3)', marginLeft: 4 }}>eks. mva</span>
                 )}
               </p>
