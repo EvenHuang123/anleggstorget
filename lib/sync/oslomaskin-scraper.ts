@@ -183,10 +183,8 @@ function slugify(str: string): string {
     .replace(/^-|-$/g, '')
 }
 
-function cleanImageUrl(src: string): string {
-  const abs = src.startsWith('http') ? src : `${BASE_URL}${src}`
-  // Remove dimension transforms like /719x0_744x0/ or /123x456_789x0/
-  return abs.replace(/\/\d+x\d+_\d+x\d+\//g, '/')
+function toAbsoluteUrl(src: string): string {
+  return src.startsWith('http') ? src : `${BASE_URL}${src}`
 }
 
 // ── Network ───────────────────────────────────────────────────────────────────
@@ -225,14 +223,14 @@ async function fetchDetailImages(slug: string, listFallback: string | null): Pro
 
     // img.featuredImg = main product image (#1), always unique per listing
     const featuredSrc = $('img.featuredImg').attr('src') ?? ''
-    if (featuredSrc) images.push(cleanImageUrl(featuredSrc))
+    if (featuredSrc) images.push(toAbsoluteUrl(featuredSrc))
 
     // img[src*="640x640_640x640"] = gallery thumbnails (#2+)
     // Logo uses 320x0_320x0 and never matches this pattern
     $('img[src*="640x640_640x640"]').each((_i, el) => {
       const src = $(el).attr('src') ?? ''
       if (!src) return
-      const clean = cleanImageUrl(src)
+      const clean = toAbsoluteUrl(src)
       if (!images.includes(clean)) images.push(clean)
     })
 
@@ -270,7 +268,7 @@ async function scrapeListPage(): Promise<ScrapedListing[]> {
     if (!title) return
 
     const imgSrc = $el.find('img.postImg').attr('src') ?? null
-    const listImage = imgSrc ? cleanImageUrl(imgSrc) : null
+    const listImage = imgSrc ? toAbsoluteUrl(imgSrc) : null
 
     const descText = $el.find('div.bodytext.shortDescription').text().trim()
 

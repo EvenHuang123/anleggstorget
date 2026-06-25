@@ -36,6 +36,15 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '*.finncdn.no',
       },
+      {
+        protocol: 'https',
+        hostname: 'www.oslomaskin.com',
+      },
+      {
+        // Oslo Maskin image CDN (redirect target from oslomaskin.com/uploads/*)
+        protocol: 'https',
+        hostname: 'images.publisher.extra-cdn.com',
+      },
     ],
   },
 };
