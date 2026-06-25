@@ -73,6 +73,12 @@ export default function AnnonseContent({ listing, related }: Props) {
     return () => document.removeEventListener('keydown', handleKey)
   }, [handleKey])
 
+  // Increment view counter on mount (fire-and-forget)
+  useEffect(() => {
+    fetch(`/api/listings/${listing.id}/view`, { method: 'POST' }).catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listing.id])
+
   const sendInquiry = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!inquiry.message.trim()) return
@@ -425,6 +431,11 @@ export default function AnnonseContent({ listing, related }: Props) {
                 <Clock size={12} style={{ color: 'var(--t3)' }} />
                 <span style={{ color: 'var(--t3)', fontSize: 13 }}>Lagt ut {formatRelativeDate(listing.created_at)}</span>
               </div>
+              {(listing.views ?? 0) > 5 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: 12, color: 'var(--t3)' }}>👁 {listing.views} har sett denne annonsen</span>
+                </div>
+              )}
             </div>
 
             {/* Inquiry CTA */}
@@ -679,36 +690,23 @@ export default function AnnonseContent({ listing, related }: Props) {
             </div>
 
             <form onSubmit={sendInquiry} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label className="label-sm" style={{ display: 'block', marginBottom: 5 }}>E-post</label>
-                  <input
-                    type="email"
-                    value={inquiry.email}
-                    onChange={e => setInquiry(p => ({ ...p, email: e.target.value }))}
-                    placeholder="din@bedrift.no"
-                    className="input-base"
-                    style={{ fontSize: 13 }}
-                  />
-                </div>
-                <div>
-                  <label className="label-sm" style={{ display: 'block', marginBottom: 5 }}>Telefon</label>
-                  <input
-                    type="tel"
-                    value={inquiry.phone}
-                    onChange={e => setInquiry(p => ({ ...p, phone: e.target.value }))}
-                    placeholder="+47 000 00 000"
-                    className="input-base"
-                    style={{ fontSize: 13 }}
-                  />
-                </div>
+              <div>
+                <label className="label-sm" style={{ display: 'block', marginBottom: 5 }}>E-post</label>
+                <input
+                  type="email"
+                  value={inquiry.email}
+                  onChange={e => setInquiry(p => ({ ...p, email: e.target.value }))}
+                  placeholder="din@bedrift.no"
+                  className="input-base"
+                  style={{ fontSize: 13 }}
+                />
               </div>
               <div>
                 <label className="label-sm" style={{ display: 'block', marginBottom: 5 }}>Melding *</label>
                 <textarea
                   value={inquiry.message}
                   onChange={e => setInquiry(p => ({ ...p, message: e.target.value }))}
-                  placeholder={`Hei, jeg er interessert i ${listing.title}. Er maskinen fortsatt tilgjengelig?`}
+                  placeholder="Hei, jeg er interessert i denne maskinen. Kan du gi meg mer informasjon om tilstand og pris?"
                   className="input-base"
                   rows={4}
                   style={{ resize: 'vertical', minHeight: 100, fontSize: 13 }}

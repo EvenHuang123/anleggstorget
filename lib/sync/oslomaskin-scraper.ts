@@ -37,6 +37,8 @@ interface ScrapedListing {
   weightClass:    string | null
   images:         string[]
   dbSlug:         string
+  description:    string | null
+  condition:      string
 }
 
 interface DbListing {
@@ -285,7 +287,7 @@ async function fetchHtml(url: string, retries = 3): Promise<string> {
 
 const EXCLUDED_IMG_PATTERNS = ['location', 'clock', 'WhatsApp', 'Logo', 'favicon']
 
-async function fetchDetailImages(slug: string, listFallback: string | null): Promise<string[]> {
+async function fetchDetailData(slug: string, listFallback: string | null): Promise<{ images: string[], description: string | null }> {
   const url = `${BASE_URL}/b/${slug}`
   try {
     const html = await fetchHtml(url)
@@ -302,11 +304,19 @@ async function fetchDetailImages(slug: string, listFallback: string | null): Pro
       if (!images.includes(abs)) images.push(abs)
     })
 
+    // Description: full bodytext from detail page (longer than list shortDescription)
+    const description = $('div.bodytext').not('.shortDescription').first().text().trim() ||
+      $('div.bodytext').first().text().trim() ||
+      null
+
     console.log(`[OSLOMASKIN] ${slug}: ${images.length} bilder funnet`)
-    return images.length > 0 ? images : (listFallback ? [listFallback] : [])
+    return {
+      images: images.length > 0 ? images : (listFallback ? [listFallback] : []),
+      description: description || null,
+    }
   } catch (err) {
     console.warn(`[oslomaskin] Detaljside-fetch feilet for ${slug}:`, err instanceof Error ? err.message : err)
-    return listFallback ? [listFallback] : []
+    return { images: listFallback ? [listFallback] : [], description: null }
   }
 }
 
@@ -364,6 +374,8 @@ async function scrapeListPage(): Promise<ScrapedListing[]> {
       category, subcategory, weightClass,
       images: listImage ? [listImage] : [],
       dbSlug,
+      description: null,
+      condition: 'Brukt',
     })
   })
 
@@ -427,10 +439,11 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
 
   result.totalScraped = listings.length
 
-  // 3. Fetch detail-page images for each listing
+  // 3. Fetch detail-page data (images + description) for each listing
   for (const item of listings) {
-    const detailImages = await fetchDetailImages(item.externalId, item.listImage)
-    if (detailImages.length > 0) item.images = detailImages
+    const detail = await fetchDetailData(item.externalId, item.listImage)
+    if (detail.images.length > 0) item.images = detail.images
+    if (detail.description) item.description = detail.description
     await sleep(300)
   }
 
@@ -470,6 +483,8 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
         price_type:         item.priceType,
         location:           DEFAULT_LOCATION,
         images:             item.images,
+        description:        item.description,
+        condition:          item.condition,
         status:             'active',
         views:              0,
         slug:               item.dbSlug,
@@ -494,6 +509,8 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
             price_type:  item.priceType,
             ...(item.operatingHours !== null ? { operating_hours: item.operatingHours } : {}),
             ...(item.weightClass    !== null ? { weight_class:    item.weightClass    } : {}),
+            ...(item.description    !== null ? { description:     item.description    } : {}),
+            condition:  item.condition,
             images:     item.images.length > 0 ? item.images : current.images,
           })
           .eq('id', current.id)

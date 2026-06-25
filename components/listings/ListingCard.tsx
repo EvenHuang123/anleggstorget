@@ -48,6 +48,14 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
             {listing.listing_type === 'both' && (
               <span className="tag" style={{ background: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.25)' }}>Salg & leie</span>
             )}
+            {listing.created_at && Date.now() - new Date(listing.created_at).getTime() < 48 * 60 * 60 * 1000 && (
+              <span style={{
+                background: '#16a34a', color: '#fff',
+                fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 10,
+                letterSpacing: '0.08em', textTransform: 'uppercase' as const,
+                padding: '3px 7px', borderRadius: 2,
+              }}>Ny</span>
+            )}
           </div>
 
           {listing.featured && (

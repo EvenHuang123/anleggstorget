@@ -82,6 +82,8 @@ export interface Listing {
   images: string[]
   featured: boolean
   views: number
+  view_count?: number | null
+  condition?: string | null
   slug?: string | null
   favorites_count?: { count: number }[]
   sold_at?: string | null
