@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { usePlausible } from 'next-plausible'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -32,6 +33,8 @@ export default function AnnonseContent({ listing, related }: Props) {
   const images = listing.images?.length
     ? listing.images.map(getListingImageUrl)
     : []
+
+  const plausible = usePlausible()
 
   const [activeImg, setActiveImg] = useState(0)
   const [lightbox, setLightbox] = useState(false)
@@ -105,6 +108,7 @@ export default function AnnonseContent({ listing, related }: Props) {
       setSent(true)
       setInquiryOpen(false)
       toast.success('Forespørsel sendt! Selger vil kontakte deg.')
+      plausible('Forespørsel sendt', { props: { category: listing.category } })
       // Fire-and-forget email to seller
       fetch('/api/send-inquiry-email', {
         method: 'POST',

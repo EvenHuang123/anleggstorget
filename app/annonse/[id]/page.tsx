@@ -51,6 +51,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: listing.title,
       description: desc,
       url: `https://www.anleggstorget.no/annonse/${slug}`,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: listing.title }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: listing.title,
+      description: desc,
       images: [ogImage],
     },
   }

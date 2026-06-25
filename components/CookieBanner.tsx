@@ -77,12 +77,13 @@ export default function CookieBanner() {
         </div>
 
         <div style={{ display: 'flex', gap: 10, flexShrink: 0, flexWrap: 'wrap' }}>
+          {/* GDPR: likeverdig synlighet på begge valg */}
           <button
             onClick={() => decide(false)}
             style={{
               background: 'transparent',
-              border: '1px solid var(--border2)',
-              color: 'var(--t2)',
+              border: '1px solid var(--gold)',
+              color: 'var(--gold)',
               borderRadius: 3,
               padding: '10px 20px',
               fontFamily: 'Barlow Condensed, sans-serif',
