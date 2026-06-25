@@ -10,7 +10,7 @@ import { useEffect, useRef } from 'react'
 // hero text + LCP image in the main bundle, carousel code in a separate chunk.
 const HeroCarousel = dynamic(() => import('./HeroCarousel'), {
   ssr: false,
-  loading: () => <div className="card shimmer" style={{ borderRadius: 4, height: 340 }} />,
+  loading: () => <div className="card shimmer" style={{ borderRadius: 16, height: 480 }} />,
 })
 
 export default function Hero() {
@@ -78,7 +78,7 @@ export default function Hero() {
       }} />
 
       <div className="container-main" style={{ position: 'relative', zIndex: 1, padding: '80px 0 100px', width: '100%' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: 64, alignItems: 'center' }} className="hero-grid">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 480px', gap: 64, alignItems: 'center' }} className="hero-grid">
 
           {/* Left: Text content */}
           <div>
@@ -193,9 +193,12 @@ export default function Hero() {
       </div>
 
       <style>{`
-        .hero-grid { grid-template-columns: 1fr 420px !important; }
+        .hero-grid { grid-template-columns: 1fr 480px !important; }
         @media (max-width: 900px) {
           .hero-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+          .hero-carousel-col { display: none !important; }
+        }
+        @media (max-width: 768px) {
           .hero-carousel-col { display: none !important; }
         }
       `}</style>
