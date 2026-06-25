@@ -380,7 +380,6 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
         price:              item.price,
         price_type:         item.priceType,
         location:           DEFAULT_LOCATION,
-        url:                item.detailUrl,
         images:             item.images,
         status:             'active',
         views:              0,
