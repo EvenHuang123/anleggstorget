@@ -19,7 +19,7 @@ export default function HeroCarousel() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(supabase as any)
       .from('listings')
-      .select('id, title, category, price, price_type, images, year, operating_hours, location, slug')
+      .select('id, title, category, price, price_type, images, year, location, slug')
       .eq('status', 'active')
       .neq('category', 'Annet')
       .not('images', 'eq', '{}')
@@ -44,7 +44,7 @@ export default function HeroCarousel() {
   }, [isPaused, goNext, listings.length])
 
   if (!loaded) {
-    return <div className="card shimmer" style={{ borderRadius: 16, height: 480 }} />
+    return <div className="card shimmer" style={{ borderRadius: 16, height: 400 }} />
   }
   if (listings.length === 0) return null
 
@@ -52,17 +52,31 @@ export default function HeroCarousel() {
   const imageUrl = listing.images?.[0] ? getListingImageUrl(listing.images[0]) : null
   const href = `/annonse/${listing.slug ?? listing.id}`
 
+  // Adjacent listing images for preloading
+  const prevUrl = listings.length > 1
+    ? getListingImageUrl(listings[(current - 1 + listings.length) % listings.length].images?.[0] ?? '')
+    : null
+  const nextUrl = listings.length > 1
+    ? getListingImageUrl(listings[(current + 1) % listings.length].images?.[0] ?? '')
+    : null
+
   return (
     <div
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       style={{ position: 'relative' }}
     >
+      {/* Preload adjacent images so karusellbytte ikke gir grå flash */}
+      <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 1, height: 1, overflow: 'hidden' }} aria-hidden>
+        {prevUrl && <img src={prevUrl} alt="" style={{ width: 1, height: 1 }} />}
+        {nextUrl && <img src={nextUrl} alt="" style={{ width: 1, height: 1 }} />}
+      </div>
+
       {/* Card */}
       <div
         key={listing.id}
         style={{
-          background: 'rgba(13, 12, 10, 0.78)',
+          background: 'rgba(13, 12, 10, 0.82)',
           backdropFilter: 'blur(18px)',
           WebkitBackdropFilter: 'blur(18px)',
           border: '1px solid var(--border2)',
@@ -72,12 +86,12 @@ export default function HeroCarousel() {
           animation: 'heroCardIn 0.32s ease',
         }}
       >
-        {/* Image — 280px, edge-to-edge, no padding */}
+        {/* Image — 70% av kortets høyde, edge-to-edge */}
         <div style={{
-          height: 280,
+          height: 300,
           position: 'relative',
           overflow: 'hidden',
-          background: 'linear-gradient(135deg, var(--bg3) 0%, var(--bg4) 100%)',
+          background: '#0d0c0a',
         }}>
           {imageUrl ? (
             <Image
@@ -85,7 +99,12 @@ export default function HeroCarousel() {
               alt={listing.title}
               fill
               sizes="480px"
-              style={{ objectFit: 'cover', objectPosition: 'center' }}
+              priority={current === 0}
+              style={{
+                objectFit: 'cover',
+                objectPosition: 'center',
+                transition: 'opacity 0.2s ease-in-out',
+              }}
             />
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
@@ -129,40 +148,27 @@ export default function HeroCarousel() {
           )}
         </div>
 
-        {/* Card content */}
-        <div style={{ padding: '18px 22px 14px' }}>
+        {/* Informasjonsboks — 30% av kortets høyde */}
+        <div style={{ padding: '12px 16px 0' }}>
           <h3 style={{
-            fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 19,
-            color: 'var(--t1)', marginBottom: 14, letterSpacing: '0.01em',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            lineHeight: 1.25,
-            minHeight: '2.5em',
+            fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 18,
+            color: '#fff', marginBottom: 8, letterSpacing: '0.01em',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {listing.title}
           </h3>
 
-          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 16 }}>
             {listing.year && (
               <div>
-                <p className="label-sm" style={{ marginBottom: 2 }}>Årsmodell</p>
-                <p style={{ color: 'var(--t1)', fontSize: 13, fontWeight: 500 }}>{listing.year}</p>
-              </div>
-            )}
-            {listing.operating_hours != null && (
-              <div>
-                <p className="label-sm" style={{ marginBottom: 2 }}>Timer</p>
-                <p style={{ color: 'var(--t1)', fontSize: 13, fontWeight: 500 }}>
-                  {listing.operating_hours.toLocaleString('nb-NO')} t
-                </p>
+                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 1 }}>Årsmodell</p>
+                <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 500 }}>{listing.year}</p>
               </div>
             )}
             {listing.location && (
               <div style={{ minWidth: 0 }}>
-                <p className="label-sm" style={{ marginBottom: 2 }}>Lokasjon</p>
-                <p style={{ color: 'var(--t1)', fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 1 }}>Lokasjon</p>
+                <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {listing.location}
                 </p>
               </div>
@@ -170,18 +176,17 @@ export default function HeroCarousel() {
           </div>
         </div>
 
-        {/* Footer: selger-badge + dot-indikatorer + Se annonse-knapp */}
+        {/* Footer: selger-badge + dots + Se annonse-knapp */}
         <div style={{
-          padding: '12px 22px 16px',
-          borderTop: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          padding: '10px 16px 14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-            <Shield size={12} style={{ color: 'var(--gold)' }} />
-            <span style={{ fontSize: 11, color: 'var(--t3)' }}>Verifisert norsk bedrift</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+            <Shield size={11} style={{ color: 'var(--gold)' }} />
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>Verifisert norsk bedrift</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {listings.length > 1 && (
               <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                 {listings.map((_, i) => (
@@ -190,9 +195,9 @@ export default function HeroCarousel() {
                     onClick={() => setCurrent(i)}
                     aria-label={`Gå til annonse ${i + 1}`}
                     style={{
-                      width: i === current ? 18 : 6,
-                      height: 6, borderRadius: 3,
-                      background: i === current ? 'var(--gold)' : 'var(--border2)',
+                      width: i === current ? 16 : 5,
+                      height: 5, borderRadius: 3,
+                      background: i === current ? 'var(--gold)' : 'rgba(255,255,255,0.2)',
                       border: 'none', cursor: 'pointer', padding: 0,
                       transition: 'all 0.25s ease',
                     }}
@@ -208,7 +213,7 @@ export default function HeroCarousel() {
                 color: 'var(--gold)', borderRadius: 6,
                 fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 12,
                 letterSpacing: '0.08em', textTransform: 'uppercase',
-                padding: '8px 16px', textDecoration: 'none',
+                padding: '7px 14px', textDecoration: 'none',
                 display: 'inline-flex', alignItems: 'center', gap: 5,
                 whiteSpace: 'nowrap',
               }}
@@ -226,7 +231,7 @@ export default function HeroCarousel() {
             onClick={goPrev}
             aria-label="Forrige annonse"
             style={{
-              position: 'absolute', left: -14, top: '45%', transform: 'translateY(-50%)',
+              position: 'absolute', left: -14, top: '40%', transform: 'translateY(-50%)',
               background: 'var(--bg2)', border: '1px solid var(--border)',
               borderRadius: '50%', width: 30, height: 30,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -240,7 +245,7 @@ export default function HeroCarousel() {
             onClick={goNext}
             aria-label="Neste annonse"
             style={{
-              position: 'absolute', right: -14, top: '45%', transform: 'translateY(-50%)',
+              position: 'absolute', right: -14, top: '40%', transform: 'translateY(-50%)',
               background: 'var(--bg2)', border: '1px solid var(--border)',
               borderRadius: '50%', width: 30, height: 30,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
