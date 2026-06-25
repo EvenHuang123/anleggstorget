@@ -80,13 +80,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             gtag('config', 'G-DYN1RCTLN5');
           `}
         </Script>
-        {/* Plausible — GDPR-vennlig analytics, ingen cookies */}
-        <Script
-          defer
-          data-domain="anleggstorget.no"
-          src="https://plausible.io/js/script.js"
-          strategy="afterInteractive"
-        />
         <SkipToContent />
         {children}
         <SpeedInsights />
