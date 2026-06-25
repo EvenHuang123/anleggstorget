@@ -162,7 +162,15 @@ export default function Hero({ listingCount = 0, sellerCount = 0 }: HeroProps) {
                 Finn maskiner
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
-              <Link href="/ny-annonse" className="btn-secondary" style={{ padding: '14px 28px' }}>
+              <Link
+                href="/ny-annonse"
+                className="btn-secondary"
+                style={{
+                  padding: '14px 28px',
+                  color: 'var(--gold)',
+                  borderColor: 'var(--gold)',
+                }}
+              >
                 Legg ut gratis
               </Link>
             </div>
