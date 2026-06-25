@@ -110,39 +110,105 @@ function inferWeightClassFromTitle(title: string): string | null {
 
 interface CategoryInfo { category: string; subcategory: string }
 
+// Returns subcategory for confirmed excavators based on type and size.
+function excavatorSubcategory(t: string): string {
+  // Wheel excavators — check before size
+  // Use (?!\d) instead of \b after digits: model suffixes like "LC", "MR", "F" follow
+  if (
+    t.includes('hjulgraver') || t.includes('wheel excavator') ||
+    /\bm3[12]\d(?!\d)/.test(t)  ||  // CAT M317, M318, M320
+    /\ba9\d{2}(?!\d)/.test(t)   ||  // Liebherr A924, A926, A930
+    /\bjz\d/.test(t)            ||  // JCB JZ-series (wheeled)
+    /\bew\d/.test(t)            ||  // Volvo EW-series
+    t.includes('liebherr a')
+  ) return 'Hjulgraver'
+
+  // Yanmar VIO and explicit mini keywords
+  if (t.includes('vio') || t.includes('mini') || t.includes('mikro')) {
+    return 'Minigraver (0–6 tonn)'
+  }
+
+  // Generic model-number heuristic: PC58 ≈ 5.8t, ZX130 ≈ 13t, ZX210 ≈ 21t, PC290 ≈ 29t
+  // (?!\d) instead of \b: "PC58MR", "ZX210LC", "EC140BLC" etc. must still match
+  const modelMatch = t.match(/\b(?:pc|zx|ec|cx|sk|dx|js|sh|r)\s*(\d{2,3})(?!\d)/)
+  if (modelMatch) {
+    const n = parseInt(modelMatch[1])
+    if (n <=  80) return 'Minigraver (0–6 tonn)'
+    if (n <= 250) return 'Middelsstor graver (6–20 tonn)'
+    return 'Stor graver (20+ tonn)'
+  }
+
+  // CAT 3xx — last two digits ≈ operating weight in tonnes (316 EL, 330 CL)
+  const catMatch = t.match(/\bcat\s*3(\d{2})(?!\d)/)
+  if (catMatch) {
+    const n = parseInt(catMatch[1])
+    if (n <= 27) return 'Middelsstor graver (6–20 tonn)'
+    return 'Stor graver (20+ tonn)'
+  }
+
+  return 'Beltegraver'
+}
+
 function categorizeFromTitle(title: string): CategoryInfo {
   const t = title.toLowerCase()
 
+  // ── Kompaktmaskiner (must come before hjullastere — "manitou mt" vs "manitou mlt") ──
+  if (
+    /\bmanitou\s+mt\b/.test(t) ||
+    t.includes('teleskop') || t.includes('telehandler') ||
+    t.includes('bobcat') || t.includes('skidsteer') ||
+    t.includes('kompaktlaster') ||
+    t.includes('jcb loadall')
+  ) {
+    return { category: 'Kompaktmaskiner', subcategory: 'Teleskoptrucker' }
+  }
+
+  // ── Hjullastere ────────────────────────────────────────────────────────────
   if (
     t.includes('hjullaster') || t.includes('wheel loader') ||
-    /\bl\d{2,3}[a-z]?\b/.test(t) || /\bwa\d{2,3}/.test(t)
+    /\bvolvo\s+l\d/.test(t)  ||   // Volvo L60, L90, L120, L150, L180
+    /\bcat\s+[89]\d{2}\b/.test(t) ||  // CAT 908, 950, 962, 972, 980
+    /\bkomatsu\s+wa\d/.test(t) ||
+    /\bmanitou\s+mlt\b/.test(t)
   ) {
     return { category: 'Hjullastere', subcategory: 'Hjullaster' }
   }
 
+  // ── Dumpers ────────────────────────────────────────────────────────────────
   if (t.includes('dumper')) {
-    const isBelt = t.includes('belted') || t.includes('belte')
-    return { category: 'Dumpers', subcategory: isBelt ? 'Beltedumper' : 'Dumper' }
+    return {
+      category:    'Dumpers',
+      subcategory: t.includes('belte') ? 'Beltedumper' : 'Dumper',
+    }
   }
 
+  // ── Kraner og løft ─────────────────────────────────────────────────────────
   if (
-    t.includes('kran') || t.includes('teleskop') || t.includes('personløfter') ||
-    t.includes('skylife') || t.includes('lift')
+    t.includes('kran') || t.includes('personløfter') ||
+    t.includes('skylift') || t.includes('arbeidslift')
   ) {
     return { category: 'Kraner og løft', subcategory: 'Personløfter (saks/mast)' }
   }
 
+  // ── Gravemaskiner ──────────────────────────────────────────────────────────
   const isExcavator =
-    t.includes('graver') || t.includes('excavator') ||
-    /\b(?:zx|pc|hx|dx|js|sk|cx|sh|r9)\d/.test(t) ||
-    /\bcat\s*3\d{2}/.test(t)
+    t.includes('hitachi')    ||
+    t.includes('graver')     ||
+    t.includes('excavator')  ||
+    /\bvolvo\s+ec\d/.test(t)      ||  // Volvo EC (not EW — caught by wheel check)
+    /\bkomatsu\s+pc\d/.test(t)    ||
+    t.includes('yanmar')          ||
+    /\bjcb\s+j[sz]\d/.test(t)     ||  // JCB JS (crawler) and JZ (wheeled)
+    /\bcat\s+m3\d/.test(t)        ||  // CAT M317, M318 (wheel)
+    /\bcat\s+3\d{2}\b/.test(t)    ||  // CAT 316, 320, 323, 325, 330, 336
+    /\bliebherr\s+[ar]\d/.test(t) ||  // Liebherr R (crawler) and A (wheel)
+    /\bkobelco\s+sk\d/.test(t)    ||
+    /\bdoosan\s+dx\d/.test(t)     ||
+    /\bhyundai\s+r\d/.test(t)     ||
+    /\bzx\d/.test(t)              // Hitachi ZX standalone
 
   if (isExcavator) {
-    const isWheel = t.includes('hjul') || /\bew\d/.test(t) || t.includes('wheel')
-    return {
-      category:    'Gravemaskiner',
-      subcategory: isWheel ? 'Hjulgraver' : 'Beltegraver',
-    }
+    return { category: 'Gravemaskiner', subcategory: excavatorSubcategory(t) }
   }
 
   return { category: 'Annet', subcategory: 'Utstyr og tilbehør' }
