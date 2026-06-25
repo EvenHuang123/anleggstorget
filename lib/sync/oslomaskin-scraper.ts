@@ -214,6 +214,8 @@ async function fetchHtml(url: string, retries = 3): Promise<string> {
 
 // ── Detail page images ────────────────────────────────────────────────────────
 
+const EXCLUDED_IMG_PATTERNS = ['location', 'clock', 'WhatsApp', 'Logo', 'favicon']
+
 async function fetchDetailImages(slug: string, listFallback: string | null): Promise<string[]> {
   const url = `${BASE_URL}/b/${slug}`
   try {
@@ -221,17 +223,14 @@ async function fetchDetailImages(slug: string, listFallback: string | null): Pro
     const $ = cheerio.load(html)
     const images: string[] = []
 
-    // img.featuredImg = main product image (#1), always unique per listing
-    const featuredSrc = $('img.featuredImg').attr('src') ?? ''
-    if (featuredSrc) images.push(toAbsoluteUrl(featuredSrc))
-
-    // img[src*="640x640_640x640"] = gallery thumbnails (#2+)
-    // Logo uses 320x0_320x0 and never matches this pattern
-    $('img[src*="640x640_640x640"]').each((_i, el) => {
-      const src = $(el).attr('src') ?? ''
-      if (!src) return
-      const clean = toAbsoluteUrl(src)
-      if (!images.includes(clean)) images.push(clean)
+    // href on gallery <a> tags contains the full-resolution image path
+    // (img src inside is only a 640x640 thumbnail)
+    $('div.module.gallery li a[href*="/uploads/"]').each((_i, el) => {
+      const href = $(el).attr('href') ?? ''
+      if (!href) return
+      if (EXCLUDED_IMG_PATTERNS.some(p => href.includes(p))) return
+      const abs = toAbsoluteUrl(href)
+      if (!images.includes(abs)) images.push(abs)
     })
 
     console.log(`[OSLOMASKIN] ${slug}: ${images.length} bilder funnet`)
