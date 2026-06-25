@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, Shield, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { getListingImageUrl } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
@@ -176,93 +176,101 @@ export default function HeroCarousel() {
           </div>
         </div>
 
-        {/* Footer: selger-badge + dots + Se annonse-knapp */}
+        {/* Footer: pil-knapper + dots til venstre, SE ANNONSE til høyre */}
         <div style={{
           padding: '10px 16px 14px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-            <Shield size={11} style={{ color: 'var(--gold)' }} />
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)' }}>Verifisert norsk bedrift</span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {listings.length > 1 && (
-              <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                {listings.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrent(i)}
-                    aria-label={`Gå til annonse ${i + 1}`}
-                    style={{
-                      width: i === current ? 16 : 5,
-                      height: 5, borderRadius: 3,
-                      background: i === current ? 'var(--gold)' : 'rgba(255,255,255,0.2)',
-                      border: 'none', cursor: 'pointer', padding: 0,
-                      transition: 'all 0.25s ease',
-                    }}
-                  />
-                ))}
-              </div>
-            )}
+              <>
+                <button
+                  onClick={goPrev}
+                  aria-label="Forrige annonse"
+                  className="hero-nav-btn"
+                  style={{
+                    width: 32, height: 32,
+                    background: 'rgba(255,255,255,0.12)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: 8,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'rgba(255,255,255,0.8)',
+                    cursor: current === 0 ? 'default' : 'pointer',
+                    opacity: current === 0 ? 0.3 : 1,
+                    pointerEvents: current === 0 ? 'none' : 'auto',
+                    padding: 0, flexShrink: 0,
+                  }}
+                >
+                  <svg viewBox="0 0 16 16" width={16} height={16} fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M10 12L6 8l4-4"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={goNext}
+                  aria-label="Neste annonse"
+                  className="hero-nav-btn"
+                  style={{
+                    width: 32, height: 32,
+                    background: 'rgba(255,255,255,0.12)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: 8,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'rgba(255,255,255,0.8)',
+                    cursor: current === listings.length - 1 ? 'default' : 'pointer',
+                    opacity: current === listings.length - 1 ? 0.3 : 1,
+                    pointerEvents: current === listings.length - 1 ? 'none' : 'auto',
+                    padding: 0, flexShrink: 0,
+                  }}
+                >
+                  <svg viewBox="0 0 16 16" width={16} height={16} fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M6 4l4 4-4 4"/>
+                  </svg>
+                </button>
 
-            <Link
-              href={href}
-              style={{
-                background: 'var(--gold3)', border: '1px solid rgba(200,149,58,0.25)',
-                color: 'var(--gold)', borderRadius: 6,
-                fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 12,
-                letterSpacing: '0.08em', textTransform: 'uppercase',
-                padding: '7px 14px', textDecoration: 'none',
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Se annonse <ArrowRight size={12} />
-            </Link>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                  {listings.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrent(i)}
+                      aria-label={`Gå til annonse ${i + 1}`}
+                      style={{
+                        width: i === current ? 16 : 5,
+                        height: 5, borderRadius: 3,
+                        background: i === current ? 'var(--gold)' : 'rgba(255,255,255,0.2)',
+                        border: 'none', cursor: 'pointer', padding: 0,
+                        transition: 'all 0.25s ease',
+                      }}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
+
+          <Link
+            href={href}
+            style={{
+              background: 'var(--gold3)', border: '1px solid rgba(200,149,58,0.25)',
+              color: 'var(--gold)', borderRadius: 6,
+              fontFamily: 'Barlow Condensed', fontWeight: 600, fontSize: 12,
+              letterSpacing: '0.08em', textTransform: 'uppercase',
+              padding: '7px 14px', textDecoration: 'none',
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Se annonse <ArrowRight size={12} />
+          </Link>
         </div>
       </div>
-
-      {/* Prev / Next arrows */}
-      {listings.length > 1 && (
-        <>
-          <button
-            onClick={goPrev}
-            aria-label="Forrige annonse"
-            style={{
-              position: 'absolute', left: -14, top: '40%', transform: 'translateY(-50%)',
-              background: 'var(--bg2)', border: '1px solid var(--border)',
-              borderRadius: '50%', width: 30, height: 30,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'var(--t2)', zIndex: 3,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-            }}
-          >
-            <ChevronLeft size={14} />
-          </button>
-          <button
-            onClick={goNext}
-            aria-label="Neste annonse"
-            style={{
-              position: 'absolute', right: -14, top: '40%', transform: 'translateY(-50%)',
-              background: 'var(--bg2)', border: '1px solid var(--border)',
-              borderRadius: '50%', width: 30, height: 30,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', color: 'var(--t2)', zIndex: 3,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
-            }}
-          >
-            <ChevronRight size={14} />
-          </button>
-        </>
-      )}
 
       <style>{`
         @keyframes heroCardIn {
           from { opacity: 0.4; transform: translateY(5px); }
           to   { opacity: 1;   transform: translateY(0);   }
         }
+        .hero-nav-btn { transition: all 0.15s ease; }
+        .hero-nav-btn:hover { background: rgba(255,255,255,0.22) !important; color: white !important; }
       `}</style>
     </div>
   )
