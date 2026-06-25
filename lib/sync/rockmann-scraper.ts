@@ -31,13 +31,15 @@ export interface ListingDetail {
 }
 
 export interface SyncResult {
-  created:      number
-  updated:      number
-  removed:      number
-  totalScraped: number
-  errors:       number
-  durationMs:   number
-  details:      ListingDetail[]
+  created:           number
+  updated:           number
+  removed:           number
+  totalScraped:      number
+  errors:            number
+  durationMs:        number
+  details:           ListingDetail[]
+  duplicatesRemoved?: number
+  categoryBreakdown?: Record<string, number>
 }
 
 interface ScrapedListing {
@@ -450,14 +452,31 @@ export async function syncRockmannListings(): Promise<SyncResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (supabase as any)
     .from('listings')
-    .select('id, source_external_id, status, price, year, operating_hours, weight_class, images')
+    .select('id, source_external_id, status, price, year, operating_hours, weight_class, images, created_at')
     .eq('source', SOURCE) as {
-      data: { id: string; source_external_id: string; status: string; price: number | null; year: number | null; operating_hours: number | null; weight_class: string | null; images: string[] }[] | null
+      data: { id: string; source_external_id: string; status: string; price: number | null; year: number | null; operating_hours: number | null; weight_class: string | null; images: string[]; created_at: string }[] | null
     }
 
-  const dbMap = new Map<string, { id: string; status: string; price: number | null; year: number | null; operating_hours: number | null; weight_class: string | null; images: string[] }>()
+  // Group by source_external_id — detect and soft-delete in-DB duplicates (keep newest)
+  type RockRow = { id: string; status: string; price: number | null; year: number | null; operating_hours: number | null; weight_class: string | null; images: string[]; created_at: string }
+  const rowsByExtId = new Map<string, RockRow[]>()
   for (const row of existing ?? []) {
-    if (row.source_external_id) dbMap.set(row.source_external_id, row)
+    if (!row.source_external_id) continue
+    const arr = rowsByExtId.get(row.source_external_id) ?? []
+    arr.push(row)
+    rowsByExtId.set(row.source_external_id, arr)
+  }
+  let duplicatesRemoved = 0
+  const categoryBreakdown: Record<string, number> = {}
+  const dbMap = new Map<string, RockRow>()
+  for (const [extId, rows] of rowsByExtId.entries()) {
+    rows.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+    dbMap.set(extId, rows[0])
+    for (const dup of rows.slice(1)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('listings').update({ status: 'removed_by_sync' }).eq('id', dup.id)
+      duplicatesRemoved++
+    }
   }
 
   // 3. Insert new / update changed listings
@@ -465,6 +484,7 @@ export async function syncRockmannListings(): Promise<SyncResult> {
   // (WHERE source_external_id IS NOT NULL) and PostgreSQL rejects ON CONFLICT
   // specs that don't include the partial index's WHERE clause.
   for (const item of listings) {
+    categoryBreakdown[item.category] = (categoryBreakdown[item.category] ?? 0) + 1
     const current = dbMap.get(item.externalId)
 
     if (!current) {
@@ -517,6 +537,9 @@ export async function syncRockmannListings(): Promise<SyncResult> {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('listings')
           .update({
+            title:      item.title,
+            category:   item.category,
+            subcategory: item.subcategory,
             price:      item.price,
             price_type: item.priceType,
             year:       item.year,
@@ -557,7 +580,9 @@ export async function syncRockmannListings(): Promise<SyncResult> {
     }
   }
 
-  result.durationMs = Date.now() - start
+  result.durationMs        = Date.now() - start
+  result.duplicatesRemoved = duplicatesRemoved
+  result.categoryBreakdown = categoryBreakdown
   return result
 }
 

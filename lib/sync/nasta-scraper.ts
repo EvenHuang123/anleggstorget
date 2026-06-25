@@ -37,12 +37,14 @@ const SOURCE          = 'nasta_as'
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface SyncResult {
-  created:      number
-  updated:      number
-  removed:      number
-  totalScraped: number
-  errors:       number
-  durationMs:   number
+  created:           number
+  updated:           number
+  removed:           number
+  totalScraped:      number
+  errors:            number
+  durationMs:        number
+  duplicatesRemoved?: number
+  categoryBreakdown?: Record<string, number>
 }
 
 interface ParsedListing {
@@ -69,6 +71,7 @@ interface DbListing {
   operating_hours:    number | null
   description:        string | null
   images:             string[]
+  created_at:         string
 }
 
 // ── Category map ──────────────────────────────────────────────────────────────
@@ -295,17 +298,33 @@ export async function syncNASTAListings(): Promise<SyncResult> {
   )
 
   const result: SyncResult = { created: 0, updated: 0, removed: 0, totalScraped: 0, errors: 0, durationMs: 0 }
+  const categoryBreakdown: Record<string, number> = {}
 
   // 1. Fetch existing NASTA listings from DB
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (supabase as any)
     .from('listings')
-    .select('id, source_external_id, status, price, operating_hours, description, images')
+    .select('id, source_external_id, status, price, operating_hours, description, images, created_at')
     .eq('source', SOURCE) as { data: DbListing[] | null }
 
-  const dbMap = new Map<string, DbListing>()
+  // Group by source_external_id — detect and soft-delete in-DB duplicates (keep newest)
+  const rowsByExtId = new Map<string, DbListing[]>()
   for (const row of existing ?? []) {
-    if (row.source_external_id) dbMap.set(row.source_external_id, row)
+    if (!row.source_external_id) continue
+    const arr = rowsByExtId.get(row.source_external_id) ?? []
+    arr.push(row)
+    rowsByExtId.set(row.source_external_id, arr)
+  }
+  let duplicatesRemoved = 0
+  const dbMap = new Map<string, DbListing>()
+  for (const [extId, rows] of rowsByExtId.entries()) {
+    rows.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+    dbMap.set(extId, rows[0])
+    for (const dup of rows.slice(1)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('listings').update({ status: 'removed_by_sync' }).eq('id', dup.id)
+      duplicatesRemoved++
+    }
   }
 
   // 2. Discover all listing paths on NASTA site
@@ -326,6 +345,7 @@ export async function syncNASTAListings(): Promise<SyncResult> {
 
     const parsed = parseListing(html, listingPath)
     seenExternalIds.add(parsed.externalId)
+    categoryBreakdown[parsed.category] = (categoryBreakdown[parsed.category] ?? 0) + 1
 
     const existing = dbMap.get(parsed.externalId)
 
@@ -371,6 +391,11 @@ export async function syncNASTAListings(): Promise<SyncResult> {
         const { error } = await (supabase as any)
           .from('listings')
           .update({
+            title:           parsed.title,
+            category:        parsed.category,
+            brand:           parsed.brand,
+            model:           parsed.model,
+            year:            parsed.year,
             price:           parsed.price,
             price_type:      parsed.priceType,
             operating_hours: parsed.operatingHours,
@@ -407,7 +432,9 @@ export async function syncNASTAListings(): Promise<SyncResult> {
     }
   }
 
-  result.durationMs = Date.now() - start
+  result.durationMs        = Date.now() - start
+  result.duplicatesRemoved = duplicatesRemoved
+  result.categoryBreakdown = categoryBreakdown
   return result
 }
 

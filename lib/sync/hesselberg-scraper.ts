@@ -58,12 +58,14 @@ const CATEGORIES: CategorySource[] = [
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface SyncResult {
-  created:      number
-  updated:      number
-  removed:      number
-  totalScraped: number
-  errors:       number
-  durationMs:   number
+  created:           number
+  updated:           number
+  removed:           number
+  totalScraped:      number
+  errors:            number
+  durationMs:        number
+  duplicatesRemoved?: number
+  categoryBreakdown?: Record<string, number>
 }
 
 interface ScrapedListing {
@@ -375,12 +377,29 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (supabase as any)
     .from('listings')
-    .select('id, source_external_id, status, price, operating_hours, year, images')
-    .eq('source', SOURCE) as { data: { id: string; source_external_id: string; status: string; price: number; operating_hours: number | null; year: number | null; images: string[] }[] | null }
+    .select('id, source_external_id, status, price, operating_hours, year, images, created_at')
+    .eq('source', SOURCE) as { data: { id: string; source_external_id: string; status: string; price: number; operating_hours: number | null; year: number | null; images: string[]; created_at: string }[] | null }
 
-  const dbMap = new Map<string, { id: string; status: string; price: number; operating_hours: number | null; year: number | null; images: string[] }>()
+  // Group by source_external_id — detect and soft-delete in-DB duplicates (keep newest)
+  type HessRow = { id: string; status: string; price: number; operating_hours: number | null; year: number | null; images: string[]; created_at: string }
+  const rowsByExtId = new Map<string, HessRow[]>()
   for (const row of existing ?? []) {
-    if (row.source_external_id) dbMap.set(row.source_external_id, row)
+    if (!row.source_external_id) continue
+    const arr = rowsByExtId.get(row.source_external_id) ?? []
+    arr.push(row)
+    rowsByExtId.set(row.source_external_id, arr)
+  }
+  let duplicatesRemoved = 0
+  const categoryBreakdown: Record<string, number> = {}
+  const dbMap = new Map<string, HessRow>()
+  for (const [extId, rows] of rowsByExtId.entries()) {
+    rows.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+    dbMap.set(extId, rows[0])
+    for (const dup of rows.slice(1)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('listings').update({ status: 'removed_by_sync' }).eq('id', dup.id)
+      duplicatesRemoved++
+    }
   }
 
   // 3. Insert new / update changed listings
@@ -389,6 +408,7 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
   // specs that don't include the partial index's WHERE clause.
   for (const item of listings) {
     if (EXCLUDED_SUBCATEGORIES.has(item.subcategory)) continue
+    categoryBreakdown[item.category] = (categoryBreakdown[item.category] ?? 0) + 1
 
     const current = dbMap.get(item.externalId)
 
@@ -427,13 +447,15 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any).from('listings')
         .update({
+          title:           item.title,
+          category:        item.category,
+          subcategory:     item.subcategory,
           price:           item.price,
           price_type:      item.priceType,
           operating_hours: item.operatingHours,
           year:            item.year,
           ...(item.weightClass ? { weight_class: item.weightClass } : {}),
           images:          item.images.length > 0 ? item.images : current.images,
-          subcategory:     item.subcategory,
         })
         .eq('id', current.id)
 
@@ -468,7 +490,9 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
     .eq('status', 'active')
     .in('subcategory', [...EXCLUDED_SUBCATEGORIES])
 
-  result.durationMs = Date.now() - start
+  result.durationMs        = Date.now() - start
+  result.duplicatesRemoved = duplicatesRemoved
+  result.categoryBreakdown = categoryBreakdown
   return result
 }
 

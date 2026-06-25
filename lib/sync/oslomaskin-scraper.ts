@@ -11,12 +11,14 @@ const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface SyncResult {
-  created:      number
-  updated:      number
-  removed:      number
-  totalScraped: number
-  errors:       number
-  durationMs:   number
+  created:           number
+  updated:           number
+  removed:           number
+  totalScraped:      number
+  errors:            number
+  durationMs:        number
+  duplicatesRemoved?: number
+  categoryBreakdown?: Record<string, number>
 }
 
 interface ScrapedListing {
@@ -45,6 +47,7 @@ interface DbListing {
   operating_hours:    number | null
   weight_class:       string | null
   images:             string[]
+  created_at:         string
 }
 
 // ── Category / weight helpers ─────────────────────────────────────────────────
@@ -381,17 +384,33 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
   )
 
   const result: SyncResult = { created: 0, updated: 0, removed: 0, totalScraped: 0, errors: 0, durationMs: 0 }
+  const categoryBreakdown: Record<string, number> = {}
 
   // 1. Fetch existing Oslo Maskin listings from DB
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: existing } = await (supabase as any)
     .from('listings')
-    .select('id, source_external_id, status, price, operating_hours, weight_class, images')
+    .select('id, source_external_id, status, price, operating_hours, weight_class, images, created_at')
     .eq('source', SOURCE) as { data: DbListing[] | null }
 
-  const dbMap = new Map<string, DbListing>()
+  // Group by source_external_id — detect and soft-delete in-DB duplicates (keep newest)
+  const rowsByExtId = new Map<string, DbListing[]>()
   for (const row of existing ?? []) {
-    if (row.source_external_id) dbMap.set(row.source_external_id, row)
+    if (!row.source_external_id) continue
+    const arr = rowsByExtId.get(row.source_external_id) ?? []
+    arr.push(row)
+    rowsByExtId.set(row.source_external_id, arr)
+  }
+  let duplicatesRemoved = 0
+  const dbMap = new Map<string, DbListing>()
+  for (const [extId, rows] of rowsByExtId.entries()) {
+    rows.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+    dbMap.set(extId, rows[0])
+    for (const dup of rows.slice(1)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from('listings').update({ status: 'removed_by_sync' }).eq('id', dup.id)
+      duplicatesRemoved++
+    }
   }
 
   // 2. Scrape list page
@@ -415,11 +434,20 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
     await sleep(300)
   }
 
+  // Dedupliserer scraped items — same external_id kan oppstå hvis siden har duplikater
+  const seenScrape = new Set<string>()
+  const uniqueListings = listings.filter(item => {
+    if (seenScrape.has(item.externalId)) return false
+    seenScrape.add(item.externalId)
+    return true
+  })
+
   const seenExternalIds = new Set<string>()
 
   // 4. Upsert listings
-  for (const item of listings) {
+  for (const item of uniqueListings) {
     seenExternalIds.add(item.externalId)
+    categoryBreakdown[item.category] = (categoryBreakdown[item.category] ?? 0) + 1
     const current = dbMap.get(item.externalId)
 
     if (!current) {
@@ -459,10 +487,11 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('listings')
           .update({
-            category:   item.category,
+            title:       item.title,
+            category:    item.category,
             subcategory: item.subcategory,
-            price:      item.price,
-            price_type: item.priceType,
+            price:       item.price,
+            price_type:  item.priceType,
             ...(item.operatingHours !== null ? { operating_hours: item.operatingHours } : {}),
             ...(item.weightClass    !== null ? { weight_class:    item.weightClass    } : {}),
             images:     item.images.length > 0 ? item.images : current.images,
@@ -492,7 +521,9 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
     }
   }
 
-  result.durationMs = Date.now() - start
+  result.durationMs        = Date.now() - start
+  result.duplicatesRemoved = duplicatesRemoved
+  result.categoryBreakdown = categoryBreakdown
   return result
 }
 
