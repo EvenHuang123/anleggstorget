@@ -82,21 +82,6 @@ export default function Hero() {
 
           {/* Left: Text content */}
           <div>
-            {/* Top label */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                background: 'var(--bg3)', border: '1px solid var(--border)',
-                borderRadius: 20, padding: '6px 14px',
-              }}>
-                <span className="live-dot" />
-                <span style={{ fontFamily: 'Barlow Condensed', fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--t1)' }}>
-                  Live markedsplass
-                </span>
-              </div>
-              <div className="tag tag-gold">Ny plattform 2025</div>
-            </div>
-
             {/* Main heading */}
             <h1 style={{
               fontFamily: 'Barlow Condensed, sans-serif',
@@ -104,6 +89,7 @@ export default function Hero() {
               fontSize: 'clamp(52px, 7vw, 96px)',
               lineHeight: 0.92,
               letterSpacing: '0.01em',
+              textTransform: 'uppercase',
               color: 'var(--t1)',
               marginBottom: 28,
             }}>
