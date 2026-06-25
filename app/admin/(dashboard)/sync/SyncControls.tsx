@@ -19,7 +19,7 @@ interface SyncState {
   showDetails: boolean
 }
 
-function SyncButton({ source, label }: { source: 'nasta' | 'hesselberg' | 'rockmann'; label: string }) {
+function SyncButton({ source, label }: { source: 'nasta' | 'hesselberg' | 'rockmann' | 'oslomaskin'; label: string }) {
   const [state, setState] = useState<SyncState>({ loading: false, result: null, ok: null, details: null, showDetails: false })
 
   const handleSync = async () => {
@@ -148,6 +148,7 @@ export default function SyncControls() {
         <SyncButton source="nasta" label="NASTA AS" />
         <SyncButton source="hesselberg" label="Hesselberg Maskin AS" />
         <SyncButton source="rockmann" label="Rockmann AS (Finn.no)" />
+        <SyncButton source="oslomaskin" label="Oslo Maskin AS" />
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
