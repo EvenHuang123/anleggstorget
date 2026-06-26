@@ -88,6 +88,7 @@ export default function PersonvernPage() {
                 'Organisasjonsnummer og bedriftsnavn (innhentet fra Brønnøysundregisteret)',
                 'Meldinger og forespørsler sendt via forespørselsskjema',
                 'IP-adresse og tekniske loggdata via Vercel (hosting)',
+                'Besøksdata og trafikkstatistikk via Google Analytics (kun med samtykke)',
               ].map(item => (
                 <li key={item}>{item}</li>
               ))}
@@ -111,6 +112,14 @@ export default function PersonvernPage() {
                   Rettslig grunnlag: berettiget interesse, jf. GDPR artikkel 6 (1) f.
                 </p>
               </div>
+              <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, padding: '16px 20px' }}>
+                <p style={{ fontWeight: 600, color: 'var(--t1)', marginBottom: 4 }}>Trafikkanalyse (Google Analytics)</p>
+                <p style={{ color: 'var(--t3)', fontSize: 14 }}>
+                  Med ditt samtykke bruker vi Google Analytics for å forstå how tjenesten brukes.
+                  Rettslig grunnlag: samtykke, jf. GDPR artikkel 6 (1) a og ekomloven § 3-15.
+                  Du kan trekke samtykket når som helst ved å klikke «Administrer cookies» i bunnen av siden.
+                </p>
+              </div>
             </div>
           </Section>
 
@@ -128,8 +137,10 @@ export default function PersonvernPage() {
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
               {[
-                { name: 'Supabase Ireland Ltd', role: 'Databaser og autentisering', location: 'EU (Irland)' },
-                { name: 'Vercel Inc', role: 'Hosting og infrastruktur', location: 'USA (Standard Contractual Clauses)' },
+                { name: 'Supabase Inc', role: 'Databaser og autentisering', location: 'EU (Frankfurt)' },
+                { name: 'Vercel Inc', role: 'Hosting og CDN', location: 'USA (Standard Contractual Clauses)' },
+                { name: 'Google LLC', role: 'Google Analytics (kun med samtykke)', location: 'USA (Standard Contractual Clauses)' },
+                { name: 'Sentry Inc', role: 'Feillogging og ytelsesovervåkning', location: 'USA (Standard Contractual Clauses)' },
                 { name: 'Resend Inc', role: 'E-postutsendelse', location: 'USA (Standard Contractual Clauses)' },
               ].map(p => (
                 <div key={p.name} style={{
@@ -165,24 +176,80 @@ export default function PersonvernPage() {
           </Section>
 
           {/* 7. Informasjonskapsler */}
-          <Section title="7. Informasjonskapsler (cookies)">
-            <p style={{ marginBottom: 20 }}>
-              Vi bruker kun nødvendige informasjonskapsler som kreves for at tjenesten skal fungere.
-              Vi bruker for øyeblikket ingen analytiske eller markedsføringscookies.
-            </p>
+          <section id="cookies" style={{ marginBottom: 48 }}>
+            <h2 style={{
+              fontFamily: 'Barlow Condensed, sans-serif',
+              fontWeight: 700, fontSize: 22, color: 'var(--t1)', marginBottom: 16,
+              letterSpacing: '0.01em', paddingBottom: 10, borderBottom: '1px solid var(--border)',
+            }}>
+              7. Informasjonskapsler (cookies)
+            </h2>
+            <div style={{ color: 'var(--t2)', fontSize: 15, lineHeight: 1.75 }}>
 
-            <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, padding: '16px 20px', marginBottom: 16 }}>
-              <p style={{ fontWeight: 600, color: 'var(--t1)', marginBottom: 8 }}>Nødvendige (alltid aktive)</p>
-              <ul style={{ paddingLeft: 20, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <li style={{ color: 'var(--t3)', fontSize: 14 }}>Innloggingssesjon (autentisering via Supabase)</li>
-                <li style={{ color: 'var(--t3)', fontSize: 14 }}>Sikkerhet (CSRF-beskyttelse)</li>
-              </ul>
+              <p style={{ marginBottom: 20 }}>
+                Anleggstorget bruker informasjonskapsler for å sikre at nettsiden fungerer korrekt og for å
+                forbedre brukeropplevelsen. Nedenfor finner du en oversikt over alle informasjonskapsler vi bruker.
+              </p>
+
+              <p style={{ fontWeight: 600, color: 'var(--t1)', marginBottom: 10 }}>Nødvendige (alltid aktive)</p>
+              <div style={{ overflowX: 'auto', marginBottom: 24 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg3)' }}>
+                      {['Navn', 'Formål', 'Varighet', 'Leverandør'].map(h => (
+                        <th key={h} style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--t1)', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { name: 'cookie-consent-v2', purpose: 'Lagrer ditt samtykkevalg', duration: '12 måneder', vendor: 'Anleggstorget' },
+                      { name: 'sb-access-token', purpose: 'Innloggingssesjon', duration: 'Sesjon', vendor: 'Supabase' },
+                      { name: 'sb-refresh-token', purpose: 'Fornyelse av innlogging', duration: '7 dager', vendor: 'Supabase' },
+                    ].map(r => (
+                      <tr key={r.name} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontSize: 12, color: 'var(--t1)' }}>{r.name}</td>
+                        <td style={{ padding: '8px 12px', color: 'var(--t2)' }}>{r.purpose}</td>
+                        <td style={{ padding: '8px 12px', color: 'var(--t3)' }}>{r.duration}</td>
+                        <td style={{ padding: '8px 12px', color: 'var(--t3)' }}>{r.vendor}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <p style={{ fontWeight: 600, color: 'var(--t1)', marginBottom: 10 }}>Analyse (krever samtykke)</p>
+              <div style={{ overflowX: 'auto', marginBottom: 20 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg3)' }}>
+                      {['Navn', 'Formål', 'Varighet', 'Leverandør'].map(h => (
+                        <th key={h} style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--t1)', fontWeight: 600, borderBottom: '1px solid var(--border)' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { name: '_ga', purpose: 'Skiller mellom brukere for trafikkanalyse', duration: '2 år', vendor: 'Google Analytics' },
+                      { name: '_ga_*', purpose: 'Lagrer sesjonsstatus', duration: '2 år', vendor: 'Google Analytics' },
+                    ].map(r => (
+                      <tr key={r.name} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontSize: 12, color: 'var(--t1)' }}>{r.name}</td>
+                        <td style={{ padding: '8px 12px', color: 'var(--t2)' }}>{r.purpose}</td>
+                        <td style={{ padding: '8px 12px', color: 'var(--t3)' }}>{r.duration}</td>
+                        <td style={{ padding: '8px 12px', color: 'var(--t3)' }}>{r.vendor}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <p style={{ fontSize: 14, color: 'var(--t3)' }}>
+                Du kan til enhver tid endre eller trekke tilbake ditt samtykke ved å klikke på
+                «Administrer cookies» i bunnen av siden.
+              </p>
             </div>
-
-            <p style={{ fontSize: 14, color: 'var(--t3)' }}>
-              Du kan når som helst endre ditt samtykke ved å klikke «Administrer cookies» i bunnen av siden.
-            </p>
-          </Section>
+          </section>
 
           {/* 8. Endringer */}
           <Section title="8. Endringer i personvernerklæringen">

@@ -98,7 +98,7 @@ export default function Footer() {
             <Link href="/personvern" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Personvernerklæring</Link>
             <Link href="/vilkar" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Vilkår</Link>
             <button
-              onClick={() => { localStorage.removeItem('cookie-consent'); window.location.reload() }}
+              onClick={() => { localStorage.removeItem('cookie-consent-v2'); window.location.reload() }}
               style={{ background: 'none', border: 'none', color: 'var(--t3)', fontSize: 12, cursor: 'pointer', padding: 0 }}
             >
               Administrer cookies

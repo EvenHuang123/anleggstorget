@@ -264,7 +264,7 @@ export default function AnnonseContent({ listing, related }: Props) {
                         transition: 'border-color 0.15s', position: 'relative',
                       }}
                     >
-                      <img src={img} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={img} alt={`${listing.title} – bilde ${i + 1} av ${images.length}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </button>
                   ))}
                 </div>
