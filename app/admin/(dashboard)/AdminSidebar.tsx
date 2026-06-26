@@ -2,13 +2,15 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Truck, RefreshCcw } from 'lucide-react'
+import { LayoutDashboard, Users, Truck, RefreshCcw, MessageSquare, BarChart2 } from 'lucide-react'
 
 const NAV = [
-  { href: '/admin', icon: LayoutDashboard, label: 'Oversikt', exact: true },
-  { href: '/admin/kunder', icon: Users, label: 'Kunder', exact: false },
-  { href: '/admin/maskiner', icon: Truck, label: 'Maskiner', exact: false },
-  { href: '/admin/sync', icon: RefreshCcw, label: 'Sync-logger', exact: false },
+  { href: '/admin',             icon: LayoutDashboard, label: 'Oversikt',      exact: true  },
+  { href: '/admin/kunder',      icon: Users,           label: 'Kunder',        exact: false },
+  { href: '/admin/maskiner',    icon: Truck,           label: 'Maskiner',      exact: false },
+  { href: '/admin/foresporsler',icon: MessageSquare,   label: 'Forespørsler',  exact: false },
+  { href: '/admin/analytics',   icon: BarChart2,       label: 'Analytics',     exact: false },
+  { href: '/admin/sync',        icon: RefreshCcw,      label: 'Sync-logger',   exact: false },
 ]
 
 export default function AdminSidebar() {

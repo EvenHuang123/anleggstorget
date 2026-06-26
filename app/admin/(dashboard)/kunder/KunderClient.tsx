@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useTransition, useEffect, useCallback } from 'react'
-import { Search, Plus, CheckCircle, XCircle, X, Copy, Check, RefreshCcw, Pencil, Eye, EyeOff, Trash2, AlertTriangle } from 'lucide-react'
+import Link from 'next/link'
+import { Search, Plus, CheckCircle, XCircle, X, Copy, Check, RefreshCcw, Pencil, Eye, EyeOff, Trash2, AlertTriangle, Send } from 'lucide-react'
 
 export interface CustomerRow {
   id: string
@@ -437,6 +438,33 @@ export default function KunderClient({ initialRows }: { initialRows: CustomerRow
   const [orgLoading, setOrgLoading] = useState(false)
   const [, startTransition]       = useTransition()
 
+  // Broadcast state
+  const [showBroadcast, setShowBroadcast]   = useState(false)
+  const [bcSubject, setBcSubject]           = useState('')
+  const [bcMessage, setBcMessage]           = useState('')
+  const [bcLoading, setBcLoading]           = useState(false)
+  const [bcResult, setBcResult]             = useState<{ sent: number; total: number } | null>(null)
+  const [bcError, setBcError]               = useState('')
+  const [bcConfirm, setBcConfirm]           = useState(false)
+
+  const verifiedCount = rows.filter(r => r.verified).length
+
+  const handleBroadcast = async () => {
+    if (!bcSubject.trim() || !bcMessage.trim()) return
+    setBcLoading(true); setBcError('')
+    try {
+      const res = await fetch('/api/admin/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: bcSubject.trim(), message: bcMessage.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setBcError(data.error ?? 'Feil under sending'); return }
+      setBcResult({ sent: data.sent, total: data.total })
+    } catch { setBcError('Nettverksfeil') }
+    finally { setBcLoading(false); setBcConfirm(false) }
+  }
+
   const filtered = rows.filter(r =>
     r.company_name.toLowerCase().includes(search.toLowerCase()) ||
     r.org_number.includes(search) ||
@@ -494,10 +522,18 @@ export default function KunderClient({ initialRows }: { initialRows: CustomerRow
           <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#e6edf3', fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase', letterSpacing: '0.03em' }}>Kunder</h1>
           <p style={{ margin: '4px 0 0', color: '#8b949e', fontSize: 13 }}>{rows.length} registrerte bedrifter</p>
         </div>
-        <button onClick={() => { setShowCreate(true); setCreateSuccess(null); setFormError('') }}
-          style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#238636', border: '1px solid rgba(240,246,252,0.1)', borderRadius: 6, color: '#e6edf3', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '8px 16px' }}>
-          <Plus size={14} /> Opprett ny kunde
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => setShowBroadcast(true)}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'none', border: '1px solid #30363d', borderRadius: 6, color: '#8b949e', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '8px 14px', transition: 'all 0.12s' }}
+            onMouseOver={e => { e.currentTarget.style.borderColor = '#388bfd'; e.currentTarget.style.color = '#388bfd' }}
+            onMouseOut={e => { e.currentTarget.style.borderColor = '#30363d'; e.currentTarget.style.color = '#8b949e' }}>
+            <Send size={13} /> Send melding
+          </button>
+          <button onClick={() => { setShowCreate(true); setCreateSuccess(null); setFormError('') }}
+            style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#238636', border: '1px solid rgba(240,246,252,0.1)', borderRadius: 6, color: '#e6edf3', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '8px 16px' }}>
+            <Plus size={14} /> Opprett ny kunde
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -530,7 +566,11 @@ export default function KunderClient({ initialRows }: { initialRows: CustomerRow
                 onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
               >
                 <td style={S.td}>
-                  <div style={{ fontWeight: 600 }}>{row.company_name}</div>
+                  <Link href={`/admin/kunder/${row.id}`} style={{ fontWeight: 600, color: '#e6edf3', textDecoration: 'none' }}
+                    onMouseOver={e => (e.currentTarget.style.color = '#388bfd')}
+                    onMouseOut={e => (e.currentTarget.style.color = '#e6edf3')}>
+                    {row.company_name}
+                  </Link>
                   {row.contact_person && <div style={{ fontSize: 12, color: '#8b949e', marginTop: 2 }}>{row.contact_person}</div>}
                 </td>
                 <td style={{ ...S.td, fontFamily: 'monospace', fontSize: 13 }}>{row.org_number}</td>
@@ -664,6 +704,100 @@ export default function KunderClient({ initialRows }: { initialRows: CustomerRow
                   </button>
                 </div>
               </form>
+            )}
+          </div>
+        </Backdrop>
+      )}
+
+      {/* Broadcast modal */}
+      {showBroadcast && (
+        <Backdrop onClose={() => { setShowBroadcast(false); setBcResult(null); setBcError(''); setBcConfirm(false) }}>
+          <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: 10, padding: 28, width: '100%', maxWidth: 560, maxHeight: '92vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: '#e6edf3', fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase' }}>Send melding til selgere</h2>
+                <p style={{ margin: '4px 0 0', color: '#8b949e', fontSize: 12 }}>{verifiedCount} verifiserte mottakere</p>
+              </div>
+              <button onClick={() => { setShowBroadcast(false); setBcResult(null); setBcError(''); setBcConfirm(false) }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8b949e', padding: 4 }}><X size={18} /></button>
+            </div>
+
+            {bcResult ? (
+              <div>
+                <div style={{ background: 'rgba(63,185,80,0.1)', border: '1px solid rgba(63,185,80,0.3)', borderRadius: 8, padding: 20, textAlign: 'center' }}>
+                  <p style={{ color: '#3fb950', fontWeight: 700, fontSize: 20, margin: '0 0 6px', fontFamily: 'Barlow Condensed, sans-serif' }}>
+                    Sendt til {bcResult.sent} av {bcResult.total} selgere
+                  </p>
+                  {bcResult.sent < bcResult.total && (
+                    <p style={{ color: '#f0883e', fontSize: 13, margin: 0 }}>{bcResult.total - bcResult.sent} feilet</p>
+                  )}
+                </div>
+                <button onClick={() => { setShowBroadcast(false); setBcResult(null); setBcSubject(''); setBcMessage('') }}
+                  style={{ marginTop: 16, width: '100%', background: '#238636', border: 'none', borderRadius: 6, color: '#e6edf3', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '10px 0' }}>
+                  Lukk
+                </button>
+              </div>
+            ) : (
+              <>
+                {bcError && (
+                  <div style={{ background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.3)', borderRadius: 6, padding: '10px 14px', marginBottom: 16, color: '#f85149', fontSize: 13 }}>
+                    {bcError}
+                  </div>
+                )}
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={S.label}>Emne</label>
+                  <input value={bcSubject} onChange={e => setBcSubject(e.target.value)}
+                    placeholder="F.eks: Viktig oppdatering fra Anleggstorget"
+                    style={S.input} />
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={S.label}>Melding</label>
+                  <textarea value={bcMessage} onChange={e => setBcMessage(e.target.value)}
+                    placeholder="Skriv meldingen her..."
+                    rows={6}
+                    style={{ ...S.input, height: 'auto', padding: '10px 12px', resize: 'vertical', lineHeight: 1.6 }} />
+                </div>
+
+                {/* Preview */}
+                {(bcSubject.trim() || bcMessage.trim()) && (
+                  <div style={{ marginBottom: 20, background: '#0d1117', border: '1px solid #30363d', borderRadius: 6, padding: '14px 16px' }}>
+                    <p style={{ margin: '0 0 8px', color: '#8b949e', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Preview</p>
+                    <p style={{ margin: '0 0 4px', color: '#8b949e', fontSize: 12 }}>Emne: <span style={{ color: '#e6edf3' }}>{bcSubject || '—'}</span></p>
+                    <p style={{ margin: '0 0 8px', color: '#8b949e', fontSize: 12 }}>Fra: <span style={{ color: '#e6edf3' }}>Anleggstorget &lt;kontakt@anleggstorget.no&gt;</span></p>
+                    <div style={{ borderTop: '1px solid #30363d', paddingTop: 10, color: '#e6edf3', fontSize: 13, lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+                      {bcMessage || '—'}
+                    </div>
+                  </div>
+                )}
+
+                {bcConfirm ? (
+                  <div style={{ background: 'rgba(240,136,62,0.1)', border: '1px solid rgba(240,136,62,0.3)', borderRadius: 6, padding: '14px 16px', marginBottom: 14 }}>
+                    <p style={{ margin: '0 0 12px', color: '#f0883e', fontSize: 13 }}>
+                      Send til <strong>{verifiedCount}</strong> verifiserte selgere? Dette kan ikke angres.
+                    </p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={() => setBcConfirm(false)}
+                        style={{ flex: 1, background: 'none', border: '1px solid #30363d', borderRadius: 6, color: '#8b949e', fontSize: 13, cursor: 'pointer', padding: '8px 0' }}>
+                        Avbryt
+                      </button>
+                      <button onClick={handleBroadcast} disabled={bcLoading}
+                        style={{ flex: 2, background: bcLoading ? '#21262d' : '#f0883e', border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 600, cursor: bcLoading ? 'not-allowed' : 'pointer', padding: '8px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <Send size={13} />
+                        {bcLoading ? 'Sender...' : `Send til ${verifiedCount} selgere`}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setBcConfirm(true)}
+                    disabled={!bcSubject.trim() || !bcMessage.trim()}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: (!bcSubject.trim() || !bcMessage.trim()) ? '#21262d' : '#388bfd', border: 'none', borderRadius: 6, color: '#fff', fontSize: 13, fontWeight: 600, cursor: (!bcSubject.trim() || !bcMessage.trim()) ? 'not-allowed' : 'pointer', padding: '10px 0' }}>
+                    <Send size={13} /> Send til {verifiedCount} selgere
+                  </button>
+                )}
+              </>
             )}
           </div>
         </Backdrop>
