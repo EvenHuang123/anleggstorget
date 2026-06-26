@@ -4,6 +4,8 @@ import Navbar from '@/components/shared/Navbar'
 import Footer from '@/components/shared/Footer'
 import SokContent from './SokContent'
 
+export const revalidate = 60
+
 const CATEGORY_META: Record<string, { title: string; description: string; keywords: string[] }> = {
   gravemaskiner: {
     title: 'Brukte gravemaskiner til salgs – Kjøp gravemaskin B2B',

@@ -15,7 +15,15 @@ export const revalidate = 300
 export const dynamicParams = true
 
 export async function generateStaticParams() {
-  return []
+  const supabase = createPublicClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data } = await (supabase as any)
+    .from('listings')
+    .select('id')
+    .eq('status', 'active')
+    .order('views', { ascending: false })
+    .limit(50) as { data: { id: string }[] | null }
+  return data?.map(l => ({ id: String(l.id) })) ?? []
 }
 
 interface Props {

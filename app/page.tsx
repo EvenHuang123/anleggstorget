@@ -5,7 +5,7 @@ import { organizationSchema, websiteSchema, faqSchema } from '@/lib/schema'
 import { createPublicClient } from '@/lib/supabase/public'
 
 // Revalidate homepage every 60 s — FeaturedListings uses public client (no cookies = cacheable)
-export const revalidate = 60
+export const revalidate = 120
 import { CheckCircle2, Shield, Users, MapPin, TrendingUp } from 'lucide-react'
 import Navbar from '@/components/shared/Navbar'
 
