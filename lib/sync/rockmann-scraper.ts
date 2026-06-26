@@ -147,17 +147,21 @@ function inferWeightClassFromTitle(title: string): string | null {
 }
 
 function parseHoursFromText(text: string): number | null {
-  const match = text.match(/(\d[\d\s]*)\s*[Tt]imer/)
+  // Primary: "3300 timer", "ca 3300 timer", "3 300 timer", "3.300 timer"
+  // Fallback: "ca. 3300 t", "ca 3300t" (abbreviated form)
+  const match =
+    text.match(/(\d[\d\s.]*)\s*[Tt]imer/i) ||
+    text.match(/ca\.?\s*(\d[\d\s.]*)\s*[Tt](?!\w)/i)
   if (!match) return null
-  const n = parseInt(match[1].replace(/\s/g, ''), 10)
+  const n = parseInt(match[1].replace(/[\s.]/g, ''), 10)
   return isNaN(n) || n <= 0 ? null : n
 }
 
 function parseWeightKgFromText(text: string): number | null {
-  const match = text.match(/(\d[\d\s.]*)\s*[Kk][Gg]/)
+  // "12 750 kg", "12750kg", "12.750 kg", "12,750 kg"
+  const match = text.match(/(\d[\d\s.,]*)\s*[Kk][Gg]/i)
   if (!match) return null
-  // Strip spaces and dots used as thousands separators (e.g. "12 750" → 12750, "12.750" → 12750)
-  const n = parseInt(match[1].replace(/[\s.]/g, ''), 10)
+  const n = parseInt(match[1].replace(/[\s.,]/g, ''), 10)
   return isNaN(n) || n <= 0 ? null : n
 }
 
@@ -220,26 +224,23 @@ export async function fetchRockmannDetail(finnId: string): Promise<{
     })
 
     // Fallback: parse free-text description when structured dl fields are absent.
-    // Finn.no /pw/ layout: <h2>Beskrivelse</h2><p>…description…</p>
-    if (hours === null || weightKg === null) {
-      // Finn.no /pw/ renders the description as <h2>Beskrivelse</h2><p><p>…
-      // The outer <p> is auto-closed empty by htmlparser2 (invalid nesting); the
-      // actual content lives in sibling <p> elements — use nextAll, not next.
-      const descText = $('h2').filter((_, el) => $(el).text().trim() === 'Beskrivelse').nextAll('p').text()
+    // Finn.no /pw/ layout: <h2>Beskrivelse</h2><p><p>… (invalid nesting)
+    // htmlparser2 auto-closes outer <p> empty; content is in sibling <p> nodes.
+    const descText = $('h2').filter((_, el) => $(el).text().trim() === 'Beskrivelse').nextAll('p').text()
+    console.log(`[rockmann] råbeskrivelse for ${finnId}:`, descText.slice(0, 200) || '(tom)')
 
-      if (hours === null) {
-        const parsed = parseHoursFromText(descText)
-        if (parsed !== null) {
-          hours = parsed
-          console.log(`[rockmann] ${finnId}: timer fra beskrivelse: ${hours}`)
-        }
+    if (hours === null) {
+      const parsed = parseHoursFromText(descText)
+      if (parsed !== null) {
+        hours = parsed
+        console.log(`[rockmann] ${finnId}: timer fra beskrivelse: ${hours}`)
       }
-      if (weightKg === null) {
-        const parsedKg = parseWeightKgFromText(descText)
-        if (parsedKg !== null) {
-          weightKg = parsedKg < 200 ? parsedKg * 1000 : parsedKg
-          console.log(`[rockmann] ${finnId}: vekt fra beskrivelse: ${weightKg} kg`)
-        }
+    }
+    if (weightKg === null) {
+      const parsedKg = parseWeightKgFromText(descText)
+      if (parsedKg !== null) {
+        weightKg = parsedKg < 200 ? parsedKg * 1000 : parsedKg
+        console.log(`[rockmann] ${finnId}: vekt fra beskrivelse: ${weightKg} kg`)
       }
     }
 
