@@ -89,17 +89,19 @@ function inferWeightClass(kg: number): string {
 function inferWeightClassFromTitle(title: string): string | null {
   const t = title.toLowerCase()
 
-  // Excavators whose model number × 100 ≈ operating weight in kg:
-  // Komatsu PC, Hitachi ZX, Volvo EC/EW, Hyundai HX/R, Doosan DX,
-  // JCB JS, Kobelco SK, Case CX/CK, Sumitomo SH
-  const excMatch = t.match(/\b(?:pc|zx|ec|ew|hx|dx|js|sk|cx|sh)\s*(\d{2,3})/)
+  // Generic excavator formula: model number × 100 ≈ operating weight in kg.
+  // Covers: Komatsu PC/PW, Hitachi ZX, Volvo EC/EW, Hyundai HX, Doosan DX,
+  //   JCB JS, Kobelco SK, Case CX/CK, Sumitomo SH, Eurocomach ES.
+  // PW added for Komatsu wheeled excavators (PW160 = 16 000 kg).
+  // ES added for Eurocomach mini excavators (ES18 = 1 800 kg).
+  // Upper-bound removed (was ≤500): EC620 = 62 000 kg → "Over 40 tonn" ✓
+  const excMatch = t.match(/\b(?:pc|zx|ec|ew|hx|dx|js|sk|cx|sh|pw|es)\s*(\d{2,3})/)
   if (excMatch) {
     const n = parseInt(excMatch[1])
-    if (n >= 15 && n <= 500) return inferWeightClass(n * 100)
+    if (n >= 15) return inferWeightClass(n * 100)
   }
 
   // Cat excavators: Cat 308/315/320/323/330/340/349 — last 2 digits = tonnes
-  // Use (?!\d) instead of \b so "Cat 323D", "Cat 320G" also match
   const catExcMatch = t.match(/\bcat\s*3(\d{2})(?!\d)/)
   if (catExcMatch) {
     const tonnes = parseInt(catExcMatch[1])
@@ -117,12 +119,43 @@ function inferWeightClassFromTitle(title: string): string | null {
     if (kg) return inferWeightClass(kg)
   }
 
+  // Cat compact loaders: 216/226/236/246/256/272/287/289/299 ≈ 3–4 t
+  if (t.match(/\bcat\s*2[1-9]\d/)) return 'Under 5 tonn'
+
   // Liebherr mining excavators: R920, R930, R940 — last 2 digits = tonnes
   const liebMatch = t.match(/\br9(\d{2})/)
   if (liebMatch) {
     const tonnes = parseInt(liebMatch[1])
     if (tonnes > 0) return inferWeightClass(tonnes * 1000)
   }
+
+  // Bell articulated dump trucks: B25/B30/B35 ≈ 27–39 t, B40+ ≈ 43+ t
+  const bellMatch = t.match(/\bbell\s*b(\d{2})/)
+  if (bellMatch) {
+    const n = parseInt(bellMatch[1])
+    return n <= 35 ? '20–40 tonn' : 'Over 40 tonn'
+  }
+
+  // Dynapac soil compactors: CA1xx ≈ 6–9 t, CA2xx/CA3xx ≈ 10–16 t, CA6xx ≈ 22 t
+  const dynapacMatch = t.match(/\bca([123456])\d{2}/)
+  if (dynapacMatch) {
+    const h = parseInt(dynapacMatch[1])
+    if (h === 1) return '5–10 tonn'
+    if (h <= 3)  return '10–20 tonn'
+    return '20–40 tonn'
+  }
+
+  // Bomag single-drum rollers: BW211 ≈ 11 t, BW213/BW216 ≈ 14–18 t, BW219+ ≈ 19+ t
+  const bomagMatch = t.match(/\bbw(\d{3})/)
+  if (bomagMatch) {
+    const n = parseInt(bomagMatch[1])
+    if (n <= 211) return '5–10 tonn'
+    if (n <= 216) return '10–20 tonn'
+    return '20–40 tonn'
+  }
+
+  // JCB backhoe loaders: 1CX/2CX/3CX/4CX and 200-series (JCB 210/214/215) ≈ 5–9 t
+  if (t.match(/\bjcb\s*(?:[1-4]cx|\d{3})/)) return '5–10 tonn'
 
   // Volvo wheel loaders: L35=5t, L60=13t, L90=17t, L110=22t, L150=29t, L220=42t
   const volvoLMatch = t.match(/\bvolvo\s*l(\d+)/)
