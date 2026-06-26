@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { z } from 'zod'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const supabase = createClient(
@@ -7,14 +8,21 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 ) as any
 
+const paramsSchema = z.object({ id: z.string().uuid() })
+
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params
-  if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+  const raw = await params
+  const parsed = paramsSchema.safeParse(raw)
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Ugyldig ID' }, { status: 400 })
+  }
 
-  // Atomic increment via RPC. Create once in Supabase:
+  const { id } = parsed.data
+
+  // Atomic increment via RPC. Create once in Supabase SQL Editor:
   // create or replace function increment_views(listing_id uuid)
   // returns void language sql as $$
   //   update listings set views = views + 1 where id = listing_id;
