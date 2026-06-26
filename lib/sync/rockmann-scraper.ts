@@ -219,14 +219,13 @@ export async function fetchRockmannDetail(finnId: string): Promise<{
       }
     })
 
-    // Fallback: parse free-text description when structured dl fields are absent
+    // Fallback: parse free-text description when structured dl fields are absent.
+    // Finn.no /pw/ layout: <h2>Beskrivelse</h2><p>…description…</p>
     if (hours === null || weightKg === null) {
-      const descText = [
-        $('div.u-word-break').text(),
-        $('section[aria-label="Beskrivelse"]').text(),
-        $('div.bodytext').text(),
-        $('article').text(),
-      ].join(' ')
+      // Finn.no /pw/ renders the description as <h2>Beskrivelse</h2><p><p>…
+      // The outer <p> is auto-closed empty by htmlparser2 (invalid nesting); the
+      // actual content lives in sibling <p> elements — use nextAll, not next.
+      const descText = $('h2').filter((_, el) => $(el).text().trim() === 'Beskrivelse').nextAll('p').text()
 
       if (hours === null) {
         const parsed = parseHoursFromText(descText)
