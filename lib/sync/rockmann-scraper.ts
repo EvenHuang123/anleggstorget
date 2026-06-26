@@ -146,6 +146,21 @@ function inferWeightClassFromTitle(title: string): string | null {
   return null
 }
 
+function parseHoursFromText(text: string): number | null {
+  const match = text.match(/(\d[\d\s]*)\s*[Tt]imer/)
+  if (!match) return null
+  const n = parseInt(match[1].replace(/\s/g, ''), 10)
+  return isNaN(n) || n <= 0 ? null : n
+}
+
+function parseWeightKgFromText(text: string): number | null {
+  const match = text.match(/(\d[\d\s.]*)\s*[Kk][Gg]/)
+  if (!match) return null
+  // Strip spaces and dots used as thousands separators (e.g. "12 750" → 12750, "12.750" → 12750)
+  const n = parseInt(match[1].replace(/[\s.]/g, ''), 10)
+  return isNaN(n) || n <= 0 ? null : n
+}
+
 async function fetchHtml(url: string): Promise<string> {
   for (let i = 0; i < 3; i++) {
     try {
@@ -203,6 +218,31 @@ export async function fetchRockmannDetail(finnId: string): Promise<{
         if (n > 0) weightKg = n < 200 ? n * 1000 : n
       }
     })
+
+    // Fallback: parse free-text description when structured dl fields are absent
+    if (hours === null || weightKg === null) {
+      const descText = [
+        $('div.u-word-break').text(),
+        $('section[aria-label="Beskrivelse"]').text(),
+        $('div.bodytext').text(),
+        $('article').text(),
+      ].join(' ')
+
+      if (hours === null) {
+        const parsed = parseHoursFromText(descText)
+        if (parsed !== null) {
+          hours = parsed
+          console.log(`[rockmann] ${finnId}: timer fra beskrivelse: ${hours}`)
+        }
+      }
+      if (weightKg === null) {
+        const parsedKg = parseWeightKgFromText(descText)
+        if (parsedKg !== null) {
+          weightKg = parsedKg < 200 ? parsedKg * 1000 : parsedKg
+          console.log(`[rockmann] ${finnId}: vekt fra beskrivelse: ${weightKg} kg`)
+        }
+      }
+    }
 
     // Finn.no /pw/ listings rarely include weight — infer from page title as fallback
     let weightClass: string | null = weightKg !== null ? inferWeightClass(weightKg) : null
