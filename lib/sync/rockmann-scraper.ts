@@ -260,21 +260,14 @@ export async function fetchRockmannDetail(finnId: string): Promise<{
     // Finn.no /pw/ layout: <h2>Beskrivelse</h2><p><p>… (invalid nesting)
     // htmlparser2 auto-closes outer <p> empty; content is in sibling <p> nodes.
     const descText = $('h2').filter((_, el) => $(el).text().trim() === 'Beskrivelse').nextAll('p').text()
-    console.log(`[rockmann] råbeskrivelse for ${finnId}:`, descText.slice(0, 200) || '(tom)')
 
     if (hours === null) {
       const parsed = parseHoursFromText(descText)
-      if (parsed !== null) {
-        hours = parsed
-        console.log(`[rockmann] ${finnId}: timer fra beskrivelse: ${hours}`)
-      }
+      if (parsed !== null) hours = parsed
     }
     if (weightKg === null) {
       const parsedKg = parseWeightKgFromText(descText)
-      if (parsedKg !== null) {
-        weightKg = parsedKg < 200 ? parsedKg * 1000 : parsedKg
-        console.log(`[rockmann] ${finnId}: vekt fra beskrivelse: ${weightKg} kg`)
-      }
+      if (parsedKg !== null) weightKg = parsedKg < 200 ? parsedKg * 1000 : parsedKg
     }
 
     // Finn.no /pw/ listings rarely include weight — infer from page title as fallback
@@ -287,11 +280,6 @@ export async function fetchRockmannDetail(finnId: string): Promise<{
         if (weightClass) weightSource = 'title'
       }
     }
-
-    console.log(
-      `[rockmann] ${finnId}: timer=${hours ?? 'mangler'} vekt=${weightClass ?? 'mangler'}` +
-      (weightSource ? ` (kilde: ${weightSource})` : ''),
-    )
 
     await sleep(300)
     return { images, hours, weightClass }
