@@ -40,9 +40,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? `${listing.price.toLocaleString('nb-NO')} kr`
     : 'Forhandlingsbar'
 
+  // Build a unique title: title + differentiators to avoid duplicates for
+  // listings with generic model-code names (e.g. multiple "S70" from Oslo Maskin)
+  const titleParts = [listing.title]
+  if (listing.brand && listing.brand !== listing.title) titleParts.push(listing.brand)
+  if (listing.year) titleParts.push(`${listing.year}`)
+  if (listing.location) titleParts.push(listing.location)
+  const uniqueTitle = `${titleParts.join(' – ')} | Anleggstorget`
+
+  // Generate a rich description even for listings with no text
   const desc = listing.description
-    ? listing.description.substring(0, 155) + '…'
-    : `${listing.brand || ''} ${listing.model || ''} – ${priceStr}`.trim()
+    ? listing.description.substring(0, 155) + (listing.description.length > 155 ? '…' : '')
+    : [
+        listing.brand ? `${listing.brand}` : null,
+        listing.model ? `${listing.model}` : null,
+        listing.category ? `– ${listing.category}` : null,
+        listing.year ? `fra ${listing.year}` : null,
+        listing.operating_hours ? `med ${listing.operating_hours.toLocaleString('nb-NO')} driftstimer` : null,
+        listing.location ? `i ${listing.location}` : null,
+        `til ${priceStr}.`,
+        'Verifisert norsk bedrift på Anleggstorget.',
+      ].filter(Boolean).join(' ')
 
   const slug = listing.slug || id
   const ogImage = listing.images?.[0]
@@ -50,20 +68,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : '/og-image.jpg'
 
   return {
-    title: { absolute: `${listing.title} – ${priceStr} | Anleggstorget` },
+    title: { absolute: uniqueTitle },
     description: desc,
     alternates: {
       canonical: `https://www.anleggstorget.no/annonse/${slug}`,
     },
     openGraph: {
-      title: listing.title,
+      title: titleParts.join(' – '),
       description: desc,
       url: `https://www.anleggstorget.no/annonse/${slug}`,
       images: [{ url: ogImage, width: 1200, height: 630, alt: listing.title }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: listing.title,
+      title: titleParts.join(' – '),
       description: desc,
       images: [ogImage],
     },

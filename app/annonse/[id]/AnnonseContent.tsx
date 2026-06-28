@@ -359,18 +359,33 @@ export default function AnnonseContent({ listing, related }: Props) {
             </div>
 
             {/* Description */}
-            {listing.description && (
-              <div style={{ marginBottom: 32 }}>
-                <h2 className="section-title" style={{ fontSize: 18, marginBottom: 14 }}>Beskrivelse</h2>
-                <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, padding: '20px 24px' }}>
-                  {listing.description.split('\n').map((line, i) => (
-                    <p key={i} style={{ color: 'var(--t2)', fontSize: 14, lineHeight: 1.8, marginBottom: line ? 6 : 4 }}>
-                      {line || '\u00A0'}
+            <div style={{ marginBottom: 32 }}>
+              <h2 className="section-title" style={{ fontSize: 18, marginBottom: 14 }}>Beskrivelse</h2>
+              <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 4, padding: '20px 24px' }}>
+                {listing.description
+                  ? listing.description.split('\n').map((line, i) => (
+                      <p key={i} style={{ color: 'var(--t2)', fontSize: 14, lineHeight: 1.8, marginBottom: line ? 6 : 4 }}>
+                        {line || '\u00A0'}
+                      </p>
+                    ))
+                  : (
+                    <p style={{ color: 'var(--t3)', fontSize: 14, lineHeight: 1.8 }}>
+                      {[
+                        listing.brand ? `${listing.brand}` : null,
+                        listing.model ? `${listing.model}` : null,
+                        listing.category ? `er en ${CATEGORIES[listing.category]?.label?.toLowerCase() ?? listing.category}` : null,
+                        listing.year ? `fra ${listing.year}` : null,
+                        listing.operating_hours != null ? `med ${formatNumber(listing.operating_hours)} driftstimer` : null,
+                        listing.weight_class ? `i vektklasse ${listing.weight_class}` : null,
+                        listing.location ? `til salgs i ${listing.location}` : null,
+                        listing.profiles?.company_name ? `fra ${listing.profiles.company_name}` : null,
+                        'p\u00E5 Anleggstorget \u2014 Norges B2B-markedsplass for verifiserte bedrifter.',
+                      ].filter(Boolean).join(', ')}
                     </p>
-                  ))}
-                </div>
+                  )
+                }
               </div>
-            )}
+            </div>
 
             {/* Technical specs */}
             <div style={{ marginBottom: 40 }}>

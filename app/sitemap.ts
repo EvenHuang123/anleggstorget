@@ -17,7 +17,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/dumpere`,                     lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
     { url: `${BASE}/traktorer`,                   lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
     { url: `${BASE}/selgere`,                      lastModified: now, changeFrequency: 'weekly',  priority: 0.8 },
-    { url: `${BASE}/markedsinnsikt`,               lastModified: now, changeFrequency: 'weekly',  priority: 0.7 },
+    // /markedsinnsikt er en «kommer snart»-side — ikke indeksverdig ennå
     { url: `${BASE}/om-oss`,                       lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${BASE}/kontakt`,                      lastModified: now, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${BASE}/guide`,                        lastModified: now, changeFrequency: 'weekly',  priority: 0.8 },
@@ -41,21 +41,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any
     const [{ data: listings }, { data: sellers }] = await Promise.all([
-      sb.from('listings').select('id, slug, updated_at').eq('status', 'active') as
-        Promise<{ data: { id: string; slug: string | null; updated_at: string }[] | null }>,
-      sb.from('profiles').select('id, slug, updated_at') as
-        Promise<{ data: { id: string; slug: string | null; updated_at: string }[] | null }>,
+      // Only active listings — removed/sold listings returning 404 would hurt SEO
+      sb.from('listings').select('id, slug, updated_at')
+        .eq('status', 'active')
+        .not('slug', 'is', null) as
+        Promise<{ data: { id: string; slug: string; updated_at: string }[] | null }>,
+      // Only profiles with a slug — UUID-based URLs may not resolve to a valid page
+      sb.from('profiles').select('id, slug, updated_at')
+        .not('slug', 'is', null) as
+        Promise<{ data: { id: string; slug: string; updated_at: string }[] | null }>,
     ])
 
     const listingPages: MetadataRoute.Sitemap = (listings ?? []).map(l => ({
-      url: `${BASE}/annonse/${l.slug || l.id}`,
+      url: `${BASE}/annonse/${l.slug}`,
       lastModified: new Date(l.updated_at),
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     }))
 
     const sellerPages: MetadataRoute.Sitemap = (sellers ?? []).map(s => ({
-      url: `${BASE}/selgere/${s.slug || s.id}`,
+      url: `${BASE}/selgere/${s.slug}`,
       lastModified: new Date(s.updated_at),
       changeFrequency: 'weekly' as const,
       priority: 0.7,

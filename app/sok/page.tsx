@@ -88,11 +88,25 @@ export async function generateMetadata({ searchParams }: SokProps): Promise<Meta
   }
 }
 
-export default function SokPage() {
+export default async function SokPage({ searchParams }: SokProps) {
+  const { category, brand, q } = await searchParams
+
+  // Server-rendered h1 ensures crawlers see a heading even before SokContent
+  // (SokContent is 'use client' inside Suspense — its h1 is JS-only on first load)
+  const serverH1 = q
+    ? `Søkeresultater for "${q}"`
+    : brand
+    ? `${brand} maskiner til salgs`
+    : category && CATEGORY_META[category]
+    ? CATEGORY_META[category].title.split(' –')[0].split(' |')[0]
+    : 'Søk maskiner'
+
   return (
     <>
       <Navbar />
       <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
+        {/* sr-only: visible to crawlers/screen readers; SokContent renders the visual h1 */}
+        <h1 className="sr-only">{serverH1}</h1>
         <Suspense fallback={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh' }}>
             <p style={{ color: 'var(--t3)', fontFamily: 'Barlow Condensed', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: 13 }}>Laster...</p>

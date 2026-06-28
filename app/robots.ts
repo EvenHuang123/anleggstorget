@@ -2,7 +2,15 @@ import type { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'https://anleggstorget.no'
-  const privateRoutes = ['/dashboard/', '/ny-annonse', '/api/', '/auth/', '/registrer/bekreft']
+  const privateRoutes = [
+    '/admin/',
+    '/dashboard/',
+    '/ny-annonse',
+    '/logg-inn',
+    '/api/',
+    '/auth/',
+    '/registrer/bekreft',
+  ]
 
   return {
     rules: [
