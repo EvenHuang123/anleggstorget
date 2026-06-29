@@ -14,8 +14,9 @@ import { z } from 'zod'
 // );
 
 const schema = z.object({
-  subject: z.string().min(1).max(200),
-  message: z.string().min(1).max(5000),
+  subject:   z.string().min(1).max(200),
+  message:   z.string().min(1).max(5000),
+  sellerIds: z.array(z.string().uuid()).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -33,14 +34,20 @@ export async function POST(req: NextRequest) {
   const parsed = schema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Ugyldig input' }, { status: 400 })
 
-  const { subject, message } = parsed.data
+  const { subject, message, sellerIds } = parsed.data
   const supabase = createAdminClient()
 
-  const { data: sellers } = await (supabase as any)
+  let query = (supabase as any)
     .from('profiles')
     .select('id, email, company_name')
     .eq('verified', true)
-    .not('email', 'is', null) as { data: { id: string; email: string; company_name: string }[] | null }
+    .not('email', 'is', null)
+
+  if (sellerIds && sellerIds.length > 0) {
+    query = query.in('id', sellerIds)
+  }
+
+  const { data: sellers } = await query as { data: { id: string; email: string; company_name: string }[] | null }
 
   if (!sellers || sellers.length === 0) {
     return NextResponse.json({ sent: 0, total: 0 })
