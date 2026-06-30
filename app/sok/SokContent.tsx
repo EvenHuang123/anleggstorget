@@ -8,6 +8,7 @@ import ListingCard from '@/components/listings/ListingCard'
 import ListingFilters from '@/components/listings/ListingFilters'
 import { createClient } from '@/lib/supabase/client'
 import { CATEGORY_TREE, treeKeysToDbValues, formatNumber } from '@/lib/utils/format'
+import { FYLKE_MAP } from '@/lib/constants/fylke-map'
 import type { Listing } from '@/lib/supabase/types'
 
 const SORT_OPTIONS = [
@@ -84,12 +85,14 @@ export default function SokContent() {
   const [searchInput, setSearchInput]             = useState(searchParams.get('q') || '')
   const [availableBrands,    setAvailableBrands]    = useState<string[]>([])
   const [availableLocations, setAvailableLocations] = useState<string[]>([])
+  const [locationCounts,     setLocationCounts]     = useState<Record<string, number>>({})
 
   // Read ALL filter + pagination params from URL
   const q            = searchParams.get('q')             || ''
   const categoryParam= searchParams.get('category')      || ''
   const subcategory  = searchParams.get('subcategory')   || ''
   const location     = searchParams.get('location')      || ''
+  const fylke        = searchParams.get('fylke')         || ''
   const listingType  = searchParams.get('listingType')   || ''
   const minPrice     = searchParams.get('minPrice')      || ''
   const maxPrice     = searchParams.get('maxPrice')      || ''
@@ -106,7 +109,7 @@ export default function SokContent() {
   const selectedBrands = brand.split(',').filter(Boolean)
 
   const activeFilterCount = [
-    treeKeys.length > 0, !!subcategory, !!location, !!listingType,
+    treeKeys.length > 0, !!subcategory, !!(location || fylke), !!listingType,
     !!(minPrice || maxPrice), selectedBrands.length > 0,
     !!(yearFrom || yearTo), !!(hoursMin || hoursMax), !!listedWithin,
   ].filter(Boolean).length
@@ -118,9 +121,17 @@ export default function SokContent() {
       .then(({ data }: { data: { brand: string }[] | null }) => {
         if (data) setAvailableBrands([...new Set(data.map(r => r.brand).filter(Boolean))])
       })
-    sb.from('listings').select('location').eq('status', 'active').not('location', 'is', null).order('location').limit(500)
+    // Fetch all location rows (with dupes) to compute counts
+    sb.from('listings').select('location').eq('status', 'active').not('location', 'is', null).limit(2000)
       .then(({ data }: { data: { location: string }[] | null }) => {
-        if (data) setAvailableLocations([...new Set(data.map(r => r.location).filter(Boolean))].sort())
+        if (data) {
+          const counts: Record<string, number> = {}
+          for (const r of data) {
+            if (r.location) counts[r.location] = (counts[r.location] || 0) + 1
+          }
+          setLocationCounts(counts)
+          setAvailableLocations(Object.keys(counts).sort())
+        }
       })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -166,8 +177,20 @@ export default function SokContent() {
         }
         qb = qb.eq('subcategory', subcategoryLabel)
       }
-      if (q)        qb = qb.ilike('title', `%${q}%`)
-      if (location) qb = qb.eq('location', location)
+      if (q) qb = qb.ilike('title', `%${q}%`)
+
+      // Location: either a single city or all cities in a fylke
+      if (fylke) {
+        const knownCities = new Set(Object.keys(FYLKE_MAP))
+        const steder = fylke === 'Annet'
+          ? availableLocations.filter(loc => !knownCities.has(loc))
+          : Object.entries(FYLKE_MAP).filter(([, f]) => f === fylke).map(([sted]) => sted)
+        if (steder.length === 1)    qb = qb.eq('location', steder[0])
+        else if (steder.length > 1) qb = qb.in('location', steder)
+      } else if (location) {
+        qb = qb.eq('location', location)
+      }
+
       if (listingType === 'sale') qb = qb.eq('listing_type', 'sale')
       else if (listingType === 'rent') qb = qb.eq('listing_type', 'rent')
       if (minPrice) qb = qb.gte('price_ex_vat', parseInt(minPrice))
@@ -203,7 +226,7 @@ export default function SokContent() {
     } finally {
       setLoading(false)
     }
-  }, [q, categoryParam, subcategory, location, listingType, minPrice, maxPrice, sort, page, brand, yearFrom, yearTo, hoursMin, hoursMax, listedWithin])
+  }, [q, categoryParam, subcategory, location, fylke, listingType, minPrice, maxPrice, sort, page, brand, yearFrom, yearTo, hoursMin, hoursMax, listedWithin, availableLocations])
 
   useEffect(() => { fetchListings() }, [fetchListings])
   useEffect(() => { setSearchInput(searchParams.get('q') || '') }, [pathname, searchParams])
@@ -258,6 +281,7 @@ export default function SokContent() {
       return subcategory
     })() },
     location    && { key: 'location',    value: location,    label: location },
+    fylke       && { key: 'fylke',       value: fylke,       label: fylke },
     listingType === 'sale' && { key: 'listingType', value: 'sale', label: 'Til salgs' },
     listingType === 'rent' && { key: 'listingType', value: 'rent', label: 'Til leie' },
     minPrice    && { key: 'minPrice',    value: minPrice,    label: `Fra ${Number(minPrice).toLocaleString('nb-NO')} kr` },
@@ -400,7 +424,7 @@ export default function SokContent() {
             </div>
             {/* Scrollable filter list */}
             <div style={{ overflowY: 'auto', flex: 1 }}>
-              <ListingFilters onClose={() => setShowMobileFilters(false)} resultCount={totalCount} searchParams={searchParams} onFilterChange={setParam} availableBrands={availableBrands} availableLocations={availableLocations} />
+              <ListingFilters onClose={() => setShowMobileFilters(false)} resultCount={totalCount} searchParams={searchParams} onFilterChange={setParam} availableBrands={availableBrands} availableLocations={availableLocations} locationCounts={locationCounts} />
             </div>
           </div>
         </div>
@@ -409,7 +433,7 @@ export default function SokContent() {
       {/* Main layout */}
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         <div className="filters-sidebar">
-          <ListingFilters searchParams={searchParams} onFilterChange={setParam} availableBrands={availableBrands} availableLocations={availableLocations} />
+          <ListingFilters searchParams={searchParams} onFilterChange={setParam} availableBrands={availableBrands} availableLocations={availableLocations} locationCounts={locationCounts} />
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>

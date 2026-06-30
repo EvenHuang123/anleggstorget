@@ -2,9 +2,10 @@
 
 import { useRouter } from 'next/navigation'
 import type { ReadonlyURLSearchParams } from 'next/navigation'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { X, ChevronDown, ChevronRight } from 'lucide-react'
 import { CATEGORY_TREE } from '@/lib/utils/format'
+import { FYLKE_MAP } from '@/lib/constants/fylke-map'
 
 interface Props {
   onClose?: () => void
@@ -13,6 +14,7 @@ interface Props {
   onFilterChange: (updates: Record<string, string>) => void
   availableBrands?: string[]
   availableLocations?: string[]
+  locationCounts?: Record<string, number>
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -91,13 +93,14 @@ function SectionHeader({ label, active, count, open, onToggle }: {
 
 // ── component ─────────────────────────────────────────────────────────────────
 
-export default function ListingFilters({ onClose, resultCount, searchParams, onFilterChange, availableBrands = [], availableLocations = [] }: Props) {
+export default function ListingFilters({ onClose, resultCount, searchParams, onFilterChange, availableBrands = [], availableLocations = [], locationCounts = {} }: Props) {
   const router = useRouter()
 
   // ── Read filter state from URL ────────────────────────────────────────────
   const selectedCats   = (searchParams.get('category')      || '').split(',').filter(Boolean)
   const subcategory    = searchParams.get('subcategory')    || ''
   const location       = searchParams.get('location')       || ''
+  const fylke          = searchParams.get('fylke')          || ''
   const listingType    = searchParams.get('listingType')    || ''
   const selectedBrands = (searchParams.get('brand')         || '').split(',').filter(Boolean)
   const listedWithin   = searchParams.get('listed_within')  || ''
@@ -130,11 +133,51 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
   const toggleSection = (k: keyof typeof openSections) =>
     setOpenSections(s => ({ ...s, [k]: !s[k] }))
 
-  // "Vis alle"-toggles
-  const [showAllBrands,    setShowAllBrands]    = useState(false)
-  const [showAllLocations, setShowAllLocations] = useState(false)
+  // ── Fylke accordion state ─────────────────────────────────────────────────
+  const [expandedFylker, setExpandedFylker] = useState<string[]>(() => {
+    const initial: string[] = []
+    if (location) { const f = FYLKE_MAP[location]; if (f) initial.push(f) }
+    if (fylke) initial.push(fylke)
+    return initial
+  })
 
-  const LOCATIONS_VISIBLE = 8
+  // Auto-expand when URL changes (e.g. chip click, back/forward nav)
+  useEffect(() => {
+    if (location) {
+      const f = FYLKE_MAP[location]
+      if (f) setExpandedFylker(prev => prev.includes(f) ? prev : [...prev, f])
+    }
+    if (fylke) {
+      setExpandedFylker(prev => prev.includes(fylke) ? prev : [...prev, fylke])
+    }
+  }, [location, fylke])
+
+  const toggleFylkeExpand = (fylkeName: string) =>
+    setExpandedFylker(prev =>
+      prev.includes(fylkeName) ? prev.filter(f => f !== fylkeName) : [...prev, fylkeName]
+    )
+
+  // ── Group locations by fylke, sorted by count desc ────────────────────────
+  const fylkeGroups = useMemo(() => {
+    if (availableLocations.length === 0) return []
+    const groups: Record<string, { steder: string[]; count: number }> = {}
+    for (const loc of availableLocations) {
+      const f = FYLKE_MAP[loc] ?? 'Annet'
+      if (!groups[f]) groups[f] = { steder: [], count: 0 }
+      groups[f].steder.push(loc)
+      groups[f].count += locationCounts[loc] ?? 0
+    }
+    return Object.entries(groups)
+      .sort(([a, da], [b, db]) => {
+        if (a === 'Annet') return 1
+        if (b === 'Annet') return -1
+        return db.count - da.count
+      })
+      .map(([name, { steder, count }]) => ({ name, steder: steder.sort(), count }))
+  }, [availableLocations, locationCounts])
+
+  // "Vis alle"-toggle for brands
+  const [showAllBrands, setShowAllBrands] = useState(false)
 
   // ── Brand ordering: priority brands first (if present in DB), then rest ──
   const sortedBrands = (() => {
@@ -201,7 +244,7 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
   }
 
   const hasFilters = selectedCats.length > 0 || selectedBrands.length > 0 || !!(
-    subcategory || location || listingType ||
+    subcategory || location || fylke || listingType ||
     searchParams.get('minPrice') || searchParams.get('maxPrice') ||
     searchParams.get('year_from') || searchParams.get('year_to') ||
     hoursMin || hoursMax || listedWithin
@@ -434,56 +477,82 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
 
       {/* ── Område ─────────────────────────────────────────────────────────── */}
       <Divider />
-      <SectionHeader label="Område" active={!!location} open={openSections.omrade} onToggle={() => toggleSection('omrade')} />
+      <SectionHeader label="Område" active={!!location || !!fylke} open={openSections.omrade} onToggle={() => toggleSection('omrade')} />
       {openSections.omrade && (
         <div style={{ paddingBottom: 4 }}>
-          {availableLocations.length === 0 ? (
-            <select
-              value={location}
-              onChange={e => onFilterChange({ location: e.target.value })}
-              className="input-base"
-              style={{ fontSize: 13, padding: '7px 9px', cursor: 'pointer', marginTop: 2, marginBottom: 6 }}
-            >
-              <option value="">Hele Norge</option>
-            </select>
-          ) : (
-            <>
-              {location && !availableLocations.includes(location) && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 6px', borderRadius: 3, background: 'var(--gold4)' }}>
-                  <input type="radio" name="location" checked readOnly style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: 'var(--t1)', fontWeight: 600 }}>{location}</span>
-                </label>
-              )}
-              <label
-                onClick={() => onFilterChange({ location: '' })}
-                style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 6px', cursor: 'pointer', borderRadius: 3, background: !location ? 'var(--gold4)' : 'transparent' }}
-              >
-                <input type="radio" name="location" checked={!location} readOnly style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: !location ? 'var(--t1)' : 'var(--t2)', fontWeight: !location ? 600 : 400 }}>Hele Norge</span>
-              </label>
-              {(showAllLocations ? availableLocations : availableLocations.slice(0, LOCATIONS_VISIBLE)).map(loc => {
-                const active = location === loc
-                return (
+          {/* Hele Norge */}
+          <label
+            onClick={() => onFilterChange({ location: '', fylke: '' })}
+            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 6px', cursor: 'pointer', borderRadius: 3, background: !location && !fylke ? 'var(--gold4)' : 'transparent' }}
+          >
+            <input type="radio" name="area" checked={!location && !fylke} readOnly style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }} />
+            <span style={{ fontSize: 13, color: !location && !fylke ? 'var(--t1)' : 'var(--t2)', fontWeight: !location && !fylke ? 600 : 400 }}>Hele Norge</span>
+          </label>
+
+          {/* Fylker */}
+          {fylkeGroups.map(({ name: fylkeName, steder, count }) => {
+            const isFylkeSelected = fylke === fylkeName
+            const isExpanded = expandedFylker.includes(fylkeName)
+            const hasCitySelected = steder.includes(location)
+
+            return (
+              <div key={fylkeName}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', borderRadius: 3,
+                  background: isFylkeSelected ? 'var(--gold4)' : hasCitySelected ? 'var(--bg4)' : 'transparent',
+                  transition: 'background 0.1s',
+                }}>
                   <label
-                    key={loc}
-                    onClick={() => onFilterChange({ location: active ? '' : loc })}
-                    style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 6px', cursor: 'pointer', borderRadius: 3, background: active ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}
+                    onClick={() => onFilterChange({ fylke: isFylkeSelected ? '' : fylkeName, location: '' })}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 6px', cursor: 'pointer' }}
                   >
-                    <input type="radio" name="location" checked={active} readOnly style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, color: active ? 'var(--t1)' : 'var(--t2)', fontWeight: active ? 600 : 400 }}>{loc}</span>
+                    <input type="radio" name="area" checked={isFylkeSelected} readOnly style={{ accentColor: 'var(--gold)', width: 13, height: 13, flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, color: isFylkeSelected || hasCitySelected ? 'var(--t1)' : 'var(--t2)', fontWeight: isFylkeSelected || hasCitySelected ? 600 : 400 }}>
+                      {fylkeName}
+                    </span>
+                    {count > 0 && (
+                      <span style={{ fontSize: 10, color: 'var(--t3)', marginLeft: 'auto', paddingRight: 2 }}>
+                        {count}
+                      </span>
+                    )}
                   </label>
-                )
-              })}
-              {availableLocations.length > LOCATIONS_VISIBLE && (
-                <button
-                  onClick={() => setShowAllLocations(s => !s)}
-                  style={{ fontSize: 11, color: 'var(--t3)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', textDecoration: 'underline', width: '100%', textAlign: 'left' }}
-                >
-                  {showAllLocations ? 'Vis færre' : `Vis alle (${availableLocations.length - LOCATIONS_VISIBLE} til)`}
-                </button>
-              )}
-            </>
-          )}
+                  {steder.length > 0 && (
+                    <button
+                      onClick={() => toggleFylkeExpand(fylkeName)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', padding: '8px 8px', flexShrink: 0, display: 'flex' }}
+                    >
+                      <ChevronRight size={11} style={{ transition: 'transform 0.15s', transform: isExpanded ? 'rotate(90deg)' : 'none' }} />
+                    </button>
+                  )}
+                </div>
+
+                {isExpanded && (
+                  <div style={{ marginLeft: 22, marginBottom: 2 }}>
+                    {steder.map(sted => {
+                      const active = location === sted
+                      return (
+                        <label
+                          key={sted}
+                          onClick={() => onFilterChange({ location: active ? '' : sted, fylke: '' })}
+                          style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 6px', cursor: 'pointer', borderRadius: 3, background: active ? 'var(--gold4)' : 'transparent', transition: 'background 0.1s' }}
+                        >
+                          <input type="radio" name="area" checked={active} readOnly style={{ accentColor: 'var(--gold)', width: 12, height: 12, flexShrink: 0 }} />
+                          <span style={{ fontSize: 12, color: active ? 'var(--gold)' : 'var(--t3)', fontWeight: active ? 600 : 400 }}>
+                            {sted}
+                          </span>
+                          {locationCounts[sted] != null && (
+                            <span style={{ fontSize: 10, color: 'var(--t3)', marginLeft: 'auto' }}>
+                              {locationCounts[sted]}
+                            </span>
+                          )}
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
 
