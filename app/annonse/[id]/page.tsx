@@ -10,8 +10,8 @@ import { CATEGORIES, getListingImageUrl } from '@/lib/utils/format'
 import { listingSchema, breadcrumbSchema } from '@/lib/schema'
 import { getListing } from '@/lib/listings'
 
-// ISR: re-render at most once every 5 minutes. No cookies() call = static-cacheable.
-export const revalidate = 300
+// ISR: re-render at most once per minute. Admin updates trigger immediate revalidation via revalidatePath.
+export const revalidate = 60
 export const dynamicParams = true
 
 export async function generateStaticParams() {

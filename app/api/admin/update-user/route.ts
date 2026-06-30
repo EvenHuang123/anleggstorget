@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { verifyAdminToken, COOKIE_NAME } from '@/lib/admin/auth'
 import { createAdminClient } from '@/lib/admin/supabase'
 
@@ -87,6 +88,10 @@ export async function POST(request: NextRequest) {
   if (errors.length > 0) {
     return NextResponse.json({ error: errors.join(' | ') }, { status: 422 })
   }
+
+  // Invalidate ISR cache so profile/listing changes appear immediately on the site
+  revalidatePath('/annonse', 'layout')
+  revalidatePath('/selgere', 'layout')
 
   return NextResponse.json({ ok: true })
 }
