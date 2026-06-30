@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { Search, SortDesc, Grid3X3, LayoutList, X, SlidersHorizontal, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { SaveSearchBanner } from '@/components/SaveSearchBanner'
@@ -10,6 +10,11 @@ import { createClient } from '@/lib/supabase/client'
 import { CATEGORY_TREE, treeKeysToDbValues, formatNumber } from '@/lib/utils/format'
 import { FYLKE_MAP } from '@/lib/constants/fylke-map'
 import type { Listing } from '@/lib/supabase/types'
+
+interface Suggestion {
+  text: string
+  type: 'brand' | 'model' | 'title'
+}
 
 const SORT_OPTIONS = [
   { value: 'newest',     label: 'Nyeste først' },
@@ -86,6 +91,11 @@ export default function SokContent() {
   const [availableBrands,    setAvailableBrands]    = useState<string[]>([])
   const [availableLocations, setAvailableLocations] = useState<string[]>([])
   const [locationCounts,     setLocationCounts]     = useState<Record<string, number>>({})
+  const [suggestions,    setSuggestions]    = useState<Suggestion[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [activeIndex,    setActiveIndex]    = useState(-1)
+  const searchContainerRef = useRef<HTMLDivElement>(null)
+  const suggestTimer       = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   // Read ALL filter + pagination params from URL
   const q            = searchParams.get('q')             || ''
@@ -231,14 +241,83 @@ export default function SokContent() {
   useEffect(() => { fetchListings() }, [fetchListings])
   useEffect(() => { setSearchInput(searchParams.get('q') || '') }, [pathname, searchParams])
 
+  // ── Autocomplete ────────────────────────────────────────────────────────────
+  const fetchSuggestions = useCallback(async (q: string) => {
+    try {
+      const res = await fetch(`/api/search/suggestions?q=${encodeURIComponent(q.trim())}`)
+      if (res.ok) setSuggestions(await res.json())
+    } catch { /* ignore */ }
+  }, [])
+
+  const selectSuggestion = useCallback((text: string) => {
+    setSearchInput(text)
+    setSuggestions([])
+    setShowSuggestions(false)
+    setActiveIndex(-1)
+    setParam({ q: text })
+  }, [setParam])
+
+  // Close suggestions when clicking outside the search container
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+        setActiveIndex(-1)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setSearchInput(val)
+    setActiveIndex(-1)
+    clearTimeout(suggestTimer.current)
+    if (val.trim().length >= 2) {
+      suggestTimer.current = setTimeout(() => {
+        fetchSuggestions(val)
+        setShowSuggestions(true)
+      }, 200)
+    } else {
+      setSuggestions([])
+      setShowSuggestions(false)
+    }
+  }
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || suggestions.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIndex(i => Math.min(i + 1, suggestions.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIndex(i => Math.max(i - 1, -1))
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault()
+      selectSuggestion(suggestions[activeIndex].text)
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false)
+      setActiveIndex(-1)
+    }
+  }
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    const trimmed = searchInput.trim()
+    const trimmed = activeIndex >= 0 && suggestions[activeIndex]
+      ? suggestions[activeIndex].text
+      : searchInput.trim()
+    setSuggestions([])
+    setShowSuggestions(false)
+    setActiveIndex(-1)
     setParam({ q: trimmed })
   }
 
   const clearSearch = () => {
     setSearchInput('')
+    setSuggestions([])
+    setShowSuggestions(false)
+    setActiveIndex(-1)
     const p = new URLSearchParams(searchParams.toString())
     p.delete('q')
     p.delete('page')
@@ -319,24 +398,149 @@ export default function SokContent() {
 
       {/* Search row */}
       <form onSubmit={handleSearch} style={{ display: 'flex', gap: 8, marginBottom: chips.length > 0 ? 10 : 16 }}>
-        <div style={{ position: 'relative', flex: 1 }}>
-          <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--t3)', pointerEvents: 'none' }} />
+        <div ref={searchContainerRef} style={{ position: 'relative', flex: 1 }}>
+          <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--t3)', pointerEvents: 'none', zIndex: 1 }} />
           <input
-            type="text" value={searchInput}
-            onChange={e => setSearchInput(e.target.value)}
+            type="text"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={showSuggestions && suggestions.length > 0}
+            aria-activedescendant={activeIndex >= 0 ? `suggestion-${activeIndex}` : undefined}
+            value={searchInput}
+            onChange={handleSearchInputChange}
+            onKeyDown={handleSearchKeyDown}
+            onFocus={() => { if (searchInput.trim().length >= 2 && suggestions.length > 0) setShowSuggestions(true) }}
             placeholder="Søk etter maskin, merke, modell..."
             className="input-base"
+            autoComplete="off"
             style={{ paddingLeft: 36, paddingRight: searchInput ? 36 : 12 }}
           />
           {searchInput && (
             <button
               type="button"
               onClick={clearSearch}
-              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', display: 'flex', padding: 2 }}
+              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', display: 'flex', padding: 2, zIndex: 1 }}
             >
               <X size={14} />
             </button>
           )}
+
+          {/* Autocomplete dropdown */}
+          {showSuggestions && suggestions.length > 0 && (() => {
+            const brandSugs = suggestions.filter(s => s.type === 'brand')
+            const modelSugs = suggestions.filter(s => s.type === 'model')
+            const titleSugs = suggestions.filter(s => s.type === 'title')
+            return (
+              <div
+                role="listbox"
+                style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 3,
+                  background: 'var(--bg)', border: '1px solid var(--border2)',
+                  borderRadius: 4, boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+                  zIndex: 50, overflow: 'hidden',
+                }}
+              >
+                {brandSugs.length > 0 && (
+                  <div>
+                    <div style={{ padding: '7px 14px 3px', fontSize: 10, fontFamily: 'Barlow Condensed', fontWeight: 700, color: 'var(--t3)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                      Merker
+                    </div>
+                    {brandSugs.map(s => {
+                      const idx = suggestions.indexOf(s)
+                      const active = idx === activeIndex
+                      return (
+                        <button
+                          key={s.text}
+                          id={`suggestion-${idx}`}
+                          role="option"
+                          aria-selected={active}
+                          type="button"
+                          onMouseDown={e => { e.preventDefault(); selectSuggestion(s.text) }}
+                          onMouseEnter={() => setActiveIndex(idx)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            width: '100%', padding: '9px 14px', border: 'none', textAlign: 'left',
+                            background: active ? 'var(--gold3)' : 'transparent',
+                            cursor: 'pointer', transition: 'background 0.1s',
+                          }}
+                        >
+                          <span style={{ fontSize: 11, color: 'var(--gold)', flexShrink: 0 }}>●</span>
+                          <span style={{ fontSize: 14, color: 'var(--t1)', fontFamily: 'Barlow', fontWeight: active ? 600 : 400 }}>{s.text}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {modelSugs.length > 0 && (
+                  <div style={{ borderTop: brandSugs.length > 0 ? '1px solid var(--border)' : 'none' }}>
+                    <div style={{ padding: '7px 14px 3px', fontSize: 10, fontFamily: 'Barlow Condensed', fontWeight: 700, color: 'var(--t3)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                      Modeller
+                    </div>
+                    {modelSugs.map(s => {
+                      const idx = suggestions.indexOf(s)
+                      const active = idx === activeIndex
+                      return (
+                        <button
+                          key={s.text}
+                          id={`suggestion-${idx}`}
+                          role="option"
+                          aria-selected={active}
+                          type="button"
+                          onMouseDown={e => { e.preventDefault(); selectSuggestion(s.text) }}
+                          onMouseEnter={() => setActiveIndex(idx)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            width: '100%', padding: '9px 14px', border: 'none', textAlign: 'left',
+                            background: active ? 'var(--gold3)' : 'transparent',
+                            cursor: 'pointer', transition: 'background 0.1s',
+                          }}
+                        >
+                          <Search size={11} style={{ color: 'var(--t3)', flexShrink: 0 }} />
+                          <span style={{ fontSize: 14, color: 'var(--t1)', fontFamily: 'Barlow', fontWeight: active ? 600 : 400 }}>{s.text}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {titleSugs.length > 0 && (
+                  <div style={{ borderTop: (brandSugs.length > 0 || modelSugs.length > 0) ? '1px solid var(--border)' : 'none' }}>
+                    <div style={{ padding: '7px 14px 3px', fontSize: 10, fontFamily: 'Barlow Condensed', fontWeight: 700, color: 'var(--t3)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+                      Annonser
+                    </div>
+                    {titleSugs.map(s => {
+                      const idx = suggestions.indexOf(s)
+                      const active = idx === activeIndex
+                      return (
+                        <button
+                          key={s.text}
+                          id={`suggestion-${idx}`}
+                          role="option"
+                          aria-selected={active}
+                          type="button"
+                          onMouseDown={e => { e.preventDefault(); selectSuggestion(s.text) }}
+                          onMouseEnter={() => setActiveIndex(idx)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            width: '100%', padding: '9px 14px', border: 'none', textAlign: 'left',
+                            background: active ? 'var(--gold3)' : 'transparent',
+                            cursor: 'pointer', transition: 'background 0.1s',
+                          }}
+                        >
+                          <Search size={11} style={{ color: 'var(--t3)', flexShrink: 0 }} />
+                          <span style={{ fontSize: 13, color: 'var(--t2)', fontFamily: 'Barlow', fontWeight: active ? 600 : 400,
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                            {s.text}
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
         </div>
         <button type="submit" className="btn-primary" style={{ padding: '0 18px', height: 46, flexShrink: 0 }}>Søk</button>
         <button
