@@ -541,6 +541,21 @@ export default function AnnonseContent({ listing, related }: Props) {
                   {listing.profiles.phone}
                 </a>
               )}
+
+              {listing.seller_id && (
+                <Link
+                  href={`/selgere/${(listing.profiles as any)?.slug ?? listing.seller_id}`}
+                  style={{
+                    display: 'block', marginTop: 14, paddingTop: 12,
+                    borderTop: '1px solid var(--border)',
+                    fontSize: 13, color: 'var(--gold)', textDecoration: 'none',
+                    fontFamily: 'Barlow Condensed, sans-serif', fontWeight: 600,
+                    letterSpacing: '0.03em',
+                  }}
+                >
+                  Se alle annonser fra {listing.profiles?.company_name || 'selger'} →
+                </Link>
+              )}
             </div>
 
             {/* Safety notice */}

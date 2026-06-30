@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { Building2, Mail, Phone, Star, TrendingUp, Package, ArrowLeft, CheckCircle } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { createPublicClient } from '@/lib/supabase/public'
+import SellerContactModal from './SellerContactModal'
 import Navbar from '@/components/shared/Navbar'
 import Footer from '@/components/shared/Footer'
 import ListingCard from '@/components/listings/ListingCard'
@@ -15,25 +16,35 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id: slugOrId } = await params
-  const supabase = await createClient()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase as any)
+  const supabase = createPublicClient() as any
+  const { data: profileData } = await supabase
     .from('profiles')
-    .select('company_name, org_number')
+    .select('id, company_name, org_number')
     .or(`slug.eq.${slugOrId},id.eq.${slugOrId}`)
-    .maybeSingle() as { data: { company_name: string; org_number: string } | null }
+    .maybeSingle() as { data: { id: string; company_name: string; org_number: string } | null }
 
-  if (!data) return { title: 'Maskinselger | Anleggstorget' }
+  if (!profileData) return { title: 'Maskinselger | Anleggstorget' }
 
-  const title = `${data.company_name} – Verifisert maskinselger | Anleggstorget`
-  const description = `Se anleggsmaskiner til salgs fra ${data.company_name}. Verifisert norsk bedrift på Anleggstorget – trygg B2B-handel uten mellomledd.`
+  const { count } = await supabase
+    .from('listings')
+    .select('id', { count: 'exact', head: true })
+    .eq('seller_id', profileData.id)
+    .eq('status', 'active') as { count: number | null }
+
+  const countStr = count && count > 0 ? `${count} aktive annonser` : 'maskiner'
+  const title = `${profileData.company_name} – Verifisert maskinselger | Anleggstorget`
+  const description = `Se ${countStr} fra ${profileData.company_name}. Verifisert norsk bedrift på Anleggstorget – kjøp og selg anleggsmaskin trygt B2B.`
   return {
     title,
     description,
+    alternates: {
+      canonical: `https://www.anleggstorget.no/selgere/${slugOrId}`,
+    },
     openGraph: {
       title,
       description,
-      url: `https://anleggstorget.no/selgere/${slugOrId}`,
+      url: `https://www.anleggstorget.no/selgere/${slugOrId}`,
     },
   }
 }
@@ -55,18 +66,28 @@ function StarRating({ rating, size = 14 }: { rating: number; size?: number }) {
   )
 }
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
+export const dynamicParams = true
+
+export async function generateStaticParams() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createPublicClient() as any
+  const { data } = await supabase
+    .from('profiles')
+    .select('id, slug')
+    .limit(50) as { data: { id: string; slug: string | null }[] | null }
+  return (data ?? []).map((p: { id: string; slug: string | null }) => ({ id: p.slug ?? p.id }))
+}
 
 export default async function SelgerProfilPage({ params }: PageProps) {
   const { id: slugOrId } = await params
-  const supabase = await createClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase = createPublicClient() as any
 
   // Fetch profile — try slug first, fall back to ID
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let profile: Profile | null = null
   for (const field of ['slug', 'id']) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from('profiles')
       .select('*')
       .eq(field, slugOrId)
@@ -77,8 +98,7 @@ export default async function SelgerProfilPage({ params }: PageProps) {
   if (!profile) notFound()
 
   // Fetch listings (active + sold)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: listingsData } = await (supabase as any)
+  const { data: listingsData } = await supabase
     .from('listings')
     .select('*, favorites_count:favorites(count)')
     .eq('seller_id', profile.id)
@@ -95,8 +115,7 @@ export default async function SelgerProfilPage({ params }: PageProps) {
   // Fetch reviews (safe — table may not exist yet)
   let reviews: (Review & { profiles: { company_name: string } | null })[] = []
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: reviewsData } = await (supabase as any)
+    const { data: reviewsData } = await supabase
       .from('reviews')
       .select('*, profiles(company_name)')
       .eq('seller_id', profile.id)
@@ -410,6 +429,9 @@ export default async function SelgerProfilPage({ params }: PageProps) {
                   )}
                 </div>
               </div>
+
+              {/* Ta kontakt */}
+              <SellerContactModal sellerId={profile.id} sellerName={profile.company_name ?? 'Selger'} />
 
               {/* CTA */}
               <Link href="/sok" style={{
