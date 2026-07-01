@@ -151,22 +151,18 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
               {listing.brand && (
                 <p className="label-sm" style={{ marginBottom: 3 }}>{listing.brand}</p>
               )}
-              {listing.price_type === 'negotiable' ? (
+              {listing.price_type === 'negotiable' || !(listing.price_ex_vat ?? listing.price) ? (
                 /* Forhandlingsbar — vis kun én gang i gull */
                 <p className="price-display" style={{ fontSize: 17 }}>Forhandlingsbar</p>
               ) : (
                 <>
                   <p className="price-display" style={{ fontSize: 17 }}>
                     {formatPrice(listing.price_ex_vat ?? listing.price)}
-                    {listing.price_ex_vat != null && listing.price_ex_vat > 0 && (
-                      <span style={{ fontFamily: 'Barlow', fontSize: 10, fontWeight: 400, color: 'var(--t3)', marginLeft: 4 }}>eks. mva</span>
-                    )}
+                    <span style={{ fontFamily: 'Barlow', fontSize: 10, fontWeight: 400, color: 'var(--t3)', marginLeft: 4 }}>eks. mva</span>
                   </p>
-                  {listing.price_inc_vat != null && listing.price_inc_vat > 0 && (
-                    <p style={{ fontSize: 11, color: 'var(--t3)', marginTop: 1 }}>
-                      {formatPrice(listing.price_inc_vat)} inkl. mva
-                    </p>
-                  )}
+                  <p style={{ fontSize: 11, color: 'var(--t3)', marginTop: 1 }}>
+                    {formatPrice(Math.round((listing.price_ex_vat ?? listing.price ?? 0) * 1.25))} inkl. mva
+                  </p>
                 </>
               )}
             </div>
