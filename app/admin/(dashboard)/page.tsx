@@ -99,9 +99,7 @@ export default async function AdminOverviewPage() {
                 </td></tr>
               )}
               {(recentProfiles ?? []).map((p: any) => (
-                <tr key={p.id} style={{ borderTop: '1px solid #F3F4F6', transition: 'background 0.1s' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <tr key={p.id} className="admin-tr">
                   <td style={{ padding: '12px 16px', fontSize: 14, color: '#1A1A1A', fontWeight: 600 }}>{p.company_name}</td>
                   <td style={{ padding: '12px 16px', fontSize: 13, color: '#6B7280', fontFamily: 'monospace' }}>{p.org_number}</td>
                   <td style={{ padding: '12px 16px', fontSize: 13, color: '#6B7280' }}>{emailMap[p.id] ?? '—'}</td>
@@ -122,6 +120,7 @@ export default async function AdminOverviewPage() {
           </table>
         </div>
       </div>
+      <style>{`.admin-tr { border-top: 1px solid #F3F4F6; transition: background 0.1s; } .admin-tr:hover { background: #F9FAFB; }`}</style>
     </div>
   )
 }

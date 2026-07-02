@@ -115,9 +115,7 @@ export default async function AdminSyncPage() {
               </td></tr>
             )}
             {(logs ?? []).map(log => (
-              <tr key={log.id} style={{ transition: 'background 0.1s' }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <tr key={log.id} className="sync-tr">
                 <td style={{ ...td, whiteSpace: 'nowrap', fontSize: 13, color: '#6B7280' }}>{fmtDateTime(log.created_at)}</td>
                 <td style={td}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500, color: '#1A1A1A' }}>
@@ -142,6 +140,7 @@ export default async function AdminSyncPage() {
           </tbody>
         </table>
       </div>
+      <style>{`.sync-tr { transition: background 0.1s; } .sync-tr:hover { background: #F9FAFB; }`}</style>
     </div>
   )
 }
