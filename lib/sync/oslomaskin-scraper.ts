@@ -498,6 +498,16 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
       // Always update images to fix any previously stored incorrect images
       const imagesChanged = item.images.length > 0
 
+      // Log price change before overwriting
+      if (priceChanged) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('price_history').insert({
+          listing_id: current.id,
+          old_price:  current.price,
+          new_price:  item.price,
+        })
+      }
+
       if (priceChanged || hoursChanged || imagesChanged) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('listings')
@@ -519,9 +529,9 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
         else if (priceChanged || hoursChanged) result.updated++
       }
 
-      if (current.status === 'removed_by_sync') {
+      if (current.status === 'removed_by_sync' || current.status === 'delisted') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('listings').update({ status: 'active' }).eq('id', current.id)
+        await (supabase as any).from('listings').update({ status: 'active', delisted_at: null }).eq('id', current.id)
       }
     }
   }
@@ -532,7 +542,7 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('listings')
-        .update({ status: 'removed_by_sync', updated_at: new Date() })
+        .update({ status: 'delisted', delisted_at: new Date(), updated_at: new Date() })
         .eq('id', row.id)
       result.removed++
     }

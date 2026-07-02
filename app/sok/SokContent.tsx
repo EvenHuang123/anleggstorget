@@ -230,6 +230,36 @@ export default function SokContent() {
 
       setListings((data as Listing[]) || [])
       setTotalCount(count ?? 0)
+
+      // Log search for market intelligence — fire-and-forget, never blocks UX
+      const hasFilters = treeKeys.length > 0 || !!subcategory || !!(location || fylke) ||
+        !!listingType || !!(minPrice || maxPrice) || selectedBrands.length > 0 ||
+        !!(yearFrom || yearTo) || !!(hoursMin || hoursMax) || !!listedWithin
+      if (q || hasFilters) {
+        const activeFilters: Record<string, unknown> = {}
+        if (treeKeys.length)          activeFilters.category    = categoryParam
+        if (subcategory)              activeFilters.subcategory = subcategory
+        if (location)                 activeFilters.location    = location
+        if (fylke)                    activeFilters.fylke       = fylke
+        if (listingType)              activeFilters.listingType = listingType
+        if (minPrice)                 activeFilters.minPrice    = minPrice
+        if (maxPrice)                 activeFilters.maxPrice    = maxPrice
+        if (selectedBrands.length)    activeFilters.brand       = brand
+        if (yearFrom)                 activeFilters.yearFrom    = yearFrom
+        if (yearTo)                   activeFilters.yearTo      = yearTo
+        if (hoursMin)                 activeFilters.hoursMin    = hoursMin
+        if (hoursMax)                 activeFilters.hoursMax    = hoursMax
+        if (listedWithin)             activeFilters.listedWithin = listedWithin
+        fetch('/api/search/log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query:         q,
+            results_count: count ?? 0,
+            filters:       Object.keys(activeFilters).length > 0 ? activeFilters : null,
+          }),
+        }).catch(() => {})
+      }
     } catch {
       setListings([])
       setTotalCount(0)

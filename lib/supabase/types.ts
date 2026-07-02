@@ -32,7 +32,7 @@ export type PriceType = 'fast_price' | 'negotiable' | 'auction'
 // ALTER TABLE public.listings ADD COLUMN IF NOT EXISTS listing_type listing_type NOT NULL DEFAULT 'sale';
 export type ListingType = 'sale' | 'rent' | 'both'
 
-export type ListingStatus = 'active' | 'sold' | 'reserved' | 'draft' | 'removed_by_sync'
+export type ListingStatus = 'active' | 'sold' | 'reserved' | 'draft' | 'removed_by_sync' | 'delisted'
 
 export type InquiryStatus = 'new' | 'read' | 'replied'
 
@@ -90,6 +90,8 @@ export interface Listing {
   sold_price?: number | null
   created_at: string
   updated_at: string
+  first_seen_at?: string | null
+  delisted_at?: string | null
   profiles?: Profile
 }
 

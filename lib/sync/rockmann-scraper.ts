@@ -595,6 +595,16 @@ export async function syncRockmannListings(): Promise<SyncResult> {
         (item.images.length > 1 && dbImageCount <= 1)
 
       if (changed) {
+        // Log price change before overwriting
+        if (current.price !== item.price) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from('price_history').insert({
+            listing_id: current.id,
+            old_price:  current.price,
+            new_price:  item.price,
+          })
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any).from('listings')
           .update({
@@ -623,10 +633,10 @@ export async function syncRockmannListings(): Promise<SyncResult> {
         status:      changed ? 'updated' : 'unchanged',
       })
 
-      // Re-activate if previously soft-deleted
-      if (current.status === 'removed_by_sync') {
+      // Re-activate if previously delisted
+      if (current.status === 'removed_by_sync' || current.status === 'delisted') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('listings').update({ status: 'active' }).eq('id', current.id)
+        await (supabase as any).from('listings').update({ status: 'active', delisted_at: null }).eq('id', current.id)
       }
     }
   }
@@ -636,7 +646,7 @@ export async function syncRockmannListings(): Promise<SyncResult> {
   for (const [extId, row] of dbMap.entries()) {
     if (!scrapedIds.has(extId) && row.status === 'active') {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('listings').update({ status: 'removed_by_sync', updated_at: new Date() }).eq('id', row.id)
+      await (supabase as any).from('listings').update({ status: 'delisted', delisted_at: new Date(), updated_at: new Date() }).eq('id', row.id)
       result.removed++
     }
   }

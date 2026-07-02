@@ -387,6 +387,16 @@ export async function syncNASTAListings(): Promise<SyncResult> {
         existing.description      !== parsed.description
 
       if (changed) {
+        // Log price change before overwriting
+        if (existing.price !== parsed.price) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).from('price_history').insert({
+            listing_id: existing.id,
+            old_price:  existing.price,
+            new_price:  parsed.price,
+          })
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await (supabase as any)
           .from('listings')
@@ -407,12 +417,12 @@ export async function syncNASTAListings(): Promise<SyncResult> {
         else       result.updated++
       }
 
-      // Re-activate if previously removed by sync (machine re-appeared on NASTA).
-      if (existing.status === 'removed_by_sync') {
+      // Re-activate if previously delisted (machine re-appeared on NASTA).
+      if (existing.status === 'removed_by_sync' || existing.status === 'delisted') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any)
           .from('listings')
-          .update({ status: 'active' })
+          .update({ status: 'active', delisted_at: null })
           .eq('id', existing.id)
       }
     }
@@ -426,7 +436,7 @@ export async function syncNASTAListings(): Promise<SyncResult> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('listings')
-        .update({ status: 'removed_by_sync', updated_at: new Date() })
+        .update({ status: 'delisted', delisted_at: new Date(), updated_at: new Date() })
         .eq('id', row.id)
       result.removed++
     }
