@@ -27,7 +27,6 @@ function fmtPrice(n: number) {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  // New TEXT values
   'Gravemaskiner':          'Gravemaskiner',
   'Hjullastere':            'Hjullastere',
   'Dumpers':                'Dumpers',
@@ -35,13 +34,14 @@ const CATEGORY_LABELS: Record<string, string> = {
   'Kraner og løft':         'Kraner og løft',
   'Annet':                  'Annet',
   'Komprimering og asfalt': 'Annet',
-  // Legacy enum fallbacks
   gravemaskin: 'Gravemaskiner', hjullaster: 'Hjullastere', dumper: 'Dumpers',
   traktor: 'Annet', kranbil: 'Kraner og løft', skogsutstyr: 'Annet',
   betong: 'Annet', kompaktlaster: 'Kompaktmaskiner', annet: 'Annet',
-  // Truck-legacy → Annet
   'Truck og lager': 'Annet', gaffeltruck: 'Annet', lagertruck: 'Annet', trekktruck: 'Annet',
 }
+
+const th = { padding: '10px 16px', textAlign: 'left' as const, color: '#6B7280', fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap' as const }
+const td = { padding: '11px 16px', fontSize: 14, color: '#1A1A1A', borderTop: '1px solid #F3F4F6', verticalAlign: 'middle' as const }
 
 export default function MaskinerClient({ initialListings }: { initialListings: Listing[] }) {
   const [listings, setListings] = useState(initialListings)
@@ -74,125 +74,124 @@ export default function MaskinerClient({ initialListings }: { initialListings: L
   }
 
   const FILTERS: { key: FilterKey; label: string }[] = [
-    { key: 'all', label: 'Alle' },
-    { key: 'active', label: 'Aktive' },
+    { key: 'all',      label: 'Alle' },
+    { key: 'active',   label: 'Aktive' },
     { key: 'inactive', label: 'Inaktive' },
-    { key: 'nasta', label: 'NASTA' },
-    { key: 'manual', label: 'Manuelle' },
+    { key: 'nasta',    label: 'NASTA' },
+    { key: 'manual',   label: 'Manuelle' },
   ]
-
-  const s = {
-    th: { padding: '10px 16px', textAlign: 'left' as const, color: '#8b949e', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em', whiteSpace: 'nowrap' as const },
-    td: { padding: '11px 16px', fontSize: 14, color: '#e6edf3', borderTop: '1px solid #21262d', verticalAlign: 'middle' as const },
-  }
 
   return (
     <div>
-      {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#e6edf3', fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, color: '#1A1A1A' }}>
           Maskiner
         </h1>
-        <p style={{ margin: '4px 0 0', color: '#8b949e', fontSize: 13 }}>{listings.length} listings totalt</p>
+        <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: 13 }}>{listings.length} annonser totalt</p>
       </div>
 
       {/* Filters + search */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 4, background: '#161b22', border: '1px solid #30363d', borderRadius: 6, padding: 3 }}>
+        <div style={{ display: 'flex', gap: 4, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 8, padding: 3 }}>
           {FILTERS.map(f => (
             <button key={f.key} onClick={() => setFilter(f.key)} style={{
-              padding: '5px 12px', borderRadius: 4, border: 'none', fontSize: 13,
-              background: filter === f.key ? '#21262d' : 'transparent',
-              color: filter === f.key ? '#e6edf3' : '#8b949e',
+              padding: '5px 12px', borderRadius: 6, border: 'none', fontSize: 13,
+              background: filter === f.key ? '#FEF3C7' : 'transparent',
+              color: filter === f.key ? '#92400E' : '#6B7280',
               cursor: 'pointer', fontWeight: filter === f.key ? 600 : 400,
+              transition: 'all 0.12s',
             }}>
               {f.label}
             </button>
           ))}
         </div>
         <div style={{ position: 'relative', flex: '1 1 260px', maxWidth: 360 }}>
-          <Search size={14} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#8b949e', pointerEvents: 'none' }} />
+          <Search size={14} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#9CA3AF', pointerEvents: 'none' }} />
           <input
             type="text" placeholder="Søk på tittel eller selger..."
             value={search} onChange={e => setSearch(e.target.value)}
-            style={{ width: '100%', height: 38, paddingLeft: 34, paddingRight: 12, background: '#0d1117', border: '1px solid #30363d', borderRadius: 6, color: '#e6edf3', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', height: 38, paddingLeft: 34, paddingRight: 12, background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 8, color: '#1A1A1A', fontSize: 14, outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
       </div>
 
       {/* Table */}
-      <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: 8, overflowX: 'auto' }}>
+      <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, overflowX: 'auto', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #30363d' }}>
-              <th style={s.th}>Tittel</th>
-              <th style={s.th}>Selger</th>
-              <th style={s.th}>Pris</th>
-              <th style={s.th}>Kategori</th>
-              <th style={s.th}>Kilde</th>
-              <th style={s.th}>Status</th>
-              <th style={s.th}>Dato</th>
-              <th style={s.th}>Handlinger</th>
+            <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
+              <th style={th}>Tittel</th>
+              <th style={th}>Selger</th>
+              <th style={th}>Pris</th>
+              <th style={th}>Kategori</th>
+              <th style={th}>Kilde</th>
+              <th style={th}>Status</th>
+              <th style={th}>Dato</th>
+              <th style={th}>Handlinger</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 && (
-              <tr><td colSpan={8} style={{ ...s.td, textAlign: 'center', color: '#8b949e', padding: '32px 16px' }}>
-                Ingen listings funnet
+              <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: '#6B7280', padding: '32px 16px' }}>
+                Ingen annonser funnet
               </td></tr>
             )}
             {filtered.map(l => {
               const isActive = l.status === 'active'
               return (
                 <tr key={l.id}
-                  onMouseOver={e => (e.currentTarget.style.background = '#21262d22')}
-                  onMouseOut={e => (e.currentTarget.style.background = 'transparent')}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
-                  <td style={{ ...s.td, maxWidth: 240 }}>
+                  <td style={{ ...td, maxWidth: 240 }}>
                     <div style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.title}</div>
                   </td>
-                  <td style={{ ...s.td, color: '#8b949e', fontSize: 13, whiteSpace: 'nowrap' }}>
+                  <td style={{ ...td, color: '#6B7280', fontSize: 13, whiteSpace: 'nowrap' }}>
                     {l.profiles?.company_name ?? '—'}
                   </td>
-                  <td style={{ ...s.td, whiteSpace: 'nowrap', fontFamily: 'Barlow Condensed, sans-serif', fontSize: 15 }}>
+                  <td style={{ ...td, whiteSpace: 'nowrap', fontFamily: 'Barlow Condensed, sans-serif', fontSize: 15 }}>
                     {fmtPrice(l.price)}
                   </td>
-                  <td style={{ ...s.td, color: '#8b949e', fontSize: 13 }}>
+                  <td style={{ ...td, color: '#6B7280', fontSize: 13 }}>
                     {CATEGORY_LABELS[l.category] ?? l.category}
                   </td>
-                  <td style={s.td}>
+                  <td style={td}>
                     <span style={{
-                      padding: '3px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em',
-                      background: l.source === 'nasta' ? 'rgba(240,136,62,0.15)' : 'rgba(139,148,158,0.15)',
-                      color: l.source === 'nasta' ? '#f0883e' : '#8b949e',
-                      border: `1px solid ${l.source === 'nasta' ? 'rgba(240,136,62,0.3)' : 'rgba(139,148,158,0.3)'}`,
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                      padding: '3px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600,
+                      background: l.source === 'nasta' ? '#fffbeb' : '#F3F4F6',
+                      color: l.source === 'nasta' ? '#B45309' : '#6B7280',
+                      border: `1px solid ${l.source === 'nasta' ? '#fde68a' : '#E5E7EB'}`,
                     }}>
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: l.source === 'nasta' ? '#D97706' : '#9CA3AF' }} />
                       {l.source === 'nasta' ? 'NASTA' : 'Manuell'}
                     </span>
                   </td>
-                  <td style={s.td}>
+                  <td style={td}>
                     <span style={{
                       padding: '3px 8px', borderRadius: 4, fontSize: 12, fontWeight: 600,
-                      background: isActive ? 'rgba(63,185,80,0.1)' : 'rgba(248,81,73,0.1)',
-                      color: isActive ? '#3fb950' : '#f85149',
-                      border: `1px solid ${isActive ? 'rgba(63,185,80,0.3)' : 'rgba(248,81,73,0.3)'}`,
+                      background: isActive ? '#f0fdf4' : '#fef2f2',
+                      color: isActive ? '#16a34a' : '#dc2626',
+                      border: `1px solid ${isActive ? '#86efac' : '#fca5a5'}`,
                     }}>
                       {isActive ? 'Aktiv' : 'Inaktiv'}
                     </span>
                   </td>
-                  <td style={{ ...s.td, color: '#8b949e', fontSize: 13, whiteSpace: 'nowrap' }}>{fmtDate(l.created_at)}</td>
-                  <td style={{ ...s.td, whiteSpace: 'nowrap' }}>
+                  <td style={{ ...td, color: '#6B7280', fontSize: 13, whiteSpace: 'nowrap' }}>{fmtDate(l.created_at)}</td>
+                  <td style={{ ...td, whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <a
                         href={`/annonse/${l.slug}`} target="_blank" rel="noopener noreferrer"
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', background: 'none', border: '1px solid #30363d', borderRadius: 5, color: '#8b949e', fontSize: 12, textDecoration: 'none', cursor: 'pointer' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', background: 'none', border: '1px solid #E5E7EB', borderRadius: 6, color: '#6B7280', fontSize: 12, textDecoration: 'none', cursor: 'pointer', transition: 'all 0.12s' }}
+                        onMouseOver={e => { e.currentTarget.style.borderColor = '#B45309'; e.currentTarget.style.color = '#B45309' }}
+                        onMouseOut={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.color = '#6B7280' }}
                         title="Åpne annonsesiden"
                       >
                         <ExternalLink size={11} /> Se
                       </a>
                       <button
                         onClick={() => handleToggle(l.id, l.status)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', background: 'none', border: `1px solid ${isActive ? 'rgba(248,81,73,0.3)' : 'rgba(63,185,80,0.3)'}`, borderRadius: 5, color: isActive ? '#f85149' : '#3fb950', fontSize: 12, cursor: 'pointer' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', background: 'none', border: `1px solid ${isActive ? '#fca5a5' : '#86efac'}`, borderRadius: 6, color: isActive ? '#dc2626' : '#16a34a', fontSize: 12, cursor: 'pointer', transition: 'all 0.12s' }}
                         title={isActive ? 'Deaktiver' : 'Aktiver'}
                       >
                         {isActive ? <><ToggleLeft size={11} /> Deaktiver</> : <><ToggleRight size={11} /> Aktiver</>}

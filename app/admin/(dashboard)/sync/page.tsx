@@ -1,6 +1,7 @@
 import { requireAdmin } from '@/lib/admin/auth'
 import { createAdminClient } from '@/lib/admin/supabase'
 import SyncControls from './SyncControls'
+import { CheckCircle2, XCircle, Clock } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,10 +33,10 @@ function fmtMs(ms: number | null) {
 
 function StatusBadge({ status }: { status: string }) {
   const cfg = status === 'success'
-    ? { bg: 'rgba(63,185,80,0.1)', color: '#3fb950', border: 'rgba(63,185,80,0.3)', label: 'Success' }
+    ? { bg: '#f0fdf4', color: '#16a34a', border: '#86efac', label: 'Vellykket' }
     : status === 'error'
-    ? { bg: 'rgba(248,81,73,0.1)', color: '#f85149', border: 'rgba(248,81,73,0.3)', label: 'Feilet' }
-    : { bg: 'rgba(240,136,62,0.1)', color: '#f0883e', border: 'rgba(240,136,62,0.3)', label: 'Delvis' }
+    ? { bg: '#fef2f2', color: '#dc2626', border: '#fca5a5', label: 'Feilet' }
+    : { bg: '#fffbeb', color: '#D97706', border: '#fde68a', label: 'Delvis' }
 
   return (
     <span style={{
@@ -57,22 +58,20 @@ export default async function AdminSyncPage() {
     .order('created_at', { ascending: false })
     .limit(50) as { data: SyncLog[] | null }
 
-  const s = {
-    th: { padding: '10px 16px', textAlign: 'left' as const, color: '#8b949e', fontSize: 12, fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.05em', whiteSpace: 'nowrap' as const },
-    td: { padding: '12px 16px', fontSize: 14, color: '#e6edf3', borderTop: '1px solid #21262d', verticalAlign: 'top' as const },
-  }
+  const th = { padding: '10px 16px', textAlign: 'left' as const, color: '#6B7280', fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap' as const }
+  const td = { padding: '12px 16px', fontSize: 14, color: '#1A1A1A', borderTop: '1px solid #F3F4F6', verticalAlign: 'top' as const }
 
   const totalSuccess = (logs ?? []).filter(l => l.status === 'success').length
-  const totalErrors = (logs ?? []).filter(l => l.status === 'error').length
-  const avgDuration = (logs ?? []).reduce((sum, l) => sum + (l.duration_ms ?? 0), 0) / Math.max((logs ?? []).length, 1)
+  const totalErrors  = (logs ?? []).filter(l => l.status === 'error').length
+  const avgDuration  = (logs ?? []).reduce((sum, l) => sum + (l.duration_ms ?? 0), 0) / Math.max((logs ?? []).length, 1)
 
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#e6edf3', fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600, color: '#1A1A1A' }}>
           Sync-logger
         </h1>
-        <p style={{ margin: '4px 0 0', color: '#8b949e', fontSize: 13 }}>Siste 50 synkroniseringer (alle kilder)</p>
+        <p style={{ margin: '4px 0 0', color: '#6B7280', fontSize: 13 }}>Siste 50 synkroniseringer (alle kilder)</p>
       </div>
 
       <SyncControls />
@@ -80,52 +79,62 @@ export default async function AdminSyncPage() {
       {/* Summary */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
         {[
-          { label: 'Vellykket', value: totalSuccess, color: '#3fb950' },
-          { label: 'Feilet', value: totalErrors, color: '#f85149' },
-          { label: 'Snitt varighet', value: fmtMs(Math.round(avgDuration)), color: '#8b949e' },
-        ].map(({ label, value, color }) => (
-          <div key={label} style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: 8, padding: '14px 20px', minWidth: 140 }}>
-            <p style={{ margin: 0, color: '#8b949e', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
-            <p style={{ margin: '4px 0 0', color, fontSize: 22, fontWeight: 700, fontFamily: 'Barlow Condensed, sans-serif' }}>{value}</p>
+          { label: 'Vellykket', value: totalSuccess, color: '#16a34a', bg: '#f0fdf4', border: '#86efac', icon: CheckCircle2 },
+          { label: 'Feilet',    value: totalErrors,  color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', icon: XCircle },
+          { label: 'Snitt varighet', value: fmtMs(Math.round(avgDuration)), color: '#6B7280', bg: '#FFFFFF', border: '#E5E7EB', icon: Clock },
+        ].map(({ label, value, color, bg, border, icon: Icon }) => (
+          <div key={label} style={{ background: bg, border: `1px solid ${border}`, borderRadius: 10, padding: '14px 20px', minWidth: 150, display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <Icon size={18} color={color} />
+            <div>
+              <p style={{ margin: 0, color: '#6B7280', fontSize: 11, fontWeight: 500 }}>{label}</p>
+              <p style={{ margin: '2px 0 0', color, fontSize: 22, fontWeight: 700, fontFamily: 'Barlow Condensed, sans-serif' }}>{value}</p>
+            </div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: 8, overflowX: 'auto' }}>
+      <div style={{ background: '#FFFFFF', border: '1px solid #E5E7EB', borderRadius: 12, overflowX: 'auto', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #30363d' }}>
-              <th style={s.th}>Dato / tid</th>
-              <th style={s.th}>Kilde</th>
-              <th style={s.th}>Status</th>
-              <th style={{ ...s.th, textAlign: 'right' as const }}>Nye</th>
-              <th style={{ ...s.th, textAlign: 'right' as const }}>Oppdatert</th>
-              <th style={{ ...s.th, textAlign: 'right' as const }}>Fjernet</th>
-              <th style={{ ...s.th, textAlign: 'right' as const }}>Scraped</th>
-              <th style={{ ...s.th, textAlign: 'right' as const }}>Varighet</th>
-              <th style={s.th}>Feilmelding</th>
+            <tr style={{ borderBottom: '1px solid #F3F4F6' }}>
+              <th style={th}>Dato / tid</th>
+              <th style={th}>Kilde</th>
+              <th style={th}>Status</th>
+              <th style={{ ...th, textAlign: 'right' as const }}>Nye</th>
+              <th style={{ ...th, textAlign: 'right' as const }}>Oppdatert</th>
+              <th style={{ ...th, textAlign: 'right' as const }}>Fjernet</th>
+              <th style={{ ...th, textAlign: 'right' as const }}>Scraped</th>
+              <th style={{ ...th, textAlign: 'right' as const }}>Varighet</th>
+              <th style={th}>Feilmelding</th>
             </tr>
           </thead>
           <tbody>
             {(logs ?? []).length === 0 && (
-              <tr><td colSpan={9} style={{ ...s.td, textAlign: 'center', color: '#8b949e', padding: '32px 16px' }}>
+              <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: '#6B7280', padding: '32px 16px' }}>
                 Ingen sync-logger ennå
               </td></tr>
             )}
             {(logs ?? []).map(log => (
-              <tr key={log.id} className="admin-tr">
-                <td style={{ ...s.td, whiteSpace: 'nowrap', fontSize: 13, color: '#8b949e' }}>{fmtDateTime(log.created_at)}</td>
-                <td style={{ ...s.td, fontWeight: 600, textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.04em', color: '#f0883e' }}>{log.source}</td>
-                <td style={s.td}><StatusBadge status={log.status} /></td>
-                <td style={{ ...s.td, textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontSize: 16, color: log.created_count > 0 ? '#3fb950' : '#8b949e' }}>{log.created_count ?? 0}</td>
-                <td style={{ ...s.td, textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontSize: 16, color: log.updated_count > 0 ? '#388bfd' : '#8b949e' }}>{log.updated_count ?? 0}</td>
-                <td style={{ ...s.td, textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontSize: 16, color: log.removed_count > 0 ? '#f85149' : '#8b949e' }}>{log.removed_count ?? 0}</td>
-                <td style={{ ...s.td, textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontSize: 16 }}>{log.total_scraped ?? 0}</td>
-                <td style={{ ...s.td, textAlign: 'right', fontSize: 13, color: '#8b949e', whiteSpace: 'nowrap' }}>{fmtMs(log.duration_ms)}</td>
-                <td style={{ ...s.td, maxWidth: 280 }}>
+              <tr key={log.id} style={{ transition: 'background 0.1s' }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#F9FAFB')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                <td style={{ ...td, whiteSpace: 'nowrap', fontSize: 13, color: '#6B7280' }}>{fmtDateTime(log.created_at)}</td>
+                <td style={td}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500, color: '#1A1A1A' }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#D97706', display: 'inline-block', flexShrink: 0 }} />
+                    {log.source}
+                  </span>
+                </td>
+                <td style={td}><StatusBadge status={log.status} /></td>
+                <td style={{ ...td, textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontSize: 16, color: log.created_count > 0 ? '#16a34a' : '#6B7280' }}>{log.created_count ?? 0}</td>
+                <td style={{ ...td, textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontSize: 16, color: log.updated_count > 0 ? '#B45309' : '#6B7280' }}>{log.updated_count ?? 0}</td>
+                <td style={{ ...td, textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontSize: 16, color: log.removed_count > 0 ? '#dc2626' : '#6B7280' }}>{log.removed_count ?? 0}</td>
+                <td style={{ ...td, textAlign: 'right', fontFamily: 'Barlow Condensed, sans-serif', fontSize: 16 }}>{log.total_scraped ?? 0}</td>
+                <td style={{ ...td, textAlign: 'right', fontSize: 13, color: '#6B7280', whiteSpace: 'nowrap' }}>{fmtMs(log.duration_ms)}</td>
+                <td style={{ ...td, maxWidth: 280 }}>
                   {log.error_message
-                    ? <code style={{ color: '#f85149', fontSize: 11, wordBreak: 'break-all', background: 'rgba(248,81,73,0.08)', padding: '3px 6px', borderRadius: 4 }}>{log.error_message}</code>
-                    : <span style={{ color: '#30363d' }}>—</span>
+                    ? <code style={{ color: '#dc2626', fontSize: 11, wordBreak: 'break-all', background: '#fef2f2', padding: '3px 6px', borderRadius: 4 }}>{log.error_message}</code>
+                    : <span style={{ color: '#D1D5DB' }}>—</span>
                   }
                 </td>
               </tr>
@@ -133,8 +142,6 @@ export default async function AdminSyncPage() {
           </tbody>
         </table>
       </div>
-
-      <style>{`.admin-tr { transition: background 0.1s; } .admin-tr:hover { background: #21262d44; }`}</style>
     </div>
   )
 }

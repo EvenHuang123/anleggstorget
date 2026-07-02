@@ -12,9 +12,9 @@ export default async function AdminDashboardLayout({ children }: { children: Rea
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#0d1117',
+      minHeight: '100vh', background: '#F7F7F9',
       fontFamily: 'Barlow, system-ui, sans-serif',
-      color: '#e6edf3',
+      color: '#1A1A1A',
     }}>
       <AdminTopbar />
       <div style={{ display: 'flex', paddingTop: 56 }}>
