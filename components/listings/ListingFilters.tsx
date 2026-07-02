@@ -262,10 +262,7 @@ export default function ListingFilters({ onClose, resultCount, searchParams, onF
       border: onClose ? 'none' : '1px solid var(--border)',
       borderRadius: onClose ? 0 : 4,
       padding: onClose ? '4px 20px 88px' : '14px 16px',
-      position: onClose ? 'static' : 'sticky',
-      top: onClose ? undefined : 100,
-      maxHeight: onClose ? 'none' : 'calc(100vh - 120px)',
-      overflowY: onClose ? 'visible' : 'auto',
+      alignSelf: 'flex-start',
     }}>
 
       {/* Header row */}
