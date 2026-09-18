@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio'
 import { createClient } from '@supabase/supabase-js'
+import { checkDelistGuard, logDelistGuardTripped } from './guards'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -38,7 +39,6 @@ interface ScrapedListing {
   images:         string[]
   dbSlug:         string
   description:    string | null
-  condition:      string
 }
 
 interface DbListing {
@@ -375,7 +375,6 @@ async function scrapeListPage(): Promise<ScrapedListing[]> {
       images: listImage ? [listImage] : [],
       dbSlug,
       description: null,
-      condition: 'Brukt',
     })
   })
 
@@ -404,6 +403,8 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
     .from('listings')
     .select('id, source_external_id, status, price, operating_hours, weight_class, images, created_at')
     .eq('source', SOURCE) as { data: DbListing[] | null }
+
+  console.log(`[oslomaskin] Eksisterende i DB (source=${SOURCE}): ${existing?.length ?? 0}`)
 
   // Group by source_external_id — detect and soft-delete in-DB duplicates (keep newest)
   const rowsByExtId = new Map<string, DbListing[]>()
@@ -455,6 +456,10 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
     return true
   })
 
+  // Diagnostikk: hvor mange scraped er nye vs. allerede i DB
+  const newCount = uniqueListings.filter(i => !dbMap.has(i.externalId)).length
+  console.log(`[oslomaskin] Hentet ${uniqueListings.length} annonser fra kilde — Nye: ${newCount}, Eksisterende: ${uniqueListings.length - newCount}`)
+
   const seenExternalIds = new Set<string>()
 
   // 4. Upsert listings
@@ -484,14 +489,18 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
         location:           DEFAULT_LOCATION,
         images:             item.images,
         description:        item.description,
-        condition:          item.condition,
         status:             'active',
         views:              0,
         slug:               item.dbSlug,
       })
 
-      if (error) result.errors++
-      else       result.created++
+      if (error) {
+        // Ikke svelg feilen — logg hele meldingen så feltvaliderings-/skjemafeil synes
+        console.error(`[oslomaskin] INSERT feilet for ${item.externalId} (${item.title}):`, error.message, error.details ?? '', error.hint ?? '')
+        result.errors++
+      } else {
+        result.created++
+      }
     } else {
       const priceChanged  = current.price !== item.price
       const hoursChanged  = current.operating_hours !== item.operatingHours
@@ -520,25 +529,36 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
             ...(item.operatingHours !== null ? { operating_hours: item.operatingHours } : {}),
             ...(item.weightClass    !== null ? { weight_class:    item.weightClass    } : {}),
             ...(item.description    !== null ? { description:     item.description    } : {}),
-            condition:  item.condition,
             images:     item.images.length > 0 ? item.images : current.images,
           })
           .eq('id', current.id)
 
-        if (error) result.errors++
-        else if (priceChanged || hoursChanged) result.updated++
+        if (error) {
+          console.error(`[oslomaskin] UPDATE feilet for ${item.externalId} (${item.title}):`, error.message, error.details ?? '', error.hint ?? '')
+          result.errors++
+        } else if (priceChanged || hoursChanged) {
+          result.updated++
+        }
       }
 
-      if (current.status === 'removed_by_sync' || current.status === 'delisted') {
+      if (current.status === 'removed_by_sync' || current.status === 'delisted' || current.status === 'sold') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('listings').update({ status: 'active', delisted_at: null }).eq('id', current.id)
+        await (supabase as any).from('listings').update({ status: 'active', delisted_at: null, sold_at: null }).eq('id', current.id)
       }
     }
   }
 
-  // 5. Soft-delete listings no longer on Oslo Maskin site
-  for (const [extId, row] of dbMap.entries()) {
-    if (!seenExternalIds.has(extId) && row.status === 'active') {
+  // 5. Soft-delete listings no longer on Oslo Maskin site — beskyttet av sikkerhetsventil
+  const activeCount = [...dbMap.values()].filter(r => r.status === 'active').length
+  const toDelist = [...dbMap.entries()]
+    .filter(([extId, row]) => !seenExternalIds.has(extId) && row.status === 'active')
+    .map(([, row]) => row)
+  const guard = checkDelistGuard(activeCount, toDelist.length)
+  if (!guard.allowed) {
+    console.error(`[oslomaskin] ${guard.reason}`)
+    await logDelistGuardTripped(supabase, SOURCE, guard)
+  } else {
+    for (const row of toDelist) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('listings')
@@ -551,6 +571,7 @@ export async function syncOslomaskinListings(): Promise<SyncResult> {
   result.durationMs        = Date.now() - start
   result.duplicatesRemoved = duplicatesRemoved
   result.categoryBreakdown = categoryBreakdown
+  console.log(`[oslomaskin] Ferdig — Nye: ${result.created}, Oppdatert: ${result.updated}, Fjernet: ${result.removed}, Feil: ${result.errors}`)
   return result
 }
 

@@ -27,6 +27,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { checkDelistGuard, logDelistGuardTripped } from './guards'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -307,6 +308,8 @@ export async function syncNASTAListings(): Promise<SyncResult> {
     .select('id, source_external_id, status, price, operating_hours, description, images, created_at')
     .eq('source', SOURCE) as { data: DbListing[] | null }
 
+  console.log(`[nasta] Eksisterende i DB (source=${SOURCE}): ${existing?.length ?? 0}`)
+
   // Group by source_external_id — detect and soft-delete in-DB duplicates (keep newest)
   const rowsByExtId = new Map<string, DbListing[]>()
   for (const row of existing ?? []) {
@@ -330,6 +333,12 @@ export async function syncNASTAListings(): Promise<SyncResult> {
   // 2. Discover all listing paths on NASTA site
   const paths = await discoverListingPaths()
   result.totalScraped = paths.length
+
+  const newCount = paths.filter(p => {
+    const extId = p.split('/').pop()?.replace('.html', '') ?? p
+    return !dbMap.has(extId)
+  }).length
+  console.log(`[nasta] Hentet ${paths.length} annonser fra kilde — Nye: ${newCount}, Eksisterende: ${paths.length - newCount}`)
 
   const seenExternalIds = new Set<string>()
 
@@ -377,8 +386,13 @@ export async function syncNASTAListings(): Promise<SyncResult> {
         slug:               `${slugify(parsed.title)}-${listingId.slice(0, 6)}`,
       })
 
-      if (error) result.errors++
-      else       result.created++
+      if (error) {
+        // Ikke svelg feilen — logg hele meldingen så feltvaliderings-/skjemafeil synes
+        console.error(`[nasta] INSERT feilet for ${parsed.externalId} (${parsed.title}):`, error.message, error.details ?? '', error.hint ?? '')
+        result.errors++
+      } else {
+        result.created++
+      }
     } else {
       // UPDATE if key fields changed
       const changed =
@@ -413,16 +427,20 @@ export async function syncNASTAListings(): Promise<SyncResult> {
           })
           .eq('id', existing.id)
 
-        if (error) result.errors++
-        else       result.updated++
+        if (error) {
+          console.error(`[nasta] UPDATE feilet for ${parsed.externalId} (${parsed.title}):`, error.message, error.details ?? '', error.hint ?? '')
+          result.errors++
+        } else {
+          result.updated++
+        }
       }
 
-      // Re-activate if previously delisted (machine re-appeared on NASTA).
-      if (existing.status === 'removed_by_sync' || existing.status === 'delisted') {
+      // Re-activate if previously delisted/sold (machine re-appeared on NASTA).
+      if (existing.status === 'removed_by_sync' || existing.status === 'delisted' || existing.status === 'sold') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabase as any)
           .from('listings')
-          .update({ status: 'active', delisted_at: null })
+          .update({ status: 'active', delisted_at: null, sold_at: null })
           .eq('id', existing.id)
       }
     }
@@ -430,9 +448,17 @@ export async function syncNASTAListings(): Promise<SyncResult> {
     await sleep(300)
   }
 
-  // 4. Soft-delete listings no longer on NASTA
-  for (const [extId, row] of dbMap.entries()) {
-    if (!seenExternalIds.has(extId) && row.status === 'active') {
+  // 4. Soft-delete listings no longer on NASTA — beskyttet av sikkerhetsventil
+  const activeCount = [...dbMap.values()].filter(r => r.status === 'active').length
+  const toDelist = [...dbMap.entries()]
+    .filter(([extId, row]) => !seenExternalIds.has(extId) && row.status === 'active')
+    .map(([, row]) => row)
+  const guard = checkDelistGuard(activeCount, toDelist.length)
+  if (!guard.allowed) {
+    console.error(`[nasta] ${guard.reason}`)
+    await logDelistGuardTripped(supabase, SOURCE, guard)
+  } else {
+    for (const row of toDelist) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any)
         .from('listings')
@@ -445,6 +471,7 @@ export async function syncNASTAListings(): Promise<SyncResult> {
   result.durationMs        = Date.now() - start
   result.duplicatesRemoved = duplicatesRemoved
   result.categoryBreakdown = categoryBreakdown
+  console.log(`[nasta] Ferdig — Nye: ${result.created}, Oppdatert: ${result.updated}, Fjernet: ${result.removed}, Feil: ${result.errors}`)
   return result
 }
 

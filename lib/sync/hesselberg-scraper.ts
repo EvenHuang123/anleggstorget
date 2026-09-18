@@ -15,6 +15,7 @@
 
 import * as cheerio from 'cheerio'
 import { createClient } from '@supabase/supabase-js'
+import { checkDelistGuard, logDelistGuardTripped } from './guards'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -472,18 +473,26 @@ export async function syncHesselbergListings(): Promise<SyncResult> {
       if (error) result.errors++
       else if (priceChanged || (item.images.length > 0 && item.images.length !== dbImageCount)) result.updated++
 
-      // Re-activate if previously delisted
-      if (current.status === 'removed_by_sync' || current.status === 'delisted') {
+      // Re-activate if previously delisted/sold
+      if (current.status === 'removed_by_sync' || current.status === 'delisted' || current.status === 'sold') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('listings').update({ status: 'active', delisted_at: null }).eq('id', current.id)
+        await (supabase as any).from('listings').update({ status: 'active', delisted_at: null, sold_at: null }).eq('id', current.id)
       }
     }
   }
 
-  // 4. Soft-delete listings no longer on Hesselberg site
+  // 4. Soft-delete listings no longer on Hesselberg site — beskyttet av sikkerhetsventil
   const scrapedIds = new Set(listings.map(l => l.externalId))
-  for (const [extId, row] of dbMap.entries()) {
-    if (!scrapedIds.has(extId) && row.status === 'active') {
+  const activeCount = [...dbMap.values()].filter(r => r.status === 'active').length
+  const toDelist = [...dbMap.entries()]
+    .filter(([extId, row]) => !scrapedIds.has(extId) && row.status === 'active')
+    .map(([, row]) => row)
+  const guard = checkDelistGuard(activeCount, toDelist.length)
+  if (!guard.allowed) {
+    console.error(`[hesselberg] ${guard.reason}`)
+    await logDelistGuardTripped(supabase, SOURCE, guard)
+  } else {
+    for (const row of toDelist) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('listings').update({ status: 'delisted', delisted_at: new Date(), updated_at: new Date() }).eq('id', row.id)
       result.removed++

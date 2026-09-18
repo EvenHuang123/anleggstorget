@@ -13,6 +13,7 @@
 
 import * as cheerio from 'cheerio'
 import { createClient } from '@supabase/supabase-js'
+import { checkDelistGuard, logDelistGuardTripped } from './guards'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ interface ScrapedListing {
   externalId:     string
   location:       string
   slug:           string
+  sold:           boolean
 }
 
 const EXCLUDED_KEYWORDS = [
@@ -391,8 +393,9 @@ function parsePage(html: string): { listings: ScrapedListing[]; hasNext: boolean
   $('div.result-item').each((_i, el) => {
     const $el = $(el)
 
-    // Skip sold listings
-    if ($el.find('span.objectstatus.sold').length > 0) return
+    // Kilden markerer solgte annonser eksplisitt — vi hopper IKKE over dem lenger,
+    // men flagger dem så vi kan sette status='sold' på annonser vi allerede har hatt aktive.
+    const sold = $el.find('span.objectstatus.sold').length > 0
 
     const title = $el.find('h3.t4').text().trim()
     if (!title) return
@@ -431,7 +434,7 @@ function parsePage(html: string): { listings: ScrapedListing[]; hasNext: boolean
       category, subcategory, images,
       operatingHours: null,  // filled in after detail-page fetch
       weightClass:    null,  // filled in after detail-page fetch
-      externalId, location, slug,
+      externalId, location, slug, sold,
     })
   })
 
@@ -548,6 +551,19 @@ export async function syncRockmannListings(): Promise<SyncResult> {
     categoryBreakdown[item.category] = (categoryBreakdown[item.category] ?? 0) + 1
     const current = dbMap.get(item.externalId)
 
+    // Kilden sier eksplisitt solgt:
+    //  - finnes den fra før → sett status='sold' (bevar salgstidspunkt hvis satt)
+    //  - finnes den IKKE → hopp over (vil ikke importere maskiner vi aldri hadde aktive)
+    if (item.sold) {
+      if (current && current.status !== 'sold') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from('listings')
+          .update({ status: 'sold', sold_at: new Date(), delisted_at: null, updated_at: new Date() })
+          .eq('id', current.id)
+      }
+      continue
+    }
+
     if (!current) {
       const listingId = crypto.randomUUID()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -633,18 +649,26 @@ export async function syncRockmannListings(): Promise<SyncResult> {
         status:      changed ? 'updated' : 'unchanged',
       })
 
-      // Re-activate if previously delisted
-      if (current.status === 'removed_by_sync' || current.status === 'delisted') {
+      // Re-activate if previously delisted/sold (kom tilbake i kilden som aktiv)
+      if (current.status === 'removed_by_sync' || current.status === 'delisted' || current.status === 'sold') {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from('listings').update({ status: 'active', delisted_at: null }).eq('id', current.id)
+        await (supabase as any).from('listings').update({ status: 'active', delisted_at: null, sold_at: null }).eq('id', current.id)
       }
     }
   }
 
-  // 4. Soft-delete listings no longer on Finn
+  // 4. Soft-delete listings no longer on Finn — beskyttet av sikkerhetsventil
   const scrapedIds = new Set(listings.map(l => l.externalId))
-  for (const [extId, row] of dbMap.entries()) {
-    if (!scrapedIds.has(extId) && row.status === 'active') {
+  const activeCount = [...dbMap.values()].filter(r => r.status === 'active').length
+  const toDelist = [...dbMap.entries()]
+    .filter(([extId, row]) => !scrapedIds.has(extId) && row.status === 'active')
+    .map(([, row]) => row)
+  const guard = checkDelistGuard(activeCount, toDelist.length)
+  if (!guard.allowed) {
+    console.error(`[rockmann] ${guard.reason}`)
+    await logDelistGuardTripped(supabase, SOURCE, guard)
+  } else {
+    for (const row of toDelist) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (supabase as any).from('listings').update({ status: 'delisted', delisted_at: new Date(), updated_at: new Date() }).eq('id', row.id)
       result.removed++
