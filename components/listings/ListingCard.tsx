@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { Heart, MapPin, Clock, Calendar, ArrowRight, Shield } from 'lucide-react'
 import { formatPrice, formatNumber, formatRelativeDate, getListingImageUrl, getListingFallbackImage, CATEGORIES } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
@@ -19,12 +20,19 @@ export default function ListingCard({ listing, onToggleFavorite, isFavorite }: P
   const [imgSrc, setImgSrc] = useState(
     listing.images?.[0] ? getListingImageUrl(listing.images[0]) : fallback
   )
+  const pathname = usePathname()
 
   return (
     <Link
       href={`/annonse/${listing.slug || listing.id}`}
       aria-label={`${listing.title}${listing.brand ? ` – ${listing.brand}` : ''}${listing.location ? `, ${listing.location}` : ''} – ${CATEGORIES[listing.category]?.label || listing.category}`}
       style={{ textDecoration: 'none', display: 'block' }}
+      onClick={() => {
+        if (pathname === '/sok') {
+          sessionStorage.setItem('lastSearch', window.location.search)
+          sessionStorage.setItem('lastSearchScroll', String(window.scrollY))
+        }
+      }}
     >
       <article className="card card-gold" style={{ overflow: 'hidden', cursor: 'pointer' }}>
         {/* Image */}

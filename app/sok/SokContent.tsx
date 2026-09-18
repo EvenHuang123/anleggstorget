@@ -271,6 +271,18 @@ export default function SokContent() {
   useEffect(() => { fetchListings() }, [fetchListings])
   useEffect(() => { setSearchInput(searchParams.get('q') || '') }, [pathname, searchParams])
 
+  // Gjenopprett scroll-posisjon etter at listingene er renderert
+  useEffect(() => {
+    if (loading) return
+    const pos = sessionStorage.getItem('restoreScrollTo')
+    if (!pos) return
+    sessionStorage.removeItem('restoreScrollTo')
+    // Dobbel rAF: vent til React har commitet og nettleseren har paintet
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      window.scrollTo({ top: parseInt(pos, 10), behavior: 'instant' })
+    }))
+  }, [loading])
+
   // ── Autocomplete ────────────────────────────────────────────────────────────
   const fetchSuggestions = useCallback(async (q: string) => {
     try {
