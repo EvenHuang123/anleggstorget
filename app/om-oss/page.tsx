@@ -4,11 +4,12 @@ import Navbar from '@/components/shared/Navbar'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Om Anleggstorget – Norges tryggeste B2B maskinmarkedsplass',
+  title: 'Om Anleggstorget – Norges tryggeste maskinmarkedsplass',
   description: 'Lær mer om Anleggstorget, hvordan vi verifiserer alle bedrifter mot Brønnøysundregisteret, og hvorfor vi er det sikreste valget for maskinhandel i Norge.',
   keywords: ['om Anleggstorget', 'B2B maskin Norge', 'verifisert maskinhandel', 'Brønnøysundregisteret', 'trygg maskinmarkedsplass'],
+  alternates: { canonical: 'https://www.anleggstorget.no/om-oss' },
   openGraph: {
-    title: 'Om Anleggstorget – Norges tryggeste B2B maskinmarkedsplass',
+    title: 'Om Anleggstorget – Norges tryggeste maskinmarkedsplass',
     description: 'Verifiserte bedrifter, trygg handel og markedsplassen bygget for norsk næringsliv.',
   },
 }

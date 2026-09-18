@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: 'Guider og eksperttips for kjøp av anleggsmaskiner – Anleggstorget',
   description: 'Praktiske guider for kjøp, salg og vedlikehold av brukte anleggsmaskiner i Norge. Sjekklister, prisguider og eksperttips fra bransjen.',
   keywords: ['guide kjøpe gravemaskin', 'anleggsmaskin tips', 'prisguide anleggsmaskiner', 'vedlikehold gravemaskin guide', 'kjøpe brukt maskin Norge'],
+  alternates: { canonical: 'https://www.anleggstorget.no/guide' },
   openGraph: {
     title: 'Guider for kjøp av anleggsmaskiner | Anleggstorget',
     description: 'Praktiske guider og eksperttips for kjøp, salg og vedlikehold av brukte anleggsmaskiner.',

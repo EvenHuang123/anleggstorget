@@ -26,18 +26,19 @@ const barlowCondensed = Barlow_Condensed({
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.anleggstorget.no'),
   title: {
-    default: 'Anleggstorget – Kjøp og selg tunge maskiner | B2B Maskinmarkedsplass',
+    default: 'Anleggstorget – Kjøp og selg tunge maskiner | Maskinmarkedsplass',
     template: '%s | Anleggstorget',
   },
   alternates: {
-    canonical: 'https://www.anleggstorget.no',
+    // Ingen global canonical her — den ville blitt arvet av alle undersider og
+    // pekt dem til forsiden. Hver side setter sin egen self-canonical.
     languages: {
       'nb-NO': 'https://www.anleggstorget.no',
       'x-default': 'https://www.anleggstorget.no',
     },
   },
   description:
-    'Norges B2B-markedsplass for verifiserte bedrifter. Kjøp, selg og leie gravemaskiner, hjullastere, dumpere og anleggsutstyr trygt og gratis.',
+    'Norges markedsplass for anleggsmaskiner. Kjøp, selg og leie gravemaskiner, hjullastere, dumpere og anleggsutstyr trygt og gratis. Selgere verifisert mot Brønnøysundregisteret.',
   keywords: [
     'kjøp maskiner', 'selg gravemaskin', 'anleggsutstyr Norge', 'brukt maskin til salgs',
     'hjullaster', 'dumper', 'traktor', 'kranbil', 'B2B maskinmarked', 'gravemaskin',
