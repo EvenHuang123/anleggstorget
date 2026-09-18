@@ -44,23 +44,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sb = supabase as any
     const [{ data: listings }, { data: sellers }] = await Promise.all([
-      // Only active listings — removed/sold listings returning 404 would hurt SEO
-      sb.from('listings').select('id, slug, updated_at')
-        .eq('status', 'active')
+      // Aktive + solgte + avpubliserte (delisted) beholdes som permanente sider.
+      // Solgte/avpubliserte får lavere priority, men blir værende for SEO-autoritet.
+      sb.from('listings').select('id, slug, updated_at, sold_at, delisted_at, status')
+        .in('status', ['active', 'sold', 'delisted'])
         .not('slug', 'is', null) as
-        Promise<{ data: { id: string; slug: string; updated_at: string }[] | null }>,
+        Promise<{ data: { id: string; slug: string; updated_at: string; sold_at: string | null; delisted_at: string | null; status: string }[] | null }>,
       // Only profiles with a slug — UUID-based URLs may not resolve to a valid page
       sb.from('profiles').select('id, slug, updated_at')
         .not('slug', 'is', null) as
         Promise<{ data: { id: string; slug: string; updated_at: string }[] | null }>,
     ])
 
-    const listingPages: MetadataRoute.Sitemap = (listings ?? []).map(l => ({
-      url: `${BASE}/annonse/${l.slug}`,
-      lastModified: new Date(l.updated_at),
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
-    }))
+    const listingPages: MetadataRoute.Sitemap = (listings ?? []).map(l => {
+      const inactive = l.status === 'sold' || l.status === 'delisted'
+      const lastmod = l.sold_at ?? l.delisted_at ?? l.updated_at
+      return {
+        url: `${BASE}/annonse/${l.slug}`,
+        lastModified: new Date(lastmod),
+        changeFrequency: 'weekly' as const,
+        priority: inactive ? 0.3 : 0.8,
+      }
+    })
 
     const sellerPages: MetadataRoute.Sitemap = (sellers ?? []).map(s => ({
       url: `${BASE}/selgere/${s.slug}`,

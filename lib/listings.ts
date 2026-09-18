@@ -14,7 +14,9 @@ export const getListing = cache(async (slugOrId: string): Promise<Listing | null
         .from('listings')
         .select('*, profiles(*), favorites_count:favorites(count)')
         .eq(field, slugOrId)
-        .in('status', ['active', 'sold', 'reserved'])
+        // Solgte OG avpubliserte (delisted) beholdes som permanente 200-sider.
+        // draft/removed_by_sync forblir skjult (404).
+        .in('status', ['active', 'sold', 'reserved', 'delisted'])
         .single() as { data: Listing | null }
       if (data) return data
     }
