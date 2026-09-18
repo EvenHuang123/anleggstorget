@@ -15,6 +15,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/gravemaskiner`,               lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
     { url: `${BASE}/hjullastere`,                 lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
     { url: `${BASE}/dumpere`,                     lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
+    { url: `${BASE}/kompaktmaskiner`,             lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
+    { url: `${BASE}/kraner-og-loft`,              lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
+    { url: `${BASE}/annet`,                        lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
     { url: `${BASE}/traktorer`,                   lastModified: now, changeFrequency: 'daily',   priority: 0.9 },
     { url: `${BASE}/selgere`,                      lastModified: now, changeFrequency: 'weekly',  priority: 0.8 },
     // /markedsinnsikt er en «kommer snart»-side — ikke indeksverdig ennå

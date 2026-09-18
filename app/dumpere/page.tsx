@@ -1,22 +1,18 @@
 import type { Metadata } from 'next'
 import CategoryPageTemplate from '@/components/seo/CategoryPageTemplate'
-import type { CategoryPageConfig } from '@/components/seo/CategoryPageTemplate'
-
-export const metadata: Metadata = {
-  title: 'Kjøp og selg dumpere i Norge – B2B markedsplass',
-  description: 'Finn brukte dumpere til salgs fra verifiserte norske bedrifter. Artikulerte dumpere, rigide dumpere og minidumpere. Gratis å søke og kontakte selger.',
-  keywords: ['kjøp dumper', 'selg dumper', 'brukt dumper Norge', 'artikulert dumper', 'rigid dumper', 'minidumper', 'Volvo dumper', 'Bell dumper', 'Komatsu dumper', 'dumper til salgs'],
-  openGraph: {
-    title: 'Kjøp og selg dumpere i Norge | Anleggstorget',
-    description: 'Finn brukte dumpere fra verifiserte norske bedrifter. Artikulerte dumpere, rigide dumpere og minidumpere.',
-  },
-}
+import { getCategoryData, buildCategoryMetadata } from '@/lib/seo/category'
+import type { CategoryPageConfig } from '@/lib/seo/category'
 
 const config: CategoryPageConfig = {
   category: 'dumpers',
-  h1: 'Dumpere til salgs i Norge',
+  slug: 'dumpere',
+  h1: 'Brukte dumpere til salgs i Norge',
+  metaTitle: 'Brukte dumpere til salgs i Norge | Anleggstorget',
+  metaDescription: 'Finn brukte dumpere til salgs fra verifiserte norske bedrifter — artikulerte dumpere, rigide dumpere og minidumpere fra Volvo, Bell, Komatsu og Cat.',
+  keywords: ['kjøp dumper', 'selg dumper', 'brukt dumper Norge', 'artikulert dumper', 'rigid dumper', 'minidumper', 'Volvo dumper', 'Bell dumper', 'Komatsu dumper', 'dumper til salgs'],
+  ogImage: 'https://images.unsplash.com/photo-1581094271901-8022df4466f9?w=1200&q=75',
   intro: [
-    'Anleggstorget er Norges B2B-markedsplass for kjøp og salg av dumpere mellom verifiserte bedrifter. Her finner du artikulerte dumpere, rigide dumpere og minidumpere fra ledende merker som Volvo, Bell, Komatsu, Caterpillar, Terex og Doosan.',
+    'Anleggstorget er Norges markedsplass for kjøp og salg av dumpere fra verifiserte bedrifter. Her finner du artikulerte dumpere, rigide dumpere og minidumpere fra ledende merker som Volvo, Bell, Komatsu, Caterpillar, Terex og Doosan.',
     'Dumpere er uunnværlige i store anleggsprosjekter, veikonstruksjon, gruvearbeid og masseflytting. Artikulerte dumpere er spesielt populære i norsk terreng takket være god manøvreringsevne på krevende underlag. Her finner du maskiner med kapasitet fra 5 til 50+ tonn.',
     'Alle selgere er verifisert mot Brønnøysundregisteret — ingen privatsalg, kun seriøse norske bedrifter. Har du en dumper til salgs? Legg ut gratis og nå kjøpere over hele landet.',
   ],
@@ -45,12 +41,18 @@ const config: CategoryPageConfig = {
   relatedCategories: [
     { label: 'Gravemaskiner', href: '/gravemaskiner' },
     { label: 'Hjullastere', href: '/hjullastere' },
-    { label: 'Traktorer', href: '/traktorer' },
-    { label: 'Kraner og løft', href: '/sok?category=kraner' },
+    { label: 'Kompaktmaskiner', href: '/kompaktmaskiner' },
+    { label: 'Kraner og løft', href: '/kraner-og-loft' },
   ],
 }
 
-export const dynamic = 'force-dynamic'
+// ISR: revalider hver time — maskinlisten endres, men ikke minutt for minutt.
+export const revalidate = 3600
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { count } = await getCategoryData(config.category)
+  return buildCategoryMetadata(config, count)
+}
 
 export default function DumperePage() {
   return <CategoryPageTemplate config={config} />

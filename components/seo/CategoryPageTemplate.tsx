@@ -1,48 +1,61 @@
 import Link from 'next/link'
-import { ArrowRight, Search, Shield, ChevronRight } from 'lucide-react'
-import { createClient } from '@/lib/supabase/server'
+import { ArrowRight, Search, Shield, ChevronRight, SlidersHorizontal } from 'lucide-react'
 import Navbar from '@/components/shared/Navbar'
 import Footer from '@/components/shared/Footer'
 import ListingCard from '@/components/listings/ListingCard'
-import { treeKeysToDbValues } from '@/lib/utils/format'
-import type { Listing } from '@/lib/supabase/types'
+import { breadcrumbSchema } from '@/lib/schema'
+import { getCategoryData } from '@/lib/seo/category'
+import type { CategoryPageConfig } from '@/lib/seo/category'
 
-export interface CategoryPageConfig {
-  category: string
-  h1: string
-  intro: string[]
-  faq: { q: string; a: string }[]
-  relatedCategories: { label: string; href: string }[]
-}
+// Re-export so existing imports of the type from this module keep working.
+export type { CategoryPageConfig } from '@/lib/seo/category'
 
-async function getCategoryListings(category: string): Promise<Listing[]> {
-  try {
-    const supabase = await createClient()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let qb = (supabase as any)
-      .from('listings')
-      .select('*, profiles(company_name, verified, org_number), favorites_count:favorites(count)')
-      .eq('status', 'active')
-
-    const dbCats = treeKeysToDbValues([category])
-    const cats = dbCats.length > 0 ? dbCats : [category]
-    if (cats.length === 1) qb = qb.eq('category', cats[0])
-    else                   qb = qb.in('category', cats)
-
-    const { data } = await qb
-      .order('created_at', { ascending: false })
-      .limit(12) as { data: Listing[] | null }
-    return data ?? []
-  } catch {
-    return []
-  }
-}
+const BASE = 'https://www.anleggstorget.no'
 
 export default async function CategoryPageTemplate({ config }: { config: CategoryPageConfig }) {
-  const listings = await getCategoryListings(config.category)
+  const { listings, count } = await getCategoryData(config.category)
+
+  // JSON-LD: CollectionPage + ItemList of the shown listings
+  const collectionLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: config.h1,
+    description: config.intro[0],
+    url: `${BASE}/${config.slug}`,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: listings.length,
+      itemListElement: listings.map((l, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url: `${BASE}/annonse/${l.slug || l.id}`,
+        name: l.title,
+      })),
+    },
+  }
+
+  // JSON-LD: FAQPage from the category's Q&A
+  const faqLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: config.faq.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  }
+
+  const breadcrumbLd = breadcrumbSchema([
+    { name: 'Hjem', url: BASE },
+    { name: 'Maskiner', url: `${BASE}/sok` },
+    { name: config.h1, url: `${BASE}/${config.slug}` },
+  ])
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <Navbar />
       <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
 
@@ -97,8 +110,8 @@ export default async function CategoryPageTemplate({ config }: { config: Categor
                 className="btn-primary"
                 style={{ fontSize: 13, padding: '11px 24px' }}
               >
-                <Search size={14} />
-                Se alle {config.h1.toLowerCase()}
+                <SlidersHorizontal size={14} />
+                Filtrer disse maskinene
                 <ArrowRight size={14} />
               </Link>
               <Link href="/registrer" className="btn-secondary" style={{ fontSize: 13, padding: '11px 24px' }}>
@@ -118,8 +131,8 @@ export default async function CategoryPageTemplate({ config }: { config: Categor
                   fontFamily: 'Barlow Condensed, sans-serif',
                   fontWeight: 700, fontSize: 22, color: 'var(--t1)',
                 }}>
-                  {listings.length > 0
-                    ? `${listings.length} aktive annonser`
+                  {count > 0
+                    ? `${count} aktive ${count === 1 ? 'annonse' : 'annonser'}`
                     : 'Ingen annonser ennå'}
                 </h2>
               </div>

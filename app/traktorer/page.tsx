@@ -1,22 +1,18 @@
 import type { Metadata } from 'next'
 import CategoryPageTemplate from '@/components/seo/CategoryPageTemplate'
-import type { CategoryPageConfig } from '@/components/seo/CategoryPageTemplate'
-
-export const metadata: Metadata = {
-  title: 'Kjøp og selg traktorer i Norge – B2B markedsplass',
-  description: 'Finn brukte traktorer til salgs fra verifiserte norske bedrifter. Landbrukstraktorer, anleggstraktorer og kompakttraktorer. Gratis å søke og kontakte selger.',
-  keywords: ['kjøp traktor', 'selg traktor', 'brukt traktor Norge', 'landbrukstraktor', 'anleggstraktor', 'kompakttraktor', 'John Deere traktor', 'Fendt traktor', 'Valtra traktor', 'traktor til salgs'],
-  openGraph: {
-    title: 'Kjøp og selg traktorer i Norge | Anleggstorget',
-    description: 'Finn brukte traktorer fra verifiserte norske bedrifter. Landbrukstraktorer, anleggstraktorer og kompakttraktorer.',
-  },
-}
+import { getCategoryData, buildCategoryMetadata } from '@/lib/seo/category'
+import type { CategoryPageConfig } from '@/lib/seo/category'
 
 const config: CategoryPageConfig = {
   category: 'traktor',
-  h1: 'Traktorer til salgs i Norge',
+  slug: 'traktorer',
+  h1: 'Brukte traktorer til salgs i Norge',
+  metaTitle: 'Brukte traktorer til salgs i Norge | Anleggstorget',
+  metaDescription: 'Finn brukte traktorer til salgs fra verifiserte norske bedrifter — landbrukstraktorer, anleggstraktorer og kompakttraktorer fra John Deere, Fendt og Valtra.',
+  keywords: ['kjøp traktor', 'selg traktor', 'brukt traktor Norge', 'landbrukstraktor', 'anleggstraktor', 'kompakttraktor', 'John Deere traktor', 'Fendt traktor', 'Valtra traktor', 'traktor til salgs'],
+  ogImage: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=1200&q=75',
   intro: [
-    'Anleggstorget er Norges B2B-markedsplass for kjøp og salg av traktorer mellom verifiserte bedrifter. Her finner du landbrukstraktorer, anleggstraktorer og kompakttraktorer fra ledende merker som John Deere, Fendt, Valtra, New Holland, Case IH og Claas.',
+    'Anleggstorget er Norges markedsplass for kjøp og salg av traktorer fra verifiserte bedrifter. Her finner du landbrukstraktorer, anleggstraktorer og kompakttraktorer fra ledende merker som John Deere, Fendt, Valtra, New Holland, Case IH og Claas.',
     'Traktorer brukes i alt fra jordbruk og skogsdrift til kommunalteknikk og anleggsarbeid. På Anleggstorget finner du alt fra kompakttraktorer under 50 hk til store firehjulsdrevne landbrukstraktorer med over 300 hk — tilgjengelig fra verifiserte norske bedrifter over hele landet.',
     'Alle selgere er verifisert mot Brønnøysundregisteret — ingen privatsalg, kun seriøse norske bedrifter. Kontakt selger direkte uten mellomledd. Har du en traktor til salgs? Legg ut gratis og nå kjøpere fra Rogaland til Troms.',
   ],
@@ -46,11 +42,17 @@ const config: CategoryPageConfig = {
     { label: 'Gravemaskiner', href: '/gravemaskiner' },
     { label: 'Hjullastere', href: '/hjullastere' },
     { label: 'Dumpere', href: '/dumpere' },
-    { label: 'Annet utstyr', href: '/sok?category=annet' },
+    { label: 'Annet utstyr', href: '/annet' },
   ],
 }
 
-export const dynamic = 'force-dynamic'
+// ISR: revalider hver time — maskinlisten endres, men ikke minutt for minutt.
+export const revalidate = 3600
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { count } = await getCategoryData(config.category)
+  return buildCategoryMetadata(config, count)
+}
 
 export default function TraktororPage() {
   return <CategoryPageTemplate config={config} />

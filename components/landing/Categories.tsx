@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react'
 
 const CATEGORIES = [
   {
-    key: 'gravemaskiner', label: 'Gravemaskiner',
+    key: 'gravemaskiner', label: 'Gravemaskiner', href: '/gravemaskiner',
     description: 'Mini-, midi-, hjul- og beltegravemaskiner',
     svgPath: (
       <svg viewBox="0 0 48 32" style={{ width: 36, height: 24 }} aria-hidden>
@@ -21,7 +21,7 @@ const CATEGORIES = [
     ),
   },
   {
-    key: 'hjullastere', label: 'Hjullastere',
+    key: 'hjullastere', label: 'Hjullastere', href: '/hjullastere',
     description: 'Kompakt, middelsstor og stor hjullaster',
     svgPath: (
       <svg viewBox="0 0 48 32" style={{ width: 36, height: 24 }} aria-hidden>
@@ -40,7 +40,7 @@ const CATEGORIES = [
     ),
   },
   {
-    key: 'dumpers', label: 'Dumpers',
+    key: 'dumpers', label: 'Dumpere', href: '/dumpere',
     description: 'Minidumpere, bandedumpere og knekstyrte dumpere',
     svgPath: (
       <svg viewBox="0 0 48 32" style={{ width: 36, height: 24 }} aria-hidden>
@@ -60,7 +60,7 @@ const CATEGORIES = [
     ),
   },
   {
-    key: 'kompaktmaskiner', label: 'Kompaktmaskiner',
+    key: 'kompaktmaskiner', label: 'Kompaktmaskiner', href: '/kompaktmaskiner',
     description: 'Kompaktlastere, teleskoplastere og teleskoptrucker',
     svgPath: (
       <svg viewBox="0 0 48 32" style={{ width: 36, height: 24 }} aria-hidden>
@@ -79,7 +79,7 @@ const CATEGORIES = [
     ),
   },
   {
-    key: 'kraner', label: 'Kraner og løft',
+    key: 'kraner', label: 'Kraner og løft', href: '/kraner-og-loft',
     description: 'Mobilkraner, personløftere og lastebilkraner',
     svgPath: (
       <svg viewBox="0 0 48 32" style={{ width: 36, height: 24 }} aria-hidden>
@@ -98,7 +98,7 @@ const CATEGORIES = [
     ),
   },
   {
-    key: 'annet', label: 'Annet',
+    key: 'annet', label: 'Annet', href: '/annet',
     description: 'Dosere, generatorer, pælerigger og utstyr',
     svgPath: (
       <svg viewBox="0 0 48 32" style={{ width: 36, height: 24 }} aria-hidden>
@@ -132,7 +132,7 @@ export default function Categories() {
           gap: 16,
         }} className="cat-grid">
           {CATEGORIES.map(cat => (
-            <Link key={cat.key} href={`/sok?category=${cat.key}`} style={{ textDecoration: 'none' }}>
+            <Link key={cat.key} href={cat.href} style={{ textDecoration: 'none' }}>
               <div className="cat-card card" style={{ padding: '24px 20px', height: '100%' }}>
                 <div style={{
                   width: 56, height: 56,
