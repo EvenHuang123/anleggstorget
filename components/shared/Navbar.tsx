@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { Menu, X, ChevronDown, LogOut, LayoutDashboard, PlusSquare, Settings, Bell } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { canSell } from '@/lib/auth/account'
 import Logo from './Logo'
 
 const NAV_LINKS = [
@@ -19,6 +20,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [user, setUser] = useState<{ email?: string; company?: string } | null>(null)
+  const [isSeller, setIsSeller] = useState(true) // sellers (og legacy) ser "Legg ut annonse"
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -55,6 +57,8 @@ export default function Navbar() {
     supabase.auth.getSession().then(async ({ data }) => {
       if (data.session?.user) {
         userId = data.session.user.id
+        const seller = canSell(data.session.user.user_metadata)
+        setIsSeller(seller)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: profile } = await (supabase as any)
           .from('profiles')
@@ -65,7 +69,7 @@ export default function Navbar() {
           email: data.session.user.email,
           company: profile?.company_name,
         })
-        fetchUnreadCount(userId)
+        if (seller) fetchUnreadCount(userId)
       }
     })
 
@@ -155,12 +159,15 @@ export default function Navbar() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="hidden-mobile">
             {user ? (
               <>
+                {isSeller && (
                 <Link href="/ny-annonse" className="btn-primary" style={{ fontSize: 12, padding: '8px 16px' }}>
                   <PlusSquare size={14} />
                   Legg ut annonse
                 </Link>
+                )}
 
-                {/* Notification bell */}
+                {/* Notification bell — kun for selgere (kjøpere mottar ikke forespørsler) */}
+                {isSeller && (
                 <Link
                   href="/dashboard/foresporsel"
                   style={{
@@ -189,6 +196,7 @@ export default function Navbar() {
                     </span>
                   )}
                 </Link>
+                )}
 
                 <div ref={dropdownRef} style={{ position: 'relative' }}>
                   <button
@@ -237,9 +245,11 @@ export default function Navbar() {
                       <Link href="/dashboard" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                         <LayoutDashboard size={14} /> Min side
                       </Link>
+                      {isSeller && (
                       <Link href="/ny-annonse" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                         <PlusSquare size={14} /> Ny annonse
                       </Link>
+                      )}
                       <Link href="/dashboard/innstillinger" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
                         <Settings size={14} /> Innstillinger
                       </Link>
@@ -254,9 +264,9 @@ export default function Navbar() {
             ) : (
               <>
                 <Link href="/logg-inn" className="btn-ghost">Logg inn</Link>
-                <Link href="/ny-annonse" className="btn-primary" style={{ fontSize: 12, padding: '8px 16px' }}>
+                <Link href="/registrer" className="btn-primary" style={{ fontSize: 12, padding: '8px 16px' }}>
                   <PlusSquare size={14} />
-                  Legg ut annonse
+                  Registrer deg
                 </Link>
               </>
             )}
@@ -311,17 +321,19 @@ export default function Navbar() {
                 <Link href="/dashboard" className="btn-secondary" style={{ justifyContent: 'center', marginBottom: 8 }} onClick={() => setMobileOpen(false)}>
                   Min side
                 </Link>
+                {isSeller && (
                 <Link href="/ny-annonse" className="btn-primary" style={{ justifyContent: 'center' }} onClick={() => setMobileOpen(false)}>
                   Legg ut annonse
                 </Link>
+                )}
               </>
             ) : (
               <>
                 <Link href="/logg-inn" className="btn-secondary" style={{ justifyContent: 'center', marginBottom: 8 }} onClick={() => setMobileOpen(false)}>
                   Logg inn
                 </Link>
-                <Link href="/ny-annonse" className="btn-primary" style={{ justifyContent: 'center' }} onClick={() => setMobileOpen(false)}>
-                  Legg ut annonse
+                <Link href="/registrer" className="btn-primary" style={{ justifyContent: 'center' }} onClick={() => setMobileOpen(false)}>
+                  Registrer deg
                 </Link>
               </>
             )}

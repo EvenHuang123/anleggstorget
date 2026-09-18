@@ -37,7 +37,7 @@ export default function TrustSection() {
             Bygget for norsk næringsliv
           </h2>
           <p style={{ color: 'var(--t2)', fontSize: 15, maxWidth: 500, margin: '0 auto' }}>
-            Vi har designet plattformen spesifikt for B2B maskinhandel i Norge — med de kravene det stiller til dokumentasjon, tillit og effektivitet.
+            Vi har designet plattformen spesifikt for maskinhandel i Norge — med de kravene det stiller til dokumentasjon, tillit og effektivitet.
           </p>
         </div>
 

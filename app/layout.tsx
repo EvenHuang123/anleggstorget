@@ -52,14 +52,14 @@ export const metadata: Metadata = {
     locale: 'nb_NO',
     siteName: 'Anleggstorget',
     url: 'https://www.anleggstorget.no',
-    title: 'Anleggstorget – Norges B2B-markedsplass for tunge maskiner',
-    description: 'Kjøp, selg og leie anleggsmaskiner mellom verifiserte norske bedrifter. Gratis annonsering.',
+    title: 'Anleggstorget – Norges markedsplass for tunge maskiner',
+    description: 'Kjøp, selg og leie anleggsmaskiner trygt — selgere verifisert mot Brønnøysundregisteret. Gratis annonsering.',
     images: ['/og-image.jpg'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Anleggstorget – Kjøp og selg tunge maskiner',
-    description: 'Norges B2B-markedsplass for anleggsmaskiner. Verifiserte bedrifter, gratis annonsering.',
+    description: 'Norges markedsplass for anleggsmaskiner. Selgere verifisert mot Brønnøysundregisteret, gratis annonsering.',
     images: ['/og-image.jpg'],
   },
 }

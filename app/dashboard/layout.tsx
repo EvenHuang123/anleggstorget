@@ -6,16 +6,19 @@ import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { LayoutDashboard, ListOrdered, MessageSquare, Heart, Settings } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { canSell } from '@/lib/auth/account'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [unreadCount, setUnreadCount] = useState(0)
+  const [isSeller, setIsSeller] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
     async function fetchUnread() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
+      setIsSeller(canSell(session.user.user_metadata))
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: ids } = await (supabase as any)
@@ -43,10 +46,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => { supabase.removeChannel(channel) }
   }, [])
 
+  // Selger-spesifikke sider (annonser, forespørsler) skjules for kjøpere.
   const NAV = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Oversikt', badge: 0 },
-    { href: '/dashboard/annonser', icon: ListOrdered, label: 'Mine annonser', badge: 0 },
-    { href: '/dashboard/foresporsel', icon: MessageSquare, label: 'Forespørsler', badge: unreadCount },
+    ...(isSeller ? [
+      { href: '/dashboard/annonser', icon: ListOrdered, label: 'Mine annonser', badge: 0 },
+      { href: '/dashboard/foresporsel', icon: MessageSquare, label: 'Forespørsler', badge: unreadCount },
+    ] : []),
     { href: '/dashboard/favoritter', icon: Heart, label: 'Favoritter', badge: 0 },
     { href: '/dashboard/innstillinger', icon: Settings, label: 'Innstillinger', badge: 0 },
   ]
@@ -102,11 +108,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             })}
           </nav>
 
+          {isSeller && (
           <div style={{ margin: '24px 16px 0', paddingTop: 24, borderTop: '1px solid var(--border)' }}>
             <Link href="/ny-annonse" className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: 12, height: 40 }}>
               + Ny annonse
             </Link>
           </div>
+          )}
         </aside>
 
         {/* Content */}

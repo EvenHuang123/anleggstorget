@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import {
   Eye, EyeOff, AlertCircle, CheckCircle2, Building2, Hash,
   User, Phone, Mail, Lock, Loader2, Shield, FileCheck,
+  Search, Store, ArrowRight,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
@@ -38,6 +39,9 @@ export default function RegistrerPage() {
   const router = useRouter()
   const supabase = createClient()
 
+  // null = ikke valgt ennå (vis rollevalg). 'buyer' = privatkjøper, 'seller' = bedrift.
+  const [role, setRole] = useState<'buyer' | 'seller' | null>(null)
+
   const [step, setStep] = useState<1 | 2 | 3>(1)
   const [orgNumber, setOrgNumber] = useState('')
   const [companyName, setCompanyName] = useState('')
@@ -54,6 +58,9 @@ export default function RegistrerPage() {
   const [agree, setAgree] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Kjøper-felt (enkel registrering, ingen org.nr)
+  const [buyerName, setBuyerName] = useState('')
 
   const handleOrgLookup = async () => {
     setOrgError('')
@@ -84,6 +91,7 @@ export default function RegistrerPage() {
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
+          account_type: 'seller',
           company_name: companyName,
           org_number: orgNumber.replace(/\s/g, ''),
           contact_person: contactPerson || null,
@@ -103,6 +111,46 @@ export default function RegistrerPage() {
     router.push('/registrer/bekreft')
   }
 
+  // Kjøper-registrering: navn, e-post, passord, telefon — ingen org.nr.
+  const handleBuyerRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!buyerName.trim()) { setError('Fyll inn navnet ditt.'); return }
+    if (!agree) { setError('Du må godta vilkårene for å fortsette.'); return }
+    setError('')
+    setLoading(true)
+
+    const { error: authErr } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          account_type: 'buyer',
+          // company_name brukes som visningsnavn i UI (selger ser hvem som tar kontakt)
+          company_name: buyerName.trim(),
+          full_name: buyerName.trim(),
+          org_number: null,
+          phone: phone || null,
+        },
+      },
+    })
+
+    setLoading(false)
+
+    if (authErr) {
+      setError(authErr.message || 'Registrering feilet. Prøv igjen.')
+      return
+    }
+
+    router.push('/registrer/bekreft')
+  }
+
+  const backToRoleChoice = () => {
+    setRole(null)
+    setStep(1)
+    setError('')
+  }
+
   const goToStep2 = () => {
     if (!orgVerified) { setOrgError('Verifiser org.nr. først'); return }
     setError('')
@@ -120,8 +168,255 @@ export default function RegistrerPage() {
     : password.length < 14 ? 3
     : 4
 
+  // ── Rollevalg: skal du kjøpe eller selge? ──
+  if (role === null) {
+    return (
+      <div style={{ width: '100%', maxWidth: 560 }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <h1 style={{
+            fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 30,
+            color: 'var(--t1)', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: 8,
+          }}>
+            Kom i gang
+          </h1>
+          <p style={{ color: 'var(--t3)', fontSize: 14 }}>Skal du kjøpe eller selge maskiner?</p>
+        </div>
+
+        <div style={{ display: 'grid', gap: 14 }}>
+          {[
+            {
+              key: 'buyer' as const, icon: Search,
+              title: 'Jeg vil kjøpe maskiner',
+              desc: 'Bla i annonser, favorittmarker og send forespørsler til selgere. Enkel registrering — ingen organisasjonsnummer.',
+            },
+            {
+              key: 'seller' as const, icon: Store,
+              title: 'Jeg vil selge maskiner',
+              desc: 'Legg ut maskiner gratis. Bedriften verifiseres mot Brønnøysundregisteret for trygg handel.',
+            },
+          ].map(({ key, icon: Icon, title, desc }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => { setRole(key); setError('') }}
+              className="role-card"
+              style={{
+                display: 'flex', alignItems: 'flex-start', gap: 16, textAlign: 'left',
+                background: 'var(--bg2)', border: '1px solid var(--border2)',
+                borderRadius: 6, padding: '24px 24px', cursor: 'pointer',
+                transition: 'border-color 0.15s, background 0.15s',
+              }}
+            >
+              <div style={{
+                width: 48, height: 48, borderRadius: 6, flexShrink: 0,
+                background: 'var(--gold3)', border: '1px solid rgba(200,149,58,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Icon size={22} style={{ color: 'var(--gold)' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <h2 style={{
+                    fontFamily: 'Barlow Condensed', fontWeight: 700, fontSize: 19,
+                    color: 'var(--t1)', letterSpacing: '0.01em',
+                  }}>
+                    {title}
+                  </h2>
+                  <ArrowRight size={16} style={{ color: 'var(--gold)', flexShrink: 0 }} />
+                </div>
+                <p style={{ color: 'var(--t3)', fontSize: 13, lineHeight: 1.6, marginTop: 6 }}>{desc}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--t2)', marginTop: 28 }}>
+          Har du konto?{' '}
+          <Link href="/logg-inn" style={{ color: 'var(--gold)', textDecoration: 'none', fontWeight: 500 }}>
+            Logg inn
+          </Link>
+        </p>
+
+        <style>{`.role-card:hover { border-color: rgba(200,149,58,0.5) !important; background: var(--bg3) !important; }`}</style>
+      </div>
+    )
+  }
+
+  // ── Kjøper-registrering: navn, e-post, passord, telefon ──
+  if (role === 'buyer') {
+    return (
+      <div style={{ width: '100%', maxWidth: 480 }}>
+        <div style={{
+          background: 'var(--bg2)', border: '1px solid var(--border2)',
+          borderRadius: 4, padding: '40px 40px 36px',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.4)',
+        }}>
+          <button
+            type="button"
+            onClick={backToRoleChoice}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', fontSize: 13, padding: 0, marginBottom: 20, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+          >
+            ← Tilbake
+          </button>
+
+          <div style={{ textAlign: 'center', marginBottom: 28 }}>
+            <div style={{
+              width: 48, height: 48, borderRadius: 8, margin: '0 auto 14px',
+              background: 'var(--gold3)', border: '1px solid rgba(200,149,58,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Search size={22} style={{ color: 'var(--gold)' }} />
+            </div>
+            <h1 style={{
+              fontFamily: 'Barlow Condensed', fontWeight: 800, fontSize: 26,
+              color: 'var(--t1)', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: 6,
+            }}>
+              Opprett kjøperkonto
+            </h1>
+            <p style={{ color: 'var(--t3)', fontSize: 13 }}>Gratis — kom i gang på under ett minutt</p>
+          </div>
+
+          {error && (
+            <div style={{
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+              borderRadius: 3, padding: '10px 14px', marginBottom: 20,
+              display: 'flex', alignItems: 'flex-start', gap: 8,
+            }}>
+              <AlertCircle size={14} style={{ color: '#ef4444', flexShrink: 0, marginTop: 1 }} />
+              <p style={{ color: '#ef4444', fontSize: 13 }}>{error}</p>
+            </div>
+          )}
+
+          <form onSubmit={handleBuyerRegister}>
+            <div style={{ marginBottom: 18 }}>
+              <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Navn *</label>
+              <div style={{ position: 'relative' }}>
+                <User size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--t3)', pointerEvents: 'none' }} />
+                <input
+                  type="text"
+                  value={buyerName}
+                  onChange={e => setBuyerName(e.target.value)}
+                  placeholder="Ola Nordmann"
+                  className="input-base"
+                  style={{ paddingLeft: 36, height: 48 }}
+                  required
+                  autoComplete="name"
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>E-post *</label>
+              <div style={{ position: 'relative' }}>
+                <Mail size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--t3)', pointerEvents: 'none' }} />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="din@epost.no"
+                  className="input-base"
+                  style={{ paddingLeft: 36, height: 48 }}
+                  required
+                  autoComplete="email"
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 18 }}>
+              <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>
+                Telefon <span style={{ color: 'var(--t3)', fontWeight: 400 }}>(valgfritt)</span>
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Phone size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--t3)', pointerEvents: 'none' }} />
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="+47 000 00 000"
+                  className="input-base"
+                  style={{ paddingLeft: 36, height: 48 }}
+                  autoComplete="tel"
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 24 }}>
+              <label className="label-sm" style={{ display: 'block', marginBottom: 6 }}>Passord *</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--t3)', pointerEvents: 'none' }} />
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Minst 8 tegn"
+                  className="input-base"
+                  style={{ paddingLeft: 36, paddingRight: 44, height: 48 }}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', padding: 4 }}
+                >
+                  {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+            </div>
+
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 28, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={agree}
+                onChange={e => setAgree(e.target.checked)}
+                className="checkbox-gold"
+                style={{ marginTop: 2 }}
+              />
+              <span style={{ fontSize: 13, color: 'var(--t2)', lineHeight: 1.6 }}>
+                Jeg godtar{' '}
+                <Link href="/vilkar" style={{ color: 'var(--gold)', textDecoration: 'none' }}>vilkårene</Link>
+                {' '}og{' '}
+                <Link href="/personvern" style={{ color: 'var(--gold)', textDecoration: 'none' }}>personvernerklæringen</Link>
+              </span>
+            </label>
+
+            <button
+              type="submit"
+              className="btn-primary"
+              style={{ width: '100%', justifyContent: 'center', height: 48, fontSize: 14 }}
+              disabled={loading}
+            >
+              {loading
+                ? <><Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} /> Oppretter konto...</>
+                : 'Opprett kjøperkonto'}
+            </button>
+          </form>
+
+          <p style={{ textAlign: 'center', fontSize: 14, color: 'var(--t2)', marginTop: 24 }}>
+            Har du konto?{' '}
+            <Link href="/logg-inn" style={{ color: 'var(--gold)', textDecoration: 'none', fontWeight: 500 }}>
+              Logg inn
+            </Link>
+          </p>
+        </div>
+
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    )
+  }
+
+  // ── Selger-registrering (uendret 3-stegs bedriftsflyt) ──
   return (
     <div style={{ width: '100%', maxWidth: 560 }}>
+      {/* Back to role choice */}
+      <button
+        type="button"
+        onClick={backToRoleChoice}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--t3)', fontSize: 13, padding: 0, marginBottom: 16, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+      >
+        ← Kjøpe i stedet?
+      </button>
       {/* Step indicator */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 0, marginBottom: 36 }}>
         {STEPS.map((s, i) => (

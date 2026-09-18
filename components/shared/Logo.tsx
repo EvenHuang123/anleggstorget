@@ -52,7 +52,7 @@ export default function Logo({ variant = 'navbar', size = 'md', href = '/' }: Lo
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
-        alt="Anleggstorget – B2B markedsplass for anleggsmaskiner"
+        alt="Anleggstorget – markedsplass for anleggsmaskiner"
         height={h}
         className={isNavbarXl ? 'logo-navbar' : undefined}
         style={{ height: h, width: 'auto', maxWidth: '100%', display: 'block' }}

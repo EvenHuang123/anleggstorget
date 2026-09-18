@@ -106,7 +106,7 @@ export default function Hero({ listingCount = 0, sellerCount = 0 }: HeroProps) {
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',
               }}>
-                B2B Maskin
+                Maskin
               </span>
               markedsplass
             </h1>

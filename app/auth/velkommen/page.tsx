@@ -4,7 +4,7 @@ import { CheckCircle2, Sparkles } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Velkommen til Anleggstorget',
-  description: 'Din bedrift er nå registrert og verifisert på Anleggstorget. Start med å legge ut din første maskinannonse gratis og nå kjøpere i hele Norge.',
+  description: 'Kontoen din er bekreftet på Anleggstorget. Søk maskiner, favorittmarker og ta kontakt med selgere — og legg ut maskiner gratis hvis du selger.',
   robots: { index: false },
 }
 
@@ -59,8 +59,8 @@ export default function VelkommenPage() {
         </h1>
 
         <p style={{ color: 'var(--t2)', fontSize: 15, lineHeight: 1.7, marginBottom: 32 }}>
-          Velkommen til Anleggstorget! Du kan nå kjøpe, selge og leie tunge maskiner
-          med verifiserte norske bedrifter.
+          Velkommen til Anleggstorget! Du kan nå handle tunge maskiner trygt —
+          alle selgere er verifisert mot Brønnøysundregisteret.
         </p>
 
         {/* Feature list */}
@@ -78,10 +78,10 @@ export default function VelkommenPage() {
             </span>
           </div>
           {[
-            'Legg ut maskiner for salg — helt gratis',
             'Søk blant annonser fra hele Norge',
-            'Send forespørsler til verifiserte bedrifter',
-            'Lagre favoritter og se dine innboks-meldinger',
+            'Send forespørsler direkte til selgere',
+            'Lagre favoritter og lagrede søk',
+            'Selger du maskiner? Legg ut annonser gratis',
           ].map((item, i, arr) => (
             <div key={i} style={{
               display: 'flex', alignItems: 'center', gap: 10,

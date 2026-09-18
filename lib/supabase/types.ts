@@ -36,10 +36,13 @@ export type ListingStatus = 'active' | 'sold' | 'reserved' | 'draft' | 'removed_
 
 export type InquiryStatus = 'new' | 'read' | 'replied'
 
+export type AccountType = 'buyer' | 'seller' | 'admin'
+
 export interface Profile {
   id: string
   company_name: string
-  org_number: string
+  org_number: string | null
+  account_type?: AccountType
   contact_person: string | null
   phone: string | null
   bio?: string | null

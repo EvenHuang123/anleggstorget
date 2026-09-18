@@ -32,7 +32,7 @@ const VALUES = [
   {
     icon: MapPin,
     title: 'Norsk',
-    text: 'Bygget for norske bedrifter, med norsk support og lokal forståelse av anleggsbransjen. Vi snakker ditt språk.',
+    text: 'Bygget for norsk anleggsbransje, med norsk support og lokal forståelse av markedet. Vi snakker ditt språk.',
   },
 ]
 
@@ -106,8 +106,8 @@ export default function OmOssPage() {
           color: 'var(--t2)', fontSize: 17, lineHeight: 1.7,
           maxWidth: 520, margin: '0 auto',
         }}>
-          Norges B2B-markedsplass for tunge maskiner — vi kobler verifiserte
-          norske bedrifter for trygg og effektiv handel. Helt gratis.
+          Norges markedsplass for tunge maskiner — vi kobler kjøpere med
+          verifiserte norske selgere for trygg og effektiv handel. Helt gratis.
         </p>
       </section>
 
@@ -130,14 +130,16 @@ export default function OmOssPage() {
           }}>
             Hvorfor vi bygde Anleggstorget
           </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            {[
-              'Maskinbransjen i Norge har i årevis manglet en moderne, pålitelig plattform for kjøp, salg og utleie av tunge maskiner mellom bedrifter.',
-              'Vi så at små og mellomstore entreprenører brukte uker på å finne riktig utstyr til kjøp eller leie, mens bedrifter med ledige maskiner slet med å nå riktige kjøpere og leietakere. Tradisjonelle metoder som Facebook-grupper og telefonsamtaler var ineffektive og utrygge.',
-              'Anleggstorget løser dette. Vi verifiserer alle bedrifter mot Brønnøysundregisteret, sikrer direkte kommunikasjon mellom bedrifter, og gjør hele prosessen raskere og enklere.',
-            ].map((p, i) => (
-              <p key={i} style={{ color: 'var(--t2)', fontSize: 15, lineHeight: 1.8, margin: 0 }}>{p}</p>
-            ))}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxWidth: 640 }}>
+            <p style={{ color: 'var(--t2)', fontSize: 15, lineHeight: 1.8, margin: 0 }}>
+              Vi ville gjøre det enkelt og trygt å handle tunge maskiner — der bedrifter selger, og alle kan handle.
+            </p>
+            <p style={{ color: 'var(--t2)', fontSize: 15, lineHeight: 1.8, margin: 0 }}>
+              Anleggsbransjen er full av dyktige folk og gode maskiner — men veien mellom en bedrift som har utstyr, og en som trenger det, kunne vært mye kortere. Det ville vi gjøre noe med.
+            </p>
+            <p style={{ color: 'var(--t2)', fontSize: 15, lineHeight: 1.8, margin: 0 }}>
+              Anleggstorget samler maskiner og bedrifter på ett sted. Vi verifiserer hver bedrift mot Brønnøysundregisteret, kobler kjøper og selger direkte, og gjør hele prosessen så rask og ryddig som mulig — slik at du kan bruke tiden på det som betyr noe: å finne riktig maskin, og komme i gang.
+            </p>
           </div>
         </div>
       </section>
@@ -408,7 +410,7 @@ export default function OmOssPage() {
             color: 'var(--t3)', fontSize: 12, marginTop: 56,
             borderTop: '1px solid var(--border)', paddingTop: 32,
           }}>
-            Anleggstorget · Norges B2B-markedsplass for tunge maskiner · Oslo, Norge
+            Anleggstorget · Norges markedsplass for tunge maskiner · Oslo, Norge
           </p>
         </div>
       </section>

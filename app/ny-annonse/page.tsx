@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/shared/Navbar'
 import { Upload, X, ChevronRight, ChevronLeft, Check, Image as ImageIcon, AlertCircle, MapPin } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { canSell } from '@/lib/auth/account'
 import { CATEGORIES, CATEGORY_TREE, WEIGHT_CLASSES, NORWEGIAN_COUNTIES, POPULAR_BRANDS, slugify, getListingImageUrl } from '@/lib/utils/format'
 import toast from 'react-hot-toast'
 import type { Category, PriceType, ListingType } from '@/lib/supabase/types'
@@ -232,6 +233,21 @@ export default function NyAnnonsePage() {
   const dragRef = useRef<HTMLDivElement>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [editSlug, setEditSlug] = useState<string | null>(null)
+  const [accessChecked, setAccessChecked] = useState(false)
+
+  // Tilgangskontroll: kun selgere kan legge ut annonser. Kjøpere sendes til forsiden.
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) { router.push('/logg-inn?redirect=/ny-annonse'); return }
+      if (!canSell(data.session.user.user_metadata)) {
+        toast.error('Kun selgere kan legge ut annonser. Opprett en bedriftskonto for å selge.')
+        router.push('/')
+        return
+      }
+      setAccessChecked(true)
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Load existing listing when editing
   useEffect(() => {
@@ -365,6 +381,7 @@ export default function NyAnnonsePage() {
       const { error: profileErr } = await (supabase as any).from('profiles').upsert({
         id: session.user.id,
         user_id: session.user.id,
+        account_type: 'seller',
         company_name: meta.company_name ?? session.user.email?.split('@')[0] ?? 'Ukjent bedrift',
         org_number: meta.org_number ?? null,
         contact_person: meta.contact_person ?? null,
@@ -455,6 +472,18 @@ export default function NyAnnonsePage() {
       setError('En uventet feil oppstod. Prøv igjen.')
       setLoading(false)
     }
+  }
+
+  // Ikke rendr skjemaet før tilgang er bekreftet (kjøpere blir omdirigert bort)
+  if (!accessChecked) {
+    return (
+      <>
+        <Navbar />
+        <main style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ color: 'var(--t3)', fontFamily: 'Barlow Condensed', letterSpacing: '0.1em', textTransform: 'uppercase', fontSize: 13 }}>Laster...</p>
+        </main>
+      </>
+    )
   }
 
   return (
