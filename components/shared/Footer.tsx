@@ -92,13 +92,13 @@ export default function Footer() {
           gap: 16,
         }}>
           <p style={{ color: 'var(--t3)', fontSize: 12 }}>
-            © {year} Anleggstorget — Norges B2B-markedsplass for tunge maskiner
+            © {year} Anleggstorget — Norges markedsplass for tunge maskiner
           </p>
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             <Link href="/personvern" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Personvernerklæring</Link>
             <Link href="/vilkar" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Vilkår</Link>
             <button
-              onClick={() => { localStorage.removeItem('cookie-consent-v2'); window.location.reload() }}
+              onClick={() => window.dispatchEvent(new Event('open-cookie-settings'))}
               style={{ background: 'none', border: 'none', color: 'var(--t3)', fontSize: 12, cursor: 'pointer', padding: 0 }}
             >
               Administrer cookies

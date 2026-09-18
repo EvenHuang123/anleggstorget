@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { Barlow, Barlow_Condensed } from 'next/font/google'
-import Script from 'next/script'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import CookieBanner from '@/components/CookieBanner'
+import GoogleAnalytics from '@/components/GoogleAnalytics'
 import { SkipToContent } from '@/components/SkipToContent'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Analytics } from '@vercel/analytics/react'
@@ -69,30 +69,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="nb" className={`${barlow.variable} ${barlowCondensed.variable}`}>
       <body>
-        {/* GA4 Consent Mode v2 — default denied per ekomloven § 3-15.
-            Må kjøre FØR GA4-scriptet lastes. CookieBanner kaller
-            gtag('consent','update') når brukeren godtar. */}
-        <Script id="ga4-consent-init" strategy="beforeInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('consent', 'default', {
-              analytics_storage: 'denied',
-              ad_storage: 'denied',
-              wait_for_update: 500
-            });
-          `}
-        </Script>
-        <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-DYN1RCTLN5"
-          strategy="afterInteractive"
-        />
-        <Script id="ga4-config" strategy="afterInteractive">
-          {`
-            gtag('js', new Date());
-            gtag('config', 'G-DYN1RCTLN5');
-          `}
-        </Script>
+        {/* GA4 lastes KUN etter samtykke (analytics=true). Se GoogleAnalytics-komponenten. */}
+        <GoogleAnalytics />
         <SkipToContent />
         {children}
         <SpeedInsights />

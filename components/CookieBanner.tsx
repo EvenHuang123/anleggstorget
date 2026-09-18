@@ -10,12 +10,6 @@ interface ConsentState {
   marketing: boolean
 }
 
-declare global {
-  interface Window {
-    gtag?: (...args: unknown[]) => void
-  }
-}
-
 export default function CookieBanner() {
   const [visible, setVisible]         = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -23,8 +17,28 @@ export default function CookieBanner() {
 
   useEffect(() => {
     try {
-      if (!localStorage.getItem(STORAGE_KEY)) setVisible(true)
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (!raw) setVisible(true)
+      else {
+        const parsed = JSON.parse(raw)
+        setConsent({ analytics: !!parsed?.analytics, marketing: !!parsed?.marketing })
+      }
     } catch { /* private mode */ }
+
+    // «Administrer cookies» (footer/personvern) åpner banneret på nytt — uten reload.
+    const open = () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY)
+        if (raw) {
+          const parsed = JSON.parse(raw)
+          setConsent({ analytics: !!parsed?.analytics, marketing: !!parsed?.marketing })
+        }
+      } catch { /* ignore */ }
+      setShowDetails(true)
+      setVisible(true)
+    }
+    window.addEventListener('open-cookie-settings', open)
+    return () => window.removeEventListener('open-cookie-settings', open)
   }, [])
 
   function save(c: ConsentState) {
@@ -32,11 +46,9 @@ export default function CookieBanner() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...c, timestamp: new Date().toISOString() }))
     } catch { /* ignore */ }
 
-    // Aktiver GA4 kun hvis analytics er godtatt — ekomloven § 3-15
-    window.gtag?.('consent', 'update', {
-      analytics_storage: c.analytics  ? 'granted' : 'denied',
-      ad_storage:        c.marketing  ? 'granted' : 'denied',
-    })
+    // GoogleAnalytics-komponenten lytter på dette og laster/oppdaterer GA4 uten reload
+    // (og sletter _ga-cookies ved avvisning). Ekomloven § 3-15.
+    window.dispatchEvent(new Event('cookie-consent-changed'))
     setVisible(false)
   }
 
