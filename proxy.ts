@@ -75,6 +75,49 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Rate-limit e-post-routes — 5 kall/minutt per IP (spam-vern)
+  if (
+    pathname.startsWith('/api/send-inquiry-email') ||
+    pathname.startsWith('/api/send-contact-email') ||
+    pathname.startsWith('/api/send-seller-contact')
+  ) {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+    if (isRateLimited(ip, 5, 60_000)) {
+      return new NextResponse('Too Many Requests', {
+        status: 429,
+        headers: { 'Retry-After': '60' },
+      })
+    }
+    return NextResponse.next()
+  }
+
+  // Rate-limit admin login — 10 kall/minutt per IP (brute force-vern)
+  if (pathname === '/api/admin/login') {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+    if (isRateLimited(ip, 10, 60_000)) {
+      return new NextResponse('Too Many Requests', {
+        status: 429,
+        headers: { 'Retry-After': '60' },
+      })
+    }
+    return NextResponse.next()
+  }
+
+  // Rate-limit søk og org-sjekk — 60 kall/minutt per IP
+  if (
+    pathname.startsWith('/api/search/') ||
+    pathname === '/api/verify-org'
+  ) {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+    if (isRateLimited(ip, 60, 60_000)) {
+      return new NextResponse('Too Many Requests', {
+        status: 429,
+        headers: { 'Retry-After': '60' },
+      })
+    }
+    return NextResponse.next()
+  }
+
   // Auth-beskyttelse for innloggede ruter via Supabase SSR
   if (
     pathname.startsWith('/dashboard') ||
@@ -121,5 +164,11 @@ export const config = {
     '/ny-annonse/:path*',
     '/api/saved-searches/:path*',
     '/api/listings/:path*',
+    '/api/send-inquiry-email',
+    '/api/send-contact-email',
+    '/api/send-seller-contact',
+    '/api/admin/login',
+    '/api/search/:path*',
+    '/api/verify-org',
   ],
 }

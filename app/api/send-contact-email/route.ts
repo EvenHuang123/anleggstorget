@@ -1,15 +1,29 @@
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
+
+const schema = z.object({
+  name:    z.string().min(1).max(100),
+  email:   z.string().email().max(254),
+  company: z.string().max(200).optional(),
+  phone:   z.string().max(30).optional(),
+  message: z.string().min(1).max(5000),
+})
+
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+const CONTACT_TO: string[] = process.env.CONTACT_RECIPIENTS
+  ? process.env.CONTACT_RECIPIENTS.split(',').map(e => e.trim()).filter(Boolean)
+  : ['huangevenzhe@gmail.com', 'alishguliyev1@gmail.com']
 
 export async function POST(request: Request) {
   try {
-    const { name, email, company, phone, message } = await request.json()
-
-    if (!name?.trim() || !email?.trim() || !message?.trim()) {
-      return NextResponse.json({ error: 'Navn, e-post og melding er påkrevd.' }, { status: 400 })
+    const parsed = schema.safeParse(await request.json().catch(() => null))
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Ugyldig input.' }, { status: 400 })
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: 'Ugyldig e-postadresse.' }, { status: 400 })
-    }
+    const { name, email, company, phone, message } = parsed.data
 
     if (!process.env.RESEND_API_KEY) {
       console.warn('RESEND_API_KEY not set — skipping contact email')
@@ -36,30 +50,30 @@ export async function POST(request: Request) {
       <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid #eeeeee;color:#666;font-size:13px;width:110px;vertical-align:top;">Fra</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eeeeee;color:#0d0c0a;font-size:14px;font-weight:600;">${name}</td>
+          <td style="padding:10px 0;border-bottom:1px solid #eeeeee;color:#0d0c0a;font-size:14px;font-weight:600;">${esc(name)}</td>
         </tr>
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid #eeeeee;color:#666;font-size:13px;vertical-align:top;">E-post</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eeeeee;color:#c8953a;font-size:14px;"><a href="mailto:${email}" style="color:#c8953a;text-decoration:none;">${email}</a></td>
+          <td style="padding:10px 0;border-bottom:1px solid #eeeeee;color:#c8953a;font-size:14px;"><a href="mailto:${esc(email)}" style="color:#c8953a;text-decoration:none;">${esc(email)}</a></td>
         </tr>
         ${company ? `<tr>
           <td style="padding:10px 0;border-bottom:1px solid #eeeeee;color:#666;font-size:13px;vertical-align:top;">Bedrift</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eeeeee;color:#0d0c0a;font-size:14px;">${company}</td>
+          <td style="padding:10px 0;border-bottom:1px solid #eeeeee;color:#0d0c0a;font-size:14px;">${esc(company)}</td>
         </tr>` : ''}
         ${phone ? `<tr>
           <td style="padding:10px 0;border-bottom:1px solid #eeeeee;color:#666;font-size:13px;vertical-align:top;">Telefon</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eeeeee;color:#0d0c0a;font-size:14px;"><a href="tel:${phone}" style="color:#0d0c0a;text-decoration:none;">${phone}</a></td>
+          <td style="padding:10px 0;border-bottom:1px solid #eeeeee;color:#0d0c0a;font-size:14px;"><a href="tel:${esc(phone)}" style="color:#0d0c0a;text-decoration:none;">${esc(phone)}</a></td>
         </tr>` : ''}
       </table>
 
       <div style="background:#f8f8f8;border-left:4px solid #c8953a;border-radius:0 4px 4px 0;padding:20px 24px;">
         <p style="margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#999;font-weight:600;">Melding</p>
-        <p style="margin:0;font-size:15px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap;">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>
+        <p style="margin:0;font-size:15px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap;">${esc(message)}</p>
       </div>
 
       <div style="margin-top:24px;padding:16px;background:#fff8ed;border:1px solid rgba(200,149,58,0.3);border-radius:4px;">
         <p style="margin:0;font-size:13px;color:#666;">
-          💡 <strong>Svar direkte</strong> på denne e-posten for å kontakte <strong>${name}</strong>.
+          💡 <strong>Svar direkte</strong> på denne e-posten for å kontakte <strong>${esc(name)}</strong>.
         </p>
       </div>
     </div>
@@ -81,10 +95,10 @@ export async function POST(request: Request) {
         'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Anleggstorget <kontakt@anleggstorget.no>',
-        to: ['huangevenzhe@gmail.com', 'alishguliyev1@gmail.com'],
+        from:     'Anleggstorget <kontakt@anleggstorget.no>',
+        to:       CONTACT_TO,
         reply_to: email,
-        subject: `Ny kontaktmelding fra ${name}`,
+        subject:  `Ny kontaktmelding fra ${name}`,
         html,
       }),
     })

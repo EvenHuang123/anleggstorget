@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createAdminClient } from '@/lib/admin/supabase'
+
+const schema = z.object({
+  sellerId: z.string().uuid(),
+  name:     z.string().min(1).max(100),
+  email:    z.string().email().max(254),
+  company:  z.string().max(200).optional(),
+  phone:    z.string().max(30).optional(),
+  message:  z.string().min(1).max(5000),
+})
+
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
 
 interface Profile {
   company_name: string
@@ -8,14 +22,11 @@ interface Profile {
 
 export async function POST(request: NextRequest) {
   try {
-    const { sellerId, name, email, company, phone, message } = await request.json()
-
-    if (!sellerId || !name?.trim() || !email?.trim() || !message?.trim()) {
+    const parsed = schema.safeParse(await request.json().catch(() => null))
+    if (!parsed.success) {
       return NextResponse.json({ error: 'Påkrevde felt mangler.' }, { status: 400 })
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: 'Ugyldig e-postadresse.' }, { status: 400 })
-    }
+    const { sellerId, name, email, company, phone, message } = parsed.data
 
     // Fetch seller email from profiles
     const supabase = createAdminClient()
@@ -35,8 +46,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true })
     }
 
-    const safeMessage = message.replace(/</g, '&lt;').replace(/>/g, '&gt;')
-
     const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"></head>
@@ -52,37 +61,37 @@ export async function POST(request: NextRequest) {
         Generell forespørsel
       </div>
       <h2 style="margin:0 0 6px;font-size:22px;color:#0d0c0a;font-weight:700;">
-        Ny henvendelse til ${profile.company_name}
+        Ny henvendelse til ${esc(profile.company_name)}
       </h2>
       <p style="margin:0 0 24px;color:#666;font-size:14px;">Noen ønsker å komme i kontakt med dere via Anleggstorget.</p>
 
       <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid #eee;color:#666;font-size:13px;width:110px;vertical-align:top;">Fra</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;color:#0d0c0a;font-size:14px;font-weight:600;">${name}</td>
+          <td style="padding:10px 0;border-bottom:1px solid #eee;color:#0d0c0a;font-size:14px;font-weight:600;">${esc(name)}</td>
         </tr>
         ${company ? `<tr>
           <td style="padding:10px 0;border-bottom:1px solid #eee;color:#666;font-size:13px;vertical-align:top;">Bedrift</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;color:#0d0c0a;font-size:14px;">${company}</td>
+          <td style="padding:10px 0;border-bottom:1px solid #eee;color:#0d0c0a;font-size:14px;">${esc(company)}</td>
         </tr>` : ''}
         <tr>
           <td style="padding:10px 0;border-bottom:1px solid #eee;color:#666;font-size:13px;vertical-align:top;">E-post</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;"><a href="mailto:${email}" style="color:#c8953a;text-decoration:none;">${email}</a></td>
+          <td style="padding:10px 0;border-bottom:1px solid #eee;font-size:14px;"><a href="mailto:${esc(email)}" style="color:#c8953a;text-decoration:none;">${esc(email)}</a></td>
         </tr>
         ${phone ? `<tr>
           <td style="padding:10px 0;border-bottom:1px solid #eee;color:#666;font-size:13px;vertical-align:top;">Telefon</td>
-          <td style="padding:10px 0;border-bottom:1px solid #eee;color:#0d0c0a;font-size:14px;"><a href="tel:${phone}" style="color:#0d0c0a;text-decoration:none;">${phone}</a></td>
+          <td style="padding:10px 0;border-bottom:1px solid #eee;color:#0d0c0a;font-size:14px;"><a href="tel:${esc(phone)}" style="color:#0d0c0a;text-decoration:none;">${esc(phone)}</a></td>
         </tr>` : ''}
       </table>
 
       <div style="background:#f8f8f8;border-left:4px solid #c8953a;border-radius:0 4px 4px 0;padding:20px 24px;margin-bottom:24px;">
         <p style="margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:#999;font-weight:600;">Melding</p>
-        <p style="margin:0;font-size:15px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap;">${safeMessage}</p>
+        <p style="margin:0;font-size:15px;color:#1a1a1a;line-height:1.7;white-space:pre-wrap;">${esc(message)}</p>
       </div>
 
       <div style="background:#fff8ed;border:1px solid rgba(200,149,58,0.3);border-radius:4px;padding:16px;">
         <p style="margin:0;font-size:13px;color:#666;">
-          💡 <strong>Svar direkte</strong> på denne e-posten for å kontakte <strong>${name}</strong>.
+          💡 <strong>Svar direkte</strong> på denne e-posten for å kontakte <strong>${esc(name)}</strong>.
         </p>
       </div>
     </div>

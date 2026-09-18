@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { verifyCredentials, getSessionToken, COOKIE_NAME } from '@/lib/admin/auth'
 
-export async function POST(request: NextRequest) {
-  const body = await request.json().catch(() => ({}))
-  const { username, password } = body as { username?: string; password?: string }
+const schema = z.object({
+  username: z.string().min(1).max(100),
+  password: z.string().min(1).max(128),
+})
 
-  if (!username || !password || !verifyCredentials(username, password)) {
+export async function POST(request: NextRequest) {
+  const parsed = schema.safeParse(await request.json().catch(() => null))
+  if (!parsed.success || !verifyCredentials(parsed.data.username, parsed.data.password)) {
     return NextResponse.json({ error: 'Ugyldig brukernavn eller passord' }, { status: 401 })
   }
 
@@ -17,7 +21,7 @@ export async function POST(request: NextRequest) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 7,
   })
 
   return response

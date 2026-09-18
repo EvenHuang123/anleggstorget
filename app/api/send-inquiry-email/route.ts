@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createServiceClient } from '@/lib/supabase/server'
+
+const schema = z.object({ inquiryId: z.string().uuid() })
+
+function esc(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const { inquiryId } = await request.json()
-    if (!inquiryId) return NextResponse.json({ error: 'inquiryId required' }, { status: 400 })
+    const parsed = schema.safeParse(await request.json().catch(() => null))
+    if (!parsed.success) return NextResponse.json({ error: 'inquiryId required' }, { status: 400 })
+    const { inquiryId } = parsed.data
 
     const supabase = await createServiceClient()
 
@@ -97,24 +105,24 @@ export async function POST(request: NextRequest) {
     <h2>Du har fått en kjøperhenvendelse!</h2>
 
     <div class="listing">
-      <div class="listing-title">${inq.listing.title}</div>
+      <div class="listing-title">${esc(inq.listing.title)}</div>
       <div class="listing-price">${priceFormatted}</div>
     </div>
 
     <div class="section">
       <div class="label">Fra bedrift</div>
-      <p class="value"><strong>${inq.sender.company_name}</strong>${inq.sender.contact_person ? `<br>${inq.sender.contact_person}` : ''}</p>
+      <p class="value"><strong>${esc(inq.sender.company_name)}</strong>${inq.sender.contact_person ? `<br>${esc(inq.sender.contact_person)}` : ''}</p>
     </div>
 
     <div class="section">
       <div class="label">Kontakt kjøper direkte</div>
-      ${inq.email ? `<p class="value"><a href="mailto:${inq.email}">${inq.email}</a></p>` : ''}
-      ${inq.phone ? `<p class="value"><a href="tel:${inq.phone}">${inq.phone}</a></p>` : ''}
+      ${inq.email ? `<p class="value"><a href="mailto:${esc(inq.email)}">${esc(inq.email)}</a></p>` : ''}
+      ${inq.phone ? `<p class="value"><a href="tel:${esc(inq.phone)}">${esc(inq.phone)}</a></p>` : ''}
     </div>
 
     <div class="msg-box">
       <div class="label">Melding fra kjøper</div>
-      <p class="msg">${inq.message}</p>
+      <p class="msg">${esc(inq.message)}</p>
     </div>
 
     <a href="${siteUrl}/dashboard/foresporsel" class="cta">Se alle forespørsler →</a>

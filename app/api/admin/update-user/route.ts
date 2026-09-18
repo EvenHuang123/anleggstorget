@@ -1,28 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { verifyAdminToken, COOKIE_NAME } from '@/lib/admin/auth'
 import { createAdminClient } from '@/lib/admin/supabase'
 
-interface UpdatePayload {
-  userId: string
-  companyName?: string
-  orgNumber?: string
-  contactPerson?: string | null
-  phone?: string | null
-  email?: string
-  verified?: boolean
-  active?: boolean
-  password?: string
-  notes?: string | null
-}
+const schema = z.object({
+  userId:        z.string().uuid(),
+  companyName:   z.string().min(1).max(200).optional(),
+  orgNumber:     z.string().regex(/^\d{9}$/).optional(),
+  contactPerson: z.string().max(200).nullable().optional(),
+  phone:         z.string().max(30).nullable().optional(),
+  email:         z.string().email().max(254).optional(),
+  verified:      z.boolean().optional(),
+  active:        z.boolean().optional(),
+  password:      z.string().min(8).max(128).optional(),
+  notes:         z.string().max(5000).nullable().optional(),
+})
 
 export async function POST(request: NextRequest) {
   const token = request.cookies.get(COOKIE_NAME)?.value
   if (!verifyAdminToken(token)) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body: UpdatePayload = await request.json().catch(() => ({}))
+  const parsed = schema.safeParse(await request.json().catch(() => null))
+  if (!parsed.success) return NextResponse.json({ error: 'userId påkrevd' }, { status: 400 })
+  const body = parsed.data
   const { userId } = body
-  if (!userId) return NextResponse.json({ error: 'userId påkrevd' }, { status: 400 })
 
   const supabase = createAdminClient()
   const errors: string[] = []
