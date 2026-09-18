@@ -5,10 +5,10 @@ import Navbar from '@/components/shared/Navbar'
 import Footer from '@/components/shared/Footer'
 import AnnonseContent from './AnnonseContent'
 import { createPublicClient } from '@/lib/supabase/public'
-import type { Listing } from '@/lib/supabase/types'
 import { CATEGORIES, getListingImageUrl } from '@/lib/utils/format'
 import { listingSchema, breadcrumbSchema } from '@/lib/schema'
 import { getListing } from '@/lib/listings'
+import SimilarListings from '@/components/SimilarListings'
 
 // ISR: re-render at most once per minute. Admin updates trigger immediate revalidation via revalidatePath.
 export const revalidate = 60
@@ -95,23 +95,6 @@ export default async function AnnonsePage({ params }: Props) {
 
   if (!listing) notFound()
 
-  // Related listings — same category, exclude current
-  let related: Listing[] = []
-  try {
-    const supabase = createPublicClient()
-    const { data } = await (supabase as any)
-      .from('listings')
-      .select('*, profiles(company_name, verified)')
-      .eq('category', listing.category)
-      .eq('status', 'active')
-      .neq('id', id)
-      .order('created_at', { ascending: false })
-      .limit(3) as { data: Listing[] | null }
-    related = data || []
-  } catch {
-    related = []
-  }
-
   const slug = listing.slug || id
   const categoryLabel = CATEGORIES[listing.category]?.label || listing.category
   const breadcrumbs = [
@@ -127,7 +110,9 @@ export default async function AnnonsePage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema(breadcrumbs)) }} />
       <Navbar />
       <main id="main-content" style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 80 }}>
-        <AnnonseContent listing={listing} related={related} />
+        <AnnonseContent listing={listing} />
+        {/* Intern lenking videre — mellom teknisk innhold og footer, på alle annonser */}
+        <SimilarListings currentListing={listing} />
       </main>
       <Footer />
     </>
