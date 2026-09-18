@@ -3,8 +3,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import dynamic from 'next/dynamic'
-import { ArrowRight, TrendingUp, Clock, Shield } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { ArrowRight } from 'lucide-react'
+import { useEffect, useRef, Fragment } from 'react'
 
 // Lazy-load: HeroCarousel fetches data client-side. Splitting it keeps the
 // hero text + LCP image in the main bundle, carousel code in a separate chunk.
@@ -16,9 +16,16 @@ const HeroCarousel = dynamic(() => import('./HeroCarousel'), {
 interface HeroProps {
   listingCount?: number
   sellerCount?: number
+  updatedLabel?: string | null
 }
 
-export default function Hero({ listingCount = 0, sellerCount = 0 }: HeroProps) {
+export default function Hero({ listingCount = 0, sellerCount = 0, updatedLabel = null }: HeroProps) {
+  const statSegments = [
+    listingCount > 0 ? `${listingCount} ${listingCount === 1 ? 'maskin' : 'maskiner'}` : null,
+    sellerCount > 0 ? `${sellerCount} ${sellerCount === 1 ? 'forhandler' : 'forhandlere'}` : null,
+    updatedLabel || null,
+  ].filter(Boolean) as string[]
+
   const bgRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -120,41 +127,8 @@ export default function Hero({ listingCount = 0, sellerCount = 0 }: HeroProps) {
               marginBottom: 40,
               fontWeight: 400,
             }}>
-              Kjøp, selg og leie tunge maskiner direkte mellom verifiserte norske bedrifter —
-              trygt, effektivt og uten mellomledd.
+              Kjøp, selg og lei brukte gravemaskiner, hjullastere og annet anleggsutstyr fra registrerte norske forhandlere.
             </p>
-
-            {/* Trust badges */}
-            <div style={{ display: 'flex', gap: 24, marginBottom: 40, flexWrap: 'wrap' }}>
-              {[
-                { icon: Shield, text: 'Verifiserte bedrifter' },
-                { icon: TrendingUp, text: 'Markedspris-innsikt' },
-                { icon: Clock, text: 'Rask saksbehandling' },
-              ].map(({ icon: Icon, text }) => (
-                <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Icon size={14} aria-hidden="true" style={{ color: 'var(--gold)' }} />
-                  <span style={{ fontSize: 14, color: 'var(--t1)', fontFamily: 'Barlow', fontWeight: 400 }}>{text}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Live stats */}
-            <div style={{ display: 'flex', gap: 32, marginBottom: 36, flexWrap: 'wrap' }}>
-              {[
-                { value: listingCount > 0 ? `${listingCount}+` : '—', label: 'maskiner tilgjengelig' },
-                { value: sellerCount > 0 ? `${sellerCount}+` : '—', label: 'verifiserte bedrifter' },
-                { value: '100%', label: 'gratis å bruke' },
-              ].map(({ value, label }) => (
-                <div key={label}>
-                  <div style={{
-                    fontFamily: 'Barlow Condensed, sans-serif',
-                    fontWeight: 800, fontSize: 28,
-                    color: 'var(--gold)', lineHeight: 1,
-                  }}>{value}</div>
-                  <div style={{ fontSize: 13, color: 'var(--t2)', marginTop: 4 }}>{label}</div>
-                </div>
-              ))}
-            </div>
 
             {/* CTAs */}
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -174,6 +148,18 @@ export default function Hero({ listingCount = 0, sellerCount = 0 }: HeroProps) {
                 Legg ut gratis
               </Link>
             </div>
+
+            {/* Live tall — én linje, brødtekststørrelse, tynne vertikale skillestreker */}
+            {statSegments.length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginTop: 24 }}>
+                {statSegments.map((seg, i) => (
+                  <Fragment key={seg}>
+                    {i > 0 && <span aria-hidden="true" style={{ width: 1, height: 12, background: 'var(--border2)' }} />}
+                    <span style={{ color: 'var(--t2)', fontSize: 14 }}>{seg}</span>
+                  </Fragment>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right: Live listing carousel */}

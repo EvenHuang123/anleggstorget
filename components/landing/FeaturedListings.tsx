@@ -28,16 +28,13 @@ export default async function FeaturedListings() {
   if (listings.length === 0) return null
 
   return (
-    <section className="section" style={{ background: 'var(--bg)' }}>
+    <section className="section" style={{ background: 'var(--bg)', paddingTop: 56, paddingBottom: 56 }}>
       <div className="container-main">
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 40, gap: 16 }}>
-          <div>
-            <p className="section-label" style={{ marginBottom: 8 }}>Mest favorittmarkerte</p>
-            <h2 className="section-title" style={{ fontSize: 'clamp(24px, 3vw, 36px)' }}>
-              Populære maskiner nå
-            </h2>
-          </div>
+        {/* Header — venstrejustert, setningsform */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 32, gap: 16 }}>
+          <h2 className="section-title" style={{ fontSize: 'clamp(24px, 3vw, 36px)', textTransform: 'none' }}>
+            Populære maskiner nå
+          </h2>
           <Link href="/sok" className="btn-secondary" style={{ flexShrink: 0 }}>
             Se alle <ArrowRight size={14} />
           </Link>

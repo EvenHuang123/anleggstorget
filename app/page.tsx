@@ -1,23 +1,9 @@
 import { Suspense } from 'react'
-import Link from 'next/link'
 import type { Metadata } from 'next'
 import { organizationSchema, websiteSchema, faqSchema } from '@/lib/schema'
 import { createPublicClient } from '@/lib/supabase/public'
-
-// Revalidate homepage every 60 s — FeaturedListings uses public client (no cookies = cacheable)
-export const revalidate = 120
-import { CheckCircle2, Shield, Users, MapPin, TrendingUp } from 'lucide-react'
+import { Shield, CheckCircle2, Users } from 'lucide-react'
 import Navbar from '@/components/shared/Navbar'
-
-export const metadata: Metadata = {
-  title: 'Kjøp og selg tunge maskiner – B2B Maskinmarkedsplass',
-  description: 'Norges B2B-markedsplass for verifiserte bedrifter. Kjøp, selg og leie gravemaskiner, hjullastere, dumpere og anleggsutstyr trygt. Gratis annonsering.',
-  openGraph: {
-    title: 'Anleggstorget – Kjøp og selg tunge maskiner',
-    description: 'Norges B2B-markedsplass for verifiserte bedrifter. Kjøp, selg og leie anleggsmaskiner trygt. Gratis annonsering.',
-    url: 'https://www.anleggstorget.no',
-  },
-}
 import Footer from '@/components/shared/Footer'
 import Hero from '@/components/landing/Hero'
 import SearchBar from '@/components/landing/SearchBar'
@@ -26,36 +12,57 @@ import Categories from '@/components/landing/Categories'
 import BrandsStripe from '@/components/landing/BrandsStripe'
 import CtaSection from '@/components/landing/CtaSection'
 
-const FEATURES = [
-  {
-    icon: CheckCircle2,
-    iconColor: '#10b981',
-    heading: 'GRATIS Å BRUKE',
-    text: 'Ingen provisjon eller skjulte kostnader',
+// Revalidate homepage every 120 s — all queries use the public client (no cookies = cacheable)
+export const revalidate = 120
+
+export const metadata: Metadata = {
+  title: 'Kjøp og selg tunge maskiner – Norges maskinmarkedsplass',
+  description: 'Norges markedsplass for anleggsmaskiner. Kjøp, selg og leie gravemaskiner, hjullastere, dumpere og anleggsutstyr trygt. Selgere verifisert mot Brønnøysundregisteret. Gratis annonsering.',
+  alternates: { canonical: 'https://www.anleggstorget.no' },
+  openGraph: {
+    title: 'Anleggstorget – Kjøp og selg tunge maskiner',
+    description: 'Norges markedsplass for anleggsmaskiner. Kjøp, selg og leie trygt — selgere verifisert mot Brønnøysundregisteret. Gratis annonsering.',
+    url: 'https://www.anleggstorget.no',
   },
-  {
-    icon: Shield,
-    iconColor: '#3b82f6',
-    heading: 'VERIFISERTE BEDRIFTER',
-    text: 'Sjekket mot Brønnøysundregisteret',
-  },
-  {
-    icon: Users,
-    iconColor: '#8b5cf6',
-    heading: 'TRYGG KOMMUNIKASJON',
-    text: 'Direkte kontakt mellom bedrifter',
-  },
-  {
-    icon: MapPin,
-    iconColor: '#ef4444',
-    heading: 'NORSK PLATTFORM',
-    text: 'Bygget for norske bedrifter',
-  },
+}
+
+// Konkrete, etterprøvbare påstander — ingen abstrakte dyder. Kun oker/nesten-sort ikoner.
+const USPS = [
+  { icon: Shield,       text: 'Hver selger er verifisert mot Brønnøysundregisteret før første annonse' },
+  { icon: CheckCircle2, text: 'Gratis å legge ut, og ingen provisjon på salg' },
+  { icon: Users,        text: 'Du kontakter selgeren direkte, uten mellomledd' },
 ]
+
+const FAQ_ITEMS = [
+  { q: 'Hvordan fungerer Anleggstorget?', a: 'Anleggstorget er en markedsplass for anleggsmaskiner. Bedrifter kan selge og leie ut maskiner ved å verifisere organisasjonsnummeret mot Brønnøysundregisteret, mens både bedrifter og privatpersoner kan søke, favorittmarkere og ta direkte kontakt med selgere.' },
+  { q: 'Hvem kan kjøpe og hvem kan selge?', a: 'Alle kan kjøpe. Både bedrifter og privatpersoner kan registrere seg gratis, favorittmarkere maskiner og sende forespørsler til selgere. For å selge må du registrere en bedrift; alle selgere verifiseres mot Brønnøysundregisteret før de kan legge ut annonser, slik at du vet at du handler med en registrert norsk bedrift.' },
+  { q: 'Koster det å legge ut annonser?', a: 'Det er gratis å legge ut annonser på Anleggstorget. Vi tar ingen provisjon på salg og har ingen abonnementsavgift.' },
+  { q: 'Hvilke typer maskiner kan jeg kjøpe, selge og leie?', a: 'Du kan kjøpe, selge og leie anleggsmaskiner på Anleggstorget: gravemaskiner, hjullastere, dumpere, traktorer, kraner og kompaktlastere. Alt fra minigravere på 1–2 tonn til anleggsmaskiner på over 40 tonn.' },
+  { q: 'Hvordan kontakter jeg en selger?', a: 'Klikk på "Kontakt selger" på en annonse og fyll ut en kort melding, så får selgeren beskjed på e-post. Du ser også selgerens bedriftsinformasjon, organisasjonsnummer og kontaktdetaljer på annonsen.' },
+  { q: 'Kan jeg leie ut maskiner på Anleggstorget?', a: 'Anleggstorget støtter både salg og utleie. Når du legger ut en annonse kan du oppgi at maskinen er til leie, med leiepris per dag, uke eller måned, eller tilby både salg og leie på samme maskin.' },
+]
+
+/** Ferskhetssignal: "oppdatert i dag 06:14" / "oppdatert i går" / "oppdatert 3. sep". Oslo-tid. */
+function formatUpdated(iso: string | null): string | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return null
+  const dayKey = (x: Date) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Oslo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(x)
+  const now = new Date()
+  const yesterday = new Date(now.getTime() - 86_400_000)
+  if (dayKey(d) === dayKey(now)) {
+    const time = new Intl.DateTimeFormat('nb-NO', { timeZone: 'Europe/Oslo', hour: '2-digit', minute: '2-digit' }).format(d)
+    return `oppdatert i dag ${time}`
+  }
+  if (dayKey(d) === dayKey(yesterday)) return 'oppdatert i går'
+  const date = new Intl.DateTimeFormat('nb-NO', { timeZone: 'Europe/Oslo', day: 'numeric', month: 'short' }).format(d)
+  return `oppdatert ${date}`
+}
 
 function ListingsSkeleton() {
   return (
-    <section style={{ padding: '80px 0', background: 'var(--bg)' }}>
+    <section style={{ padding: '56px 0', background: 'var(--bg)' }}>
       <div className="container-main">
         <div className="listing-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -67,21 +74,46 @@ function ListingsSkeleton() {
   )
 }
 
-const FAQ_ITEMS = [
-  { q: 'Hvordan fungerer Anleggstorget?', a: 'Anleggstorget er en B2B-markedsplass kun for verifiserte norske bedrifter. Registrer din bedrift gratis ved å verifisere organisasjonsnummeret mot Brønnøysundregisteret, legg ut annonser for maskiner du vil selge eller leie ut, og kom i direkte kontakt med andre bedrifter. Ingen mellommenn, ingen provisjon.' },
-  { q: 'Er alle bedrifter verifiserte?', a: 'Ja, alle bedrifter på Anleggstorget er automatisk verifisert mot Brønnøysundregisteret før de kan legge ut annonser. Vi sjekker organisasjonsnummer og bedriftsnavn i sanntid, noe som sikrer at kun ekte, registrerte norske bedrifter kan handle på plattformen. Ingen privatpersoner eller uverifiserte selskaper.' },
-  { q: 'Koster det å legge ut annonser?', a: 'Nei, det er helt gratis å legge ut annonser på Anleggstorget. Vi tar ingen provisjon på salg, ingen skjulte kostnader, og ingen abonnementsavgift. Plattformen er 100% gratis for alle verifiserte bedrifter.' },
-  { q: 'Hvilke typer maskiner kan jeg kjøpe, selge og leie?', a: 'Du kan kjøpe, selge og leie alle typer anleggsmaskiner på Anleggstorget: gravemaskiner, hjullastere, dumpere, traktorer, kraner, kompaktlastere, veivalser og mer. Alt fra små minigravere på 1–2 tonn til store anleggsmaskiner på 40+ tonn.' },
-  { q: 'Hvordan kontakter jeg en selger?', a: 'Klikk på "Kontakt selger" på en annonse, fyll ut en kort melding med ditt spørsmål, så får selgeren beskjed på e-post umiddelbart. Du kan også se selgerens bedriftsinformasjon, organisasjonsnummer og kontaktdetaljer direkte på annonsen.' },
-  { q: 'Kan jeg leie ut maskiner på Anleggstorget?', a: 'Ja! Anleggstorget støtter både salg og utleie av maskiner. Når du legger ut en annonse kan du spesifisere at maskinen er til leie, og oppgi leiepris per dag, uke eller måned. Du kan også velge å tilby både salg og leie på samme maskin.' },
-]
-
 export default async function HomePage() {
-  const supabase = createPublicClient()
-  const [{ count: listingCount }, { count: sellerCount }] = await Promise.all([
-    supabase.from('listings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = createPublicClient() as any
+
+  // Én spørring for aktive annonser dekker antall, distinkte selgere, merker og ferskhet.
+  const [activeRes, syncRes] = await Promise.all([
+    sb.from('listings').select('seller_id, brand, created_at').eq('status', 'active'),
+    sb.from('sync_logs').select('created_at').in('status', ['success', 'partial'])
+      .order('created_at', { ascending: false }).limit(1),
   ])
+
+  const rows = (activeRes.data ?? []) as { seller_id: string | null; brand: string | null; created_at: string | null }[]
+  const syncRows = (syncRes.data ?? []) as { created_at: string | null }[]
+  const listingCount = rows.length
+  const sellerCount = new Set(rows.map(r => r.seller_id).filter(Boolean)).size
+
+  // Merker grupperes case-insensitivt (så "CAT" og "Cat" ikke teller som to),
+  // og vi viser den vanligste skrivemåten. Kun visning — ingen datamodell-endring.
+  const brandAgg = new Map<string, { count: number; labels: Map<string, number> }>()
+  let newestListing: string | null = null
+  for (const r of rows) {
+    if (r.created_at && (!newestListing || r.created_at > newestListing)) newestListing = r.created_at
+    const raw = r.brand?.trim()
+    if (!raw) continue
+    const key = raw.toLowerCase()
+    const entry = brandAgg.get(key) ?? { count: 0, labels: new Map<string, number>() }
+    entry.count += 1
+    entry.labels.set(raw, (entry.labels.get(raw) ?? 0) + 1)
+    brandAgg.set(key, entry)
+  }
+  const topBrands = [...brandAgg.values()]
+    .map(e => ({
+      name: [...e.labels.entries()].sort((a, b) => b[1] - a[1])[0][0],
+      count: e.count,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8)
+
+  // Ferskhet: siste vellykkede sync, fallback til nyeste annonse.
+  const updatedLabel = formatUpdated(syncRows?.[0]?.created_at ?? newestListing)
 
   return (
     <>
@@ -90,119 +122,48 @@ export default async function HomePage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema()) }} />
       <Navbar />
       <main id="main-content">
-        <Hero listingCount={listingCount ?? 0} sellerCount={sellerCount ?? 0} />
+        <Hero listingCount={listingCount} sellerCount={sellerCount} updatedLabel={updatedLabel} />
+
+        {/* USP-stripe — inline linje, venstrejustert, ingen kort/ramme/ikonring */}
         <section style={{
           background: 'var(--bg2)',
           borderTop: '1px solid var(--border)',
           borderBottom: '1px solid var(--border)',
-          padding: '80px 0',
+          padding: '36px 0',
         }}>
-          <div className="container-main" style={{ maxWidth: 1200, margin: '0 auto' }}>
-            <div className="features-grid" style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(5, 1fr)',
-              gap: 32,
-              textAlign: 'center',
-            }}>
-              {FEATURES.map(f => (
-                <div key={f.heading}>
-                  <div style={{ marginBottom: 12, lineHeight: 1 }}>
-                    <f.icon size={40} strokeWidth={2} style={{ color: f.iconColor, display: 'block', margin: '0 auto' }} />
-                  </div>
-                  <div style={{
-                    fontFamily: 'Barlow Condensed, sans-serif',
-                    fontWeight: 700,
-                    fontSize: 18,
-                    color: 'var(--t1)',
-                    marginBottom: 8,
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                  }}>
-                    {f.heading}
-                  </div>
-                  <p style={{ color: 'var(--t3)', fontSize: 14, margin: 0, lineHeight: 1.6 }}>
-                    {f.text}
-                  </p>
+          <div className="container-main">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '18px 40px' }}>
+              {USPS.map(u => (
+                <div key={u.text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <u.icon size={20} strokeWidth={1.5} aria-hidden="true" style={{ color: 'var(--gold)', flexShrink: 0 }} />
+                  <span style={{ color: 'var(--t2)', fontSize: 15, lineHeight: 1.4 }}>{u.text}</span>
                 </div>
               ))}
-
-              {/* Markedsinnsikt teaser card */}
-              <Link
-                href="/markedsinnsikt"
-                className="feature-teaser-link"
-              >
-                <div style={{ marginBottom: 12, lineHeight: 1 }}>
-                  <TrendingUp size={40} strokeWidth={2} style={{ color: '#C8953A', display: 'block', margin: '0 auto' }} />
-                </div>
-                <div style={{
-                  fontFamily: 'Barlow Condensed, sans-serif',
-                  fontWeight: 700,
-                  fontSize: 18,
-                  color: 'var(--t1)',
-                  marginBottom: 8,
-                  letterSpacing: '0.05em',
-                  textTransform: 'uppercase',
-                }}>
-                  MARKEDSINNSIKT
-                </div>
-                <p style={{ color: 'var(--t3)', fontSize: 14, margin: 0, lineHeight: 1.6 }}>
-                  Prisindekser og trender for brukte maskiner
-                </p>
-                <div style={{
-                  display: 'inline-block',
-                  background: 'var(--gold3)',
-                  border: '1px solid var(--gold)',
-                  borderRadius: 12,
-                  padding: '4px 10px',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                  color: 'var(--gold)',
-                  marginTop: 12,
-                }}>
-                  Kommer snart
-                </div>
-              </Link>
             </div>
           </div>
-          <style>{`
-            @media (max-width: 1200px) { .features-grid { grid-template-columns: repeat(3, 1fr) !important; } }
-            @media (max-width: 768px)  { .features-grid { grid-template-columns: repeat(2, 1fr) !important; } }
-            @media (max-width: 480px)  { .features-grid { grid-template-columns: 1fr !important; } }
-            .feature-teaser-link { text-decoration: none; display: block; transition: transform 0.15s; }
-            .feature-teaser-link:hover { transform: translateY(-4px); }
-          `}</style>
         </section>
+
         <SearchBar />
         <Suspense fallback={<ListingsSkeleton />}>
           <FeaturedListings />
         </Suspense>
         <div className="gold-line" />
         <Categories />
-        <BrandsStripe />
+        <BrandsStripe brands={topBrands} />
         <CtaSection />
 
-        {/* FAQ */}
+        {/* FAQ — venstrejustert, ingen kicker */}
         <section className="faq-section" style={{
           background: 'var(--bg2)',
           borderTop: '1px solid var(--border)',
           padding: '80px 24px',
         }}>
           <div style={{ maxWidth: 900, margin: '0 auto' }}>
-            <p style={{
-              fontFamily: 'Barlow Condensed, sans-serif',
-              fontWeight: 600, fontSize: 11,
-              letterSpacing: '0.14em', textTransform: 'uppercase',
-              color: 'var(--gold)', marginBottom: 12, textAlign: 'center',
-            }}>
-              Spørsmål og svar
-            </p>
             <h2 className="faq-heading" style={{
               fontFamily: 'Barlow Condensed, sans-serif',
               fontWeight: 800, fontSize: 36,
-              color: 'var(--t1)', marginBottom: 48,
-              textAlign: 'center', letterSpacing: '0.02em',
+              color: 'var(--t1)', marginBottom: 40,
+              letterSpacing: '0.02em',
             }}>
               Ofte stilte spørsmål
             </h2>

@@ -59,7 +59,7 @@ export default function CtaSection() {
         </div>
 
         <p style={{ color: 'var(--t3)', fontSize: 12, marginTop: 20 }}>
-          Ingen binding · Gratis å registrere · Ingen provisjon
+          Gratis å registrere, ingen binding.
         </p>
       </div>
     </section>

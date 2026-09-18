@@ -1,64 +1,58 @@
 import Link from 'next/link'
 
-const BRANDS = [
-  'Volvo', 'Caterpillar', 'Komatsu', 'Liebherr', 'Hitachi',
-  'Doosan', 'JCB', 'Mecalac', 'Terex', 'Kobelco',
-  'John Deere', 'Case', 'New Holland', 'Claas', 'Fendt',
-]
-
-const brandStyle = {
-  fontFamily: 'Barlow Condensed', fontWeight: 700,
-  fontSize: 15, letterSpacing: '0.08em', textTransform: 'uppercase' as const,
-  color: 'var(--t3)', whiteSpace: 'nowrap' as const,
-  transition: 'color 0.15s', textDecoration: 'none',
+interface BrandCount {
+  name: string
+  count: number
 }
 
-export default function BrandsStripe() {
+const chipStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'baseline',
+  gap: 8,
+  padding: '8px 14px',
+  border: '1px solid var(--border)',
+  borderRadius: 2,
+  background: 'var(--bg)',
+  textDecoration: 'none',
+  fontFamily: 'Barlow Condensed, sans-serif',
+  fontWeight: 700,
+  fontSize: 15,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  color: 'var(--t2)',
+  whiteSpace: 'nowrap',
+}
+
+/**
+ * Merker som faktisk har aktive annonser — generert fra databasen, sortert etter
+ * antall. Statisk rad (ingen marquee). Rendrer ingenting hvis under 4 merker,
+ * for ikke å love et utvalg vi ikke har.
+ */
+export default function BrandsStripe({ brands }: { brands: BrandCount[] }) {
+  if (!brands || brands.length < 4) return null
+
   return (
-    <div style={{
+    <section style={{
       background: 'var(--bg2)',
       borderTop: '1px solid var(--border)',
       borderBottom: '1px solid var(--border)',
-      padding: '80px 0',
-      overflow: 'hidden',
+      padding: '48px 0',
     }}>
-      <div style={{ textAlign: 'center', marginBottom: 28 }}>
-        <p className="label-sm">Populære merker på plattformen</p>
-      </div>
-
-      <div style={{ overflow: 'hidden', position: 'relative' }}>
-        {/* Gradient fades */}
-        <div style={{
-          position: 'absolute', left: 0, top: 0, bottom: 0, width: 120,
-          background: 'linear-gradient(to right, var(--bg2), transparent)',
-          zIndex: 1, pointerEvents: 'none',
-        }} />
-        <div style={{
-          position: 'absolute', right: 0, top: 0, bottom: 0, width: 120,
-          background: 'linear-gradient(to left, var(--bg2), transparent)',
-          zIndex: 1, pointerEvents: 'none',
-        }} />
-
-        <div
-          className="animate-ticker"
-          style={{ display: 'flex', alignItems: 'center', gap: 0, whiteSpace: 'nowrap' }}
-        >
-          {/* First set — real links for SEO */}
-          {BRANDS.map(brand => (
-            <div key={brand} style={{ padding: '0 32px', borderRight: '1px solid var(--border)', flexShrink: 0 }}>
-              <Link href={`/sok?brand=${encodeURIComponent(brand)}`} style={brandStyle}>
-                {brand}
-              </Link>
-            </div>
-          ))}
-          {/* Second set — visual duplicate for seamless loop, hidden from crawlers */}
-          {BRANDS.map(brand => (
-            <div key={`dup-${brand}`} aria-hidden="true" style={{ padding: '0 32px', borderRight: '1px solid var(--border)', flexShrink: 0 }}>
-              <span style={brandStyle}>{brand}</span>
-            </div>
+      <div className="container-main">
+        <p className="label-sm" style={{ marginBottom: 16 }}>Merker med annonser nå</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+          {brands.map(b => (
+            <Link key={b.name} href={`/sok?brand=${encodeURIComponent(b.name)}`} className="brand-chip" style={chipStyle}>
+              <span>{b.name}</span>
+              <span style={{ color: 'var(--t3)', fontWeight: 600, fontSize: 13, letterSpacing: 0 }}>{b.count}</span>
+            </Link>
           ))}
         </div>
       </div>
-    </div>
+
+      <style>{`
+        .brand-chip:hover { border-color: var(--gold) !important; color: var(--gold) !important; }
+      `}</style>
+    </section>
   )
 }

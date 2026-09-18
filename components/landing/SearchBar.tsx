@@ -37,16 +37,15 @@ export default function SearchBar() {
   }
 
   return (
-    <section style={{ padding: '80px 0', background: 'var(--bg)', overflowX: 'clip' }}>
+    <section style={{ padding: '64px 0', background: 'var(--bg)', overflowX: 'clip' }}>
       <div className="container-main">
-        {/* Section header */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <p className="section-label" style={{ marginBottom: 10 }}>Søk i markedet</p>
-          <h2 className="section-title" style={{ fontSize: 'clamp(28px, 4vw, 44px)', marginBottom: 14 }}>
+        {/* Section header — venstrejustert, setningsform */}
+        <div style={{ marginBottom: 32 }}>
+          <h2 className="section-title" style={{ fontSize: 'clamp(28px, 4vw, 44px)', textTransform: 'none', marginBottom: 10 }}>
             Finn din neste maskin
           </h2>
           <p style={{ color: 'var(--t2)', fontSize: 15 }}>
-            Maskiner til salgs og utleie fra verifiserte norske bedrifter
+            Maskiner til salgs og utleie fra verifiserte norske forhandlere
           </p>
         </div>
 

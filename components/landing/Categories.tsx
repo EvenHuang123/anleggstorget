@@ -117,10 +117,9 @@ const CATEGORIES = [
 
 export default function Categories() {
   return (
-    <section className="section" style={{ background: 'var(--bg2)', borderTop: '1px solid var(--border)' }}>
+    <section className="section" style={{ background: 'var(--bg2)', borderTop: '1px solid var(--border)', paddingTop: 56, paddingBottom: 56 }}>
       <div className="container-main">
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <p className="section-label" style={{ marginBottom: 8 }}>Kategorier</p>
+        <div style={{ marginBottom: 32 }}>
           <h2 className="section-title" style={{ fontSize: 'clamp(24px, 3vw, 36px)' }}>
             Bla etter type maskin
           </h2>
