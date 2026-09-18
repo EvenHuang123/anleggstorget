@@ -2,23 +2,23 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { usePlausible } from 'next-plausible'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
   ChevronRight, ChevronLeft, MapPin, Clock, Calendar, Weight,
   Shield, Heart, Share2, Phone, Mail, MessageSquare,
-  AlertCircle, X, ZoomIn, Building2,
+  AlertCircle, X, ZoomIn, Building2, ArrowLeft, Bell,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { formatPrice, formatNumber, formatDate, formatRelativeDate, CATEGORIES, getListingImageUrl } from '@/lib/utils/format'
 import type { Listing } from '@/lib/supabase/types'
-import ListingCard from '@/components/listings/ListingCard'
+import ListingStatusBanner from '@/components/listing/ListingStatusBanner'
 import { CategoryBadge } from '@/components/ui/CategoryBadge'
 import toast from 'react-hot-toast'
 
 interface Props {
   listing: Listing
-  related: Listing[]
 }
 
 const PRICE_TYPE_LABELS: Record<string, string> = {
@@ -27,12 +27,17 @@ const PRICE_TYPE_LABELS: Record<string, string> = {
   auction: 'Auksjon',
 }
 
-export default function AnnonseContent({ listing, related }: Props) {
+export default function AnnonseContent({ listing }: Props) {
   const supabase = createClient()
+  const router = useRouter()
 
   const images = listing.images?.length
     ? listing.images.map(getListingImageUrl)
     : []
+
+  // Solgt/avpublisert: nedtonet pris, skjult kontakt-CTA, ingen relatert-seksjon
+  // (SimilarListings tar over fra serversiden).
+  const inactive = listing.status === 'sold' || listing.status === 'delisted'
 
   const plausible = usePlausible()
 
@@ -45,6 +50,13 @@ export default function AnnonseContent({ listing, related }: Props) {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  // null = ikke lest enda (unngår flash), '' = ingen lagret søk, '?...' = har søk
+  const [lastSearch, setLastSearch] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLastSearch(sessionStorage.getItem('lastSearch') ?? '')
+  }, [])
 
   // Pre-fill inquiry form + check favorite status
   useEffect(() => {
@@ -92,6 +104,21 @@ export default function AnnonseContent({ listing, related }: Props) {
       setSending(false)
       return
     }
+
+    // Kjøpere har ikke nødvendigvis en profilrad ennå (opprettes først ved behov).
+    // inquiries.sender_id refererer til profiles, så vi sikrer at raden finnes.
+    const meta = session.user.user_metadata ?? {}
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('profiles').upsert({
+      id: session.user.id,
+      user_id: session.user.id,
+      account_type: (meta.account_type === 'seller' || meta.account_type === 'admin') ? meta.account_type : 'buyer',
+      company_name: meta.company_name ?? meta.full_name ?? session.user.email?.split('@')[0] ?? 'Privatperson',
+      org_number: meta.org_number ?? null,
+      phone: meta.phone ?? inquiry.phone ?? null,
+      email: session.user.email ?? null,
+    }, { onConflict: 'id', ignoreDuplicates: true })
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: newInquiry, error } = await (supabase as any).from('inquiries').insert({
       listing_id: listing.id,
@@ -125,6 +152,28 @@ export default function AnnonseContent({ listing, related }: Props) {
   return (
     <>
       <div className="container-main" style={{ padding: '32px 24px 80px' }}>
+        {/* Tilbake til søk */}
+        {lastSearch !== null && (
+          <div style={{ marginBottom: 10 }}>
+            <button
+              onClick={() => {
+                const pos = sessionStorage.getItem('lastSearchScroll')
+                if (pos) sessionStorage.setItem('restoreScrollTo', pos)
+                router.push(`/sok${lastSearch}`)
+              }}
+              className="back-to-search"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                display: 'inline-flex', alignItems: 'center', gap: 5,
+                color: 'var(--t3)', fontSize: 13, transition: 'color 0.15s',
+              }}
+            >
+              <ArrowLeft size={13} />
+              {lastSearch ? 'Tilbake til søk' : 'Se alle maskiner'}
+            </button>
+          </div>
+        )}
+
         {/* Breadcrumbs */}
         <nav aria-label="Brødsmule-navigering" style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 28, flexWrap: 'wrap' }}>
           <Link href="/" style={{ color: 'var(--t3)', fontSize: 12, textDecoration: 'none' }}>Hjem</Link>
@@ -137,6 +186,9 @@ export default function AnnonseContent({ listing, related }: Props) {
           <ChevronRight size={12} style={{ color: 'var(--t3)' }} aria-hidden="true" />
           <span aria-current="page" style={{ color: 'var(--t2)', fontSize: 12 }}>{listing.title}</span>
         </nav>
+
+        {/* Status-banner for solgte / avpubliserte / reserverte annonser */}
+        <ListingStatusBanner status={listing.status} />
 
         {/* Main grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 380px', gap: 40, alignItems: 'flex-start' }} className="annonse-grid">
@@ -328,14 +380,32 @@ export default function AnnonseContent({ listing, related }: Props) {
                 </button>
                 <button
                   aria-label="Del denne annonsen"
-                  onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success('Lenke kopiert!') }}
+                  onClick={async () => {
+                    const shareData = {
+                      title: `${listing.title} – Anleggstorget`,
+                      text: `Se denne maskinen på Anleggstorget: ${listing.title}`,
+                      url: window.location.href,
+                    }
+                    if (typeof navigator.share === 'function') {
+                      try { await navigator.share(shareData) } catch { /* bruker avbrøt */ }
+                    } else {
+                      await navigator.clipboard.writeText(window.location.href)
+                      setCopied(true)
+                      setTimeout(() => setCopied(false), 2000)
+                    }
+                  }}
                   style={{
-                    background: 'var(--bg3)', border: '1px solid var(--border)',
-                    borderRadius: 3, width: 38, height: 38,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                    background: copied ? 'var(--gold3)' : 'var(--bg3)',
+                    border: `1px solid ${copied ? 'rgba(200,149,58,0.4)' : 'var(--border)'}`,
+                    borderRadius: 3, height: 38, padding: '0 10px',
+                    display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+                    transition: 'all 0.15s',
                   }}
                 >
-                  <Share2 size={15} style={{ color: 'var(--t2)' }} />
+                  <Share2 size={15} style={{ color: copied ? 'var(--gold)' : 'var(--t2)', flexShrink: 0 }} />
+                  <span className="share-label" style={{ fontSize: 13, color: copied ? 'var(--gold)' : 'var(--t2)', whiteSpace: 'nowrap' }}>
+                    {copied ? 'Kopiert!' : 'Del'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -379,7 +449,7 @@ export default function AnnonseContent({ listing, related }: Props) {
                         listing.weight_class ? `i vektklasse ${listing.weight_class}` : null,
                         listing.location ? `til salgs i ${listing.location}` : null,
                         listing.profiles?.company_name ? `fra ${listing.profiles.company_name}` : null,
-                        'p\u00E5 Anleggstorget \u2014 Norges B2B-markedsplass for verifiserte bedrifter.',
+                        'p\u00E5 Anleggstorget \u2014 Norges markedsplass for anleggsmaskiner fra verifiserte bedrifter.',
                       ].filter(Boolean).join(', ')}
                     </p>
                   )
@@ -413,28 +483,18 @@ export default function AnnonseContent({ listing, related }: Props) {
               </div>
             </div>
 
-            {/* Related listings */}
-            {related.length > 0 && (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <h2 className="section-title" style={{ fontSize: 18 }}>Lignende annonser</h2>
-                  <Link href={`/sok?category=${listing.category}`} style={{ color: 'var(--gold)', fontSize: 13, textDecoration: 'none' }}>
-                    Se alle →
-                  </Link>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }} className="related-grid">
-                  {related.map(r => <ListingCard key={r.id} listing={r} />)}
-                </div>
-              </div>
-            )}
+            {/* Lignende annonser rendres nå full-bredde under innholdet via
+                <SimilarListings> i page.tsx — bedre rangering og crawlbar intern lenking. */}
           </div>
 
           {/* RIGHT sidebar */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 88 }}>
             {/* Price card */}
             <div style={{ background: 'var(--bg2)', border: '1px solid var(--border2)', borderRadius: 4, padding: '24px 22px' }}>
-              <p className="label-sm" style={{ marginBottom: 6 }}>{PRICE_TYPE_LABELS[listing.price_type]}</p>
-              <p className="price-display" style={{ fontSize: 32, marginBottom: 8 }}>
+              <p className="label-sm" style={{ marginBottom: 6 }}>
+                {inactive ? 'Siste kjente pris' : PRICE_TYPE_LABELS[listing.price_type]}
+              </p>
+              <p className="price-display" style={{ fontSize: 32, marginBottom: 8, opacity: inactive ? 0.5 : 1 }}>
                 {formatPrice(listing.price)}
               </p>
               {listing.price_type === 'negotiable' && <div className="tag tag-gold" style={{ marginBottom: 8 }}>Forhandlingsbar</div>}
@@ -457,8 +517,17 @@ export default function AnnonseContent({ listing, related }: Props) {
               )}
             </div>
 
-            {/* Inquiry CTA */}
-            {currentUserId === listing.seller_id ? (
+            {/* Inquiry CTA — skjult for solgte/avpubliserte; erstattet av varsel-lenke */}
+            {inactive ? (
+              <Link
+                href={`/sok?category=${listing.category}`}
+                className="btn-primary"
+                style={{ width: '100%', justifyContent: 'center', height: 50, fontSize: 14, textDecoration: 'none' }}
+              >
+                <Bell size={16} />
+                Få varsel om lignende maskiner
+              </Link>
+            ) : currentUserId === listing.seller_id ? (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 10, padding: '14px 18px',
                 background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 4,
@@ -768,12 +837,15 @@ export default function AnnonseContent({ listing, related }: Props) {
         .annonse-grid { grid-template-columns: minmax(0, 1fr) 380px !important; }
         .stats-row { grid-template-columns: repeat(4, 1fr) !important; }
         .related-grid { grid-template-columns: repeat(3, 1fr) !important; }
+        .share-label { display: inline; }
+        .back-to-search:hover { color: var(--gold) !important; }
         @media (max-width: 960px) {
           .annonse-grid { grid-template-columns: 1fr !important; }
         }
         @media (max-width: 640px) {
           .stats-row { grid-template-columns: repeat(2, 1fr) !important; }
           .related-grid { grid-template-columns: 1fr !important; }
+          .share-label { display: none; }
         }
       `}</style>
     </>
